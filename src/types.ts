@@ -8,38 +8,32 @@ import { Dictionary } from 'lodash'
  */
 export interface FakerBag {
   faker: Faker.FakerStatic
-  constraints: RelationConstraints
 }
 
-export interface RelationConstraints {
-  atMax(amount: number): FixtureConstraint
-  atLeastIfExisting(amount: number): FixtureConstraint
-}
-
-export interface FixtureConstraint {
-  type: 'AT_MAX' | 'AT_LEAST_IF_EXISTING'
-  value: number
+export type RelationConstraint = {
+  min?: number
+  max?: number
 }
 
 /**
  * FakerModel represents the collection of all explicit faking model definitions
  * used in Prisma Faker.
  */
-export type FakerModel = Dictionary<FixtureDefinition>
+export type FakerSchema = Dictionary<FixtureDefinition>
 
 export type FixtureDefinition = {
   amount?: number
   factory?: Dictionary<FixtureFieldDefinition | (() => FixtureFieldDefinition)>
 }
 
-export type FixtureFieldDefinition = string | number | FixtureConstraint
+export type FixtureFieldDefinition = string | number | RelationConstraint
 
 /**
  * Prisma Faker uses intermediate step between model-faker definition
  * and database seeding. Fixture is a virtual data unit used to describe
  * future data and calculate relations.
  */
-export interface Fixture {
+export interface Order {
   model: Model
   amount: number
   relations: { [field: string]: number }
@@ -56,7 +50,7 @@ export interface Step {
 /**
  * Represents the virtual unit.
  */
-export interface VData {
+export interface Fixture {
   order: number // starts with 0
   id: string
   model: Model

@@ -24,11 +24,30 @@ async function run() {
    *  pre-execution setting.
    * Cons: Difficult type-safety
    */
-  const _model = (b: FakerBag): FakerModel => ({
+  // const _model = (b: FakerBag): FakerModel => ({
+  //   User: {
+  //     factory: {
+  //       name: b.faker.name.firstName,
+  //       posts: b.constraints.atMax(2),
+  //     },
+  //   },
+  // })
+
+  /**
+   * #4
+   * Pros: easier to implement,
+   *  supports granular implementation (optional implementation of fields, otherwise use defults),
+   *  pre-execution setting, removes unnecessary contraint compelxity.
+   * Cons: Difficult type-safety
+   */
+  const __model = (b: FakerBag): FakerModel => ({
     User: {
       factory: {
         name: b.faker.name.firstName,
-        posts: b.constraints.atMax(2),
+        posts: {
+          min: 3,
+          max: 100,
+        },
       },
     },
   })
@@ -48,7 +67,7 @@ async function run() {
   //   },
   // }))
 
-  const fixtures = getFixtures(_model, { seed: 42 })
+  const fixtures = getFixtures(__model, { seed: 42 })
 
   console.log(fixtures)
 }
