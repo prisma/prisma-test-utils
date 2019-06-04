@@ -12,7 +12,7 @@ import {
   Order,
   FixtureDefinition,
 } from './types'
-import { withDefault, withDefaultIn } from './utils'
+import { withDefault } from './utils'
 
 /**
  * Calculate the fixtures from the faker model definition.
@@ -103,9 +103,15 @@ export function getFixtures(
    * Coverts fixtures to steps. Steps represent an ordered entity that specifies the creation
    * of a virtual data.
    *
+   * Creates a pool of available instances and validates relation constraints.
+   *
    * @param fixtures
    */
   function getStepsFromOrders(orders: Order[]): Step[] {
+    const pool = orders.reduce((acc, order) => ({
+      ...acc,
+      [order.model.name]: order.amount,
+    }))
     return []
   }
 
