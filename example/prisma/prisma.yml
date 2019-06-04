@@ -1,0 +1,9 @@
+# Defines your models, each model is mapped to the database as a table.
+datamodel: datamodels/simple.prisma
+
+# Specifies the language and directory for the generated Prisma client.
+generate:
+  - generator: typescript-client
+    output: ./src/prisma/prisma-client
+
+endpoint: https://eu1.prisma.sh/flavian/prisma_mocking/required

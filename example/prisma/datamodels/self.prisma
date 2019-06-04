@@ -1,0 +1,4 @@
+type A {
+  id: ID! @id
+  a: A!
+}

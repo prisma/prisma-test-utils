@@ -1,0 +1,8 @@
+type A {
+  id: ID! @id
+  b: B! @relation(link: INLINE)
+}
+type B {
+  id: ID! @id
+  a: A!
+}
