@@ -49,5 +49,7 @@ async function run() {
     },
   )
 
+  debugger
+
   console.log(data)
 }

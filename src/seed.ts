@@ -455,27 +455,27 @@ export function seed(
 
           switch (field.type) {
             case 'ID': {
-              const id = mock(faker.guid)
+              const id = faker.guid() //mock(faker.guid)
 
               return [pool, { ...acc, [field.name]: id }]
             }
             case 'String': {
-              const string = mock(faker.word)
+              const string = faker.word() //mock(faker.word)
 
               return [pool, { ...acc, [field.name]: string }]
             }
             case 'Int': {
-              const number = mock(faker.integer)
+              const number = faker.integer() //mock(faker.integer)
 
               return [pool, { ...acc, [field.name]: number }]
             }
             case 'Float': {
-              const float = mock(faker.floating)
+              const float = faker.floating() //mock(faker.floating)
 
               return [pool, { ...acc, [field.name]: float }]
             }
             case 'Date': {
-              const date = mock(faker.date)
+              const date = faker.date() //mock(faker.date)
 
               return [pool, { ...acc, [field.name]: date }]
             }
@@ -485,15 +485,13 @@ export function seed(
                 if (field.isList) {
                   const [id, newPool] = getInstanceIDsFromPool(
                     pool,
-                    fieldModel.name,
-                    task.relations[fieldModel.name].amount,
+                    field.type,
+                    task.relations[field.name].amount,
                   )
                   return [newPool, { ...acc, [field.name]: id }]
                 } else {
-                  const [id, newPool] = getInstanceIDFromPool(
-                    pool,
-                    fieldModel.name,
-                  )
+                  const [id, newPool] = getInstanceIDFromPool(pool, field.type)
+
                   return [newPool, { ...acc, [field.name]: id }]
                 }
               }
