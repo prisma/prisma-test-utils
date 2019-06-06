@@ -32,7 +32,8 @@ export function seed(
   /* Fixture calculations */
   const orders: Order[] = getOrdersFromDMMF(dmmf)
   const steps: Step[] = getStepsFromOrders(orders)
-  const fixtures: Fixture[] = getFixturesFromSteps(fakerSchema, steps)
+  const tasks: Task[] = getTasksFromSteps(steps)
+  const fixtures: Fixture[] = getFixturesFromTasks(fakerSchema, tasks)
 
   // TODO: seeding
 
@@ -48,8 +49,8 @@ export function seed(
    *  should exist in the end.
    * 2. Create steps from orders. Steps cronologically order the creation of the actual
    *  instances to enable relations.
-   * 3. Convert steps to virual data instances - fixtures, to calculate relation ids.
-   * 4. Apply mock generation functions to obtain actual data, relations are represented as lists
+   * 3. Create Tasks from Steps. Tasks represent single unordered unit derived from Step.
+   * 4. Convert tasks to virual data instances, apply mock generation functions to obtain actual data, relations are represented as lists
    *  of strings.
    */
 
@@ -82,6 +83,16 @@ export function seed(
     }>
   }
 
+  interface Task {
+    order: number // the creation order of a step, starts with 0
+    model: Model
+    relations: Dictionary<{
+      type: '1-1' | '1-N' | 'M-N'
+      relationTo: string // determines the direction of relation
+      amount: number
+    }>
+  }
+
   type FixtureData = Dictionary<
     ID | string | number | boolean | ID[] | string[] | number[] | boolean[]
   >
@@ -94,6 +105,10 @@ export function seed(
     id: string
     model: Model
     data: FixtureData
+    relations: Dictionary<{
+      type: '1-1' | '1-N' | 'M-N'
+      relationTo: string // determines the direction of relation
+    }>
   }
 
   /* Helper functions */
@@ -152,8 +167,6 @@ export function seed(
   function getStepsFromOrders(orders: Order[]): Step[] {
     type Pool = Dictionary<{
       model: Model
-      remainingUnits: number
-      allUnits: number
     }>
 
     const pool: Pool = orders.reduce(
@@ -223,15 +236,6 @@ export function seed(
       return { steps: [], pool: {} }
     }
 
-    /**
-     * Calculates the step number from the pool.
-     *
-     * @param pool
-     */
-    function getStepNumber(pool: Pool): number {
-      return _.sum(Object.values(pool).map(m => m.allUnits - m.remainingUnits))
-    }
-
     /* Triggers the order conversion */
     const steps = sort(orders, [], {})
 
@@ -239,30 +243,59 @@ export function seed(
   }
 
   /**
-   * Converts fixtures from steps by creating a pool of available instances
-   * and assigning relations to particular types.
+   * Converts steps to tasks.
+   *
+   * Steps to Tasks introduce no non-trivial logic. It's a simple conversion mechanism
+   * to make system more robuts and make the mocking part more granular.
    *
    * @param steps
    */
-  function getFixturesFromSteps(schema: FakerSchema, steps: Step[]): Fixture[] {
+  function getTasksFromSteps(steps: Step[]): Task[] {
+    const tasks = steps.reduce<Task[]>((acc, step) => {
+      const intermediateTasks: Task[] = Array(step.amount).map(() => ({
+        order: step.order,
+        model: step.model,
+        relations: step.relations,
+      }))
+
+      return acc.concat(...intermediateTasks)
+    }, [])
+
+    return tasks
+  }
+
+  /**
+   * Converts fixtures from steps by creating a pool of available instances
+   * and assigning relations to particular types.
+   *
+   * This function assumes that:
+   *  1. Tasks (Steps) are sorted in such an order that pool always possesses
+   *    all required instances,
+   *  2. There are enough resources in the pool at all times,
+   *  3. The provided schema is valid.
+   *
+   * @param steps
+   */
+  function getFixturesFromTasks(schema: FakerSchema, tasks: Task[]): Fixture[] {
     faker.seed(opts.seed)
 
     type Pool = Dictionary<ID[]>
 
-    const [fixtures] = _.sortBy(steps, s => s.order).reduce<[Fixture[], Pool]>(
-      ([fixtures, pool], step) => {
-        const [data, newPool] = getMockDataForStep(pool, step)
+    const [fixtures] = _.sortBy(tasks, t => t.order).reduce<[Fixture[], Pool]>(
+      ([fixtures, pool], task) => {
+        const [data, newPool] = getMockDataForTask(pool, task)
 
         const fixture: Fixture = {
-          order: 0,
+          order: fixtures.length,
           id: faker.random.uuid(),
-          model: step.model,
+          model: task.model,
           data: data,
+          relations: task.relations,
         }
 
         const poolWithFixture = insertInstanceIDIntoPool(
           newPool,
-          step.model.name,
+          task.model.name,
           fixture.id,
         )
 
@@ -279,12 +312,12 @@ export function seed(
      * Generates mock data from the provided model. Scalars return a mock scalar or
      * list of mock scalars, relations return an ID or lists of IDs.
      */
-    function getMockDataForStep(_pool: Pool, step: Step): [FixtureData, Pool] {
-      const [finalPool, fixture] = step.model.fields.reduce(
+    function getMockDataForTask(_pool: Pool, task: Task): [FixtureData, Pool] {
+      const [finalPool, fixture] = task.model.fields.reduce(
         ([pool, acc], field) => {
           const fieldModel = field.getModel()
           const mock = fallback =>
-            withDefault(fallback, schema[step.model.name][fieldModel.name])()
+            withDefault(fallback, schema[task.model.name][fieldModel.name])()
 
           switch (field.type) {
             case 'ID': {
@@ -319,7 +352,7 @@ export function seed(
                   const [id, newPool] = getInstanceIDsFromPool(
                     pool,
                     fieldModel.name,
-                    step.relations[fieldModel.name].amount,
+                    task.relations[fieldModel.name].amount,
                   )
                   return [newPool, { ...acc, [field.name]: id }]
                 } else {
@@ -332,8 +365,8 @@ export function seed(
               }
 
               /* Custom field mocks */
-              if (schema[step.model.name][fieldModel.name]) {
-                return schema[step.model.name][fieldModel.name]()
+              if (schema[task.model.name][fieldModel.name]) {
+                return schema[task.model.name][fieldModel.name]()
               }
 
               /* Fallback for unsupported scalars */
