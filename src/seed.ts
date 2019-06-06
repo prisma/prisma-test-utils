@@ -476,7 +476,14 @@ export function seed(
 
           /* Custom field mocks */
           if (schema[task.model.name][fieldModel.name]) {
-            return schema[task.model.name][fieldModel.name]()
+            switch (typeof schema[task.model.name][fieldModel.name]) {
+              case 'function': {
+                return schema[task.model.name][fieldModel.name]()
+              }
+              default: {
+                return schema[task.model.name][fieldModel.name]
+              }
+            }
           }
 
           switch (field.type) {
