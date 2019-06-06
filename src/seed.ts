@@ -186,6 +186,11 @@ export function seed(
       model: Model
     }>
 
+    /* Triggers the order conversion */
+    const steps = sort(orders, orders, [], {})
+
+    return steps
+
     const pool: Pool = orders.reduce(
       (acc, order) => ({
         ...acc,
@@ -197,12 +202,15 @@ export function seed(
       {},
     )
 
+    /* Helper functions */
+
     /**
      * The sort function functionally implements topological sort algorithm
      * by making sure all relations have been defined prior to the inclusion of
      * an order in the chain.
      */
     function sort(
+      allOrders: Order[],
       remainingOrders: Order[],
       sortedSteps: Step[],
       pool: Pool,
@@ -215,9 +223,14 @@ export function seed(
           const [o] = remainingOrders
 
           /* Checks if the order is well defined */
-          if (Object.keys(o.relations).every(pool.hasOwnProperty)) {
-            return getStepsFromOrder().steps
+          if (isOrderWellDefinedInPool(pool, o)) {
+            const [steps] = getStepsFromOrder(allOrders, sortedSteps, pool, o)
+
+            return steps
           } else {
+            /** Since this is the last order, we cannot obtain any new resources,
+             * meaning that there's an issue with the order.
+             */
             throw new Error(`${o.model.name} uses undefined relations!`)
           }
         }
@@ -225,21 +238,52 @@ export function seed(
           const [o, ...os] = remainingOrders
 
           /* Checks if the order is well defined */
-          if (Object.keys(o.relations).every(pool.hasOwnProperty)) {
-            const { steps, pool: remainingPool } = getStepsFromOrder()
+          if (isOrderWellDefinedInPool(pool, o)) {
+            const [steps, newPool] = getStepsFromOrder(
+              allOrders,
+              sortedSteps,
+              pool,
+              o,
+            )
+
             return [
               ...steps,
-              ...sort(os, [...sortedSteps, ...steps], remainingPool),
+              ...sort(allOrders, os, [...sortedSteps, ...steps], newPool),
             ]
           } else {
-            return sort([...os, o], sortedSteps, pool)
+            /**
+             * If the order is not yet well defined, we put it at the end of the list
+             * and wait for resources in the pool to be adequate.
+             */
+            return sort(allOrders, [...os, o], sortedSteps, pool)
           }
         }
       }
-      return []
     }
 
-    function getStepsFromOrder(): { steps: Step[]; pool: Pool } {
+    /**
+     * Determines whether we can already process the order based on the pool
+     * capacity.
+     *
+     * This function in combination with `getStepsFromOrder` should give you
+     * all you need to implement meaningful topological sort on steps.
+     */
+    function isOrderWellDefinedInPool(pool: Pool, order: Order) {
+      return Object.keys(order.relations).every(pool.hasOwnProperty)
+    }
+
+    /**
+     * Converts a well defined order to multiple steps.
+     *
+     * This function in combination with `isOrderWellDefinedInPool` should give
+     * you everything you need to implement meaningful topological sort on steps.
+     */
+    function getStepsFromOrder(
+      allOrders: Order[],
+      sortedSteps: Step[],
+      pool: Pool,
+      order: Order,
+    ): [Step[], Pool] {
       // const foo = [
       //   {
       //     order: getStepNumber(pool),
@@ -250,13 +294,8 @@ export function seed(
       //   },
       // ]
 
-      return { steps: [], pool: {} }
+      return [[], {}]
     }
-
-    /* Triggers the order conversion */
-    const steps = sort(orders, [], {})
-
-    return steps
   }
 
   /**
