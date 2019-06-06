@@ -1,4 +1,4 @@
-import { FakerBag, FakerModel, getFixtures } from '../src'
+import { FakerBag, FakerSchema, getFixtures } from '../src'
 
 run()
 
@@ -40,7 +40,7 @@ async function run() {
    *  pre-execution setting, removes unnecessary contraint compelxity.
    * Cons: Difficult type-safety
    */
-  const __model = (b: FakerBag): FakerModel => ({
+  const __model = (b: FakerBag): FakerSchema => ({
     User: {
       factory: {
         name: b.faker.name.firstName,
@@ -51,6 +51,16 @@ async function run() {
       },
     },
   })
+
+  // const fixtures = getFixtures((b) => ({
+  //   User: {
+  //     factory: {
+
+  //     }
+  //   }
+  // }))
+
+  // const seedData = seed(fixtures, { silent: true })
 
   /**
    * #3

@@ -1,8 +1,42 @@
+# That's easy to detect because we can treat the relation as a single entity (one `create`)
 type A {
   id: ID! @id
   b: B! @relation(link: INLINE)
 }
 type B {
+  id: ID! @id
+  a: A!
+}
+
+# Easy way: Ignore the optional type and disregard the connect.
+# Hard way: Still thinking about how to make the API seem right
+type A {
+  id: ID! @id
+  b: B!
+}
+
+type B {
+  id: ID! @id
+  c: C
+}
+
+type C {
+  id: ID! @id
+  a: A!
+}
+
+# Is that truly possible? How would you use that in real-world application?
+type A {
+  id: ID! @id
+  b: B!
+}
+
+type B {
+  id: ID! @id
+  c: C!
+}
+
+type C {
   id: ID! @id
   a: A!
 }

@@ -12,7 +12,7 @@ import {
   Order,
   FixtureDefinition,
 } from './types'
-import { withDefault } from './utils'
+import { withDefault, topologicalSort } from './utils'
 
 /**
  * Calculate the fixtures from the faker model definition.
@@ -112,6 +112,13 @@ export function getFixtures(
       ...acc,
       [order.model.name]: order.amount,
     }))
+
+    // function sort
+
+    const relations = topologicalSort<Order>((x, y) => {
+      return true
+    }, orders)
+
     return []
   }
 
@@ -124,54 +131,4 @@ export function getFixtures(
   function getFixturesFromSteps(steps: Step[]): Fixture[] {
     return []
   }
-}
-
-/**
- *
- * Generates mock data for a field.
- *
- * @param field
- */
-function fakeField(field: PField) {
-  if (field.isUnique) {
-    switch (field.type) {
-      case 'ID': {
-        return uuid()
-      }
-
-      case 'String': {
-        return uuid()
-      }
-
-      default: {
-        throw new Error(
-          `Unique field not supported. ${model.name}.${field.name}: ${
-            field.type
-          }`,
-        )
-      }
-    }
-  }
-
-  if (field.isScalar()) {
-    switch (field.type) {
-      case 'String': {
-        return faker.random.word()
-      }
-
-      case 'Int': {
-        return Math.round(faker.random.number({ min: 1, max: 100 }))
-      }
-
-      case 'Float': {
-        return faker.finance.amount(1, 100000, 4)
-      }
-
-      case 'Date': {
-        return faker.date.recent()
-      }
-    }
-  }
-
-  return DEFAULT_CONSTRAINT
 }

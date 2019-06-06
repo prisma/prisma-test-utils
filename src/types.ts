@@ -26,6 +26,8 @@ export type FixtureDefinition = {
   factory?: Dictionary<FixtureFieldDefinition | (() => FixtureFieldDefinition)>
 }
 
+export type ID = string
+
 export type FixtureFieldDefinition = string | number | RelationConstraint
 
 /**
@@ -54,4 +56,5 @@ export interface Fixture {
   order: number // starts with 0
   id: string
   model: Model
+  // data: Dictionary<ID | string | number | boolean>
 }
