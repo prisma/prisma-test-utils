@@ -5,7 +5,7 @@ import Chance from 'chance'
 import _ from 'lodash'
 import { Dictionary } from 'lodash'
 // import { readPrismaYml, findDatamodelAndComputeSchema } from './datamodel'
-import { Faker, FakerBag, FakerSchema, ID, FixtureDefinition } from './types'
+import { Faker, FakerBag, FakerSchema, ID, RelationConstraint } from './types'
 import { withDefault } from './utils'
 
 export interface SeedOptions {
@@ -79,11 +79,20 @@ export function seed(
    * and database seeding. Fixture is a virtual data unit used to describe
    * future data and calculate relations.
    */
-  interface Order {
+  type Order = {
     model: Model
     amount: number
-    relations: Dictionary<{ connections: number; field: Field }>
-    // relations: Dictionary<{ min: number; max: number }>
+    relations: Dictionary<Relation>
+  }
+
+  type RelationType = '1-to-1' | '1-to-many' | 'many-to-1' | 'many-to-many'
+
+  type Relation = {
+    type: RelationType
+    relationTo: string
+    field: Field
+    min: number
+    max: number
   }
 
   /**
@@ -92,25 +101,17 @@ export function seed(
    * pointing towards the model, we shouldn't create it since the cyclic complement
    * will implement it.
    */
-  interface Step {
+  type Step = {
     order: number // the creation order of a step, starts with 0
     model: Model
     amount: number // number of instances created in this step
-    relations: Dictionary<{
-      type: '1-1' | '1-N' | 'M-N'
-      relationTo: string // determines the direction of relation
-      amount: number
-    }>
+    relations: Dictionary<Relation>
   }
 
-  interface Task {
+  type Task = {
     order: number // the creation order of a step, starts with 0
     model: Model
-    relations: Dictionary<{
-      type: '1-1' | '1-N' | 'M-N'
-      relationTo: string // determines the direction of relation
-      amount: number
-    }>
+    relations: Dictionary<Relation>
   }
 
   type FixtureData = Dictionary<
@@ -120,13 +121,13 @@ export function seed(
   /**
    * Represents the virtual unit.
    */
-  interface Fixture {
+  type Fixture = {
     order: number // starts with 0
     id: string
     model: Model
     data: FixtureData
     relations: Dictionary<{
-      type: '1-1' | '1-N' | 'M-N'
+      type: RelationType
       relationTo: string // determines the direction of relation
     }>
   }
@@ -157,15 +158,25 @@ export function seed(
 
           switch (typeof fakerField) {
             case 'object': {
-              /**
-               * TODO: now, max is treated as a constant, think whether it's possible
-               * to have a range. (Possible solution: change amount of objects to max_amount,
-               * and take from the pool.)
-               */
-              const min = withDefault(0, fakerField.min)
-              const max = withDefault(min, fakerField.max)
+              // const min = withDefault(0, fakerField.min)
+              // const max = withDefault(min, fakerField.max)
 
-              return { ...acc, [field.name]: { connections: max, field } }
+              const { type, min, max } = getRelationType(
+                dmmf.datamodel.models,
+                field,
+                fakerField,
+              )
+
+              return {
+                ...acc,
+                [field.name]: {
+                  type: type,
+                  min: min,
+                  max: max,
+                  relationTo: '',
+                  field,
+                } as Relation,
+              }
             }
             default: {
               throw new Error(`Expected a relation got ${typeof fakerField}`)
@@ -179,6 +190,84 @@ export function seed(
         relations: relations,
       }
     })
+
+    /**
+     * Derives the relation type and constraints from the field
+     * and definition.
+     *
+     * We have four different relation types:
+     * 1. 1-to-1
+     *  ~ There can be at most one connection or none if optional.
+     *  ~ We'll connect the nodes from this model (a child model).
+     * 2. 1-to-many
+     *  ~ The node can have 0 to infinite connections (we'll use min/max spec).
+     *  ~ We'll connect the nodes from this model (a child model).
+     * 3. many-to-1
+     *  ~ A particular instance can either connect or not connect if optional.
+     *  ~ We'll fill the pool with ids of this model (a parent model).
+     * 4. many-to-many
+     *  ~ A particular instance can have 0 to infinite connections (we'll use min/max spec).
+     *  ~ We'll use `relationTo` to determine whether this is a parent or child model.
+     *
+     * We presume that the field is a relation.
+     */
+    function getRelationType(
+      allModels: Model[],
+      field: Field,
+      definition: RelationConstraint,
+    ): {
+      type: RelationType
+      min: number
+      max: number
+    } {
+      /* Models */
+
+      const fieldModel = field.getModel()
+      const relationModel = allModels.find(m => m.name === field.type)
+
+      const relationField = relationModel.fields.find(
+        f => f.type === fieldModel.name,
+      )
+
+      if (field.isList && relationField.isList) {
+        /* many-to-many */
+        const min = withDefault(0, definition.min)
+        const max = withDefault(min, definition.max)
+
+        return {
+          type: 'many-to-many',
+          min: min,
+          max: max,
+        }
+      } else if (field.isList && !relationField.isList) {
+        /* many-to-1 */
+
+        return {
+          type: 'many-to-1',
+          min: field.isRequired ? 1 : 0,
+          max: 1,
+        }
+      } else if (!field.isList && relationField.isList) {
+        /* 1-to-many */
+
+        const min = withDefault(field.isRequired ? 1 : 0, definition.min)
+        const max = withDefault(min, definition.max)
+
+        return {
+          type: '1-to-many',
+          min: min,
+          max: max,
+        }
+      } else {
+        /* 1-to-1 */
+
+        return {
+          type: '1-to-1',
+          min: field.isRequired ? 1 : 0,
+          max: 1,
+        }
+      }
+    }
   }
 
   /**
@@ -192,8 +281,7 @@ export function seed(
   function getStepsFromOrders(orders: Order[]): Step[] {
     type Pool = Dictionary<{
       model: Model
-      remainingUnits: number
-      allUnits: number
+      units: number
     }>
 
     /* Triggers the order to steps conversion */
@@ -286,95 +374,28 @@ export function seed(
       pool: Pool,
       order: Order,
     ): [Step[], Pool] {
-      // const User: Step = {
-      //   order: sortedSteps.length,
-      //   amount: order.amount,
-      //   model: order.model,
-      //   relations: {
-      //     Bookmark: {
-      //       type: '1-N',
-      //       relationTo: 'Bookmark',
-      //       amount: order.relations['Bookmark'].connections,
-      //     },
-      //   },
-      // }
-
-      // // Bookmark
-      // const Bookmark: Step = {
-      //   order: sortedSteps.length,
-      //   amount: order.amount,
-      //   model: order.model,
-      //   relations: {},
-      // }
-
-      const [relations, drainedPool] = getRelations(pool, order)
-
+      /**
+       * A step unit derived from the order.
+       */
       const step: Step = {
         order: sortedSteps.length,
         amount: order.amount,
         model: order.model,
-        relations: relations,
+        relations: order.relations,
       }
 
       /**
        * Assumes that there cannot exist two models with the same name.
        */
       const newPool: Pool = {
-        ...drainedPool,
+        ...pool,
         [order.model.name]: {
           model: order.model,
-          remainingUnits: order.amount,
-          allUnits: order.amount,
+          units: order.amount,
         },
       }
 
       return [[step], newPool]
-    }
-
-    /**
-     * Calculates the number of connections between models and drains the pool.
-     */
-    function getRelations(pool: Pool, order: Order): [Step['relations'], Pool] {
-      const [relations, drainedPool] = Object.values(order.relations).reduce<
-        [Step['relations'], Pool]
-      >(
-        ([acc, pool], relation) => {
-          const poolResources = pool[relation.field.type]
-
-          /* Resource Validation */
-
-          if (relation.connections > poolResources.remainingUnits) {
-            throw new Error(`There's not enough "${order.model.name}" units.`)
-          }
-
-          /* Pool draining */
-
-          const newPool: Pool = {
-            ...pool,
-            [relation.field.type]: {
-              model: poolResources.model,
-              remainingUnits:
-                poolResources.remainingUnits - relation.connections,
-              allUnits: poolResources.allUnits,
-            },
-          }
-
-          return [
-            {
-              ...acc,
-              [relation.field.name]: {
-                type: '1-N',
-                amount: relation.connections,
-                relationTo: '',
-              },
-            },
-            newPool,
-          ]
-        },
-        [{}, pool],
-      )
-
-      return [relations, drainedPool]
     }
   }
 
@@ -413,27 +434,25 @@ export function seed(
    * @param steps
    */
   function getFixturesFromTasks(schema: FakerSchema, tasks: Task[]): Fixture[] {
-    type Pool = Dictionary<ID[]>
+    /**
+     * Pool describes the resources made available by a parent type to its children.
+     */
+    type Pool = Dictionary<{ [child: string]: ID[] }>
 
     const [fixtures] = _.sortBy(tasks, t => t.order).reduce<[Fixture[], Pool]>(
       ([fixtures, pool], task) => {
-        const [data, newPool] = getMockDataForTask(pool, task)
+        const id = faker.guid()
+        const [data, newPool] = getMockDataForTask(id, pool, task)
 
         const fixture: Fixture = {
           order: fixtures.length,
-          id: faker.guid(),
+          id: id,
           model: task.model,
           data: data,
           relations: task.relations,
         }
 
-        const poolWithFixture = insertInstanceIDIntoPool(
-          newPool,
-          task.model.name,
-          fixture.id,
-        )
-
-        return [fixtures.concat(fixture), poolWithFixture]
+        return [fixtures.concat(fixture), newPool]
       },
       [[], {}],
     )
@@ -446,7 +465,11 @@ export function seed(
      * Generates mock data from the provided model. Scalars return a mock scalar or
      * list of mock scalars, relations return an ID or lists of IDs.
      */
-    function getMockDataForTask(_pool: Pool, task: Task): [FixtureData, Pool] {
+    function getMockDataForTask(
+      id: ID,
+      _pool: Pool,
+      task: Task,
+    ): [FixtureData, Pool] {
       const [finalPool, fixture] = task.model.fields.reduce(
         ([pool, acc], field) => {
           const fieldModel = field.getModel()
@@ -482,17 +505,81 @@ export function seed(
             default: {
               /* Relations */
               if (field.isRelation()) {
-                if (field.isList) {
-                  const [id, newPool] = getInstanceIDsFromPool(
-                    pool,
-                    field.type,
-                    task.relations[field.name].amount,
-                  )
-                  return [newPool, { ...acc, [field.name]: id }]
-                } else {
-                  const [id, newPool] = getInstanceIDFromPool(pool, field.type)
+                /* Resources calculation */
+                const relation = task.relations[field.name]
+                const units = faker.integer({
+                  min: relation.min,
+                  max: relation.max,
+                })
 
-                  return [newPool, { ...acc, [field.name]: id }]
+                switch (relation.type) {
+                  case '1-to-1': {
+                    /**
+                     * 1-to-1 relation should take at most one id from the resource pool
+                     * and submit no new ids. Because we already manage requirements during
+                     * order creation step, we can ignore it now.
+                     */
+                    const [newPool, ids] = getIDInstancesFromPool(
+                      pool,
+                      fieldModel.name,
+                      field.type,
+                      units,
+                    )
+
+                    /**
+                     * This makes sure that relations are properly connected.
+                     */
+                    switch (ids.length) {
+                      case 0: {
+                        return [newPool, acc]
+                      }
+
+                      case 1: {
+                        const [id] = ids
+                        return [newPool, { ...acc, [field.name]: id }]
+                      }
+
+                      default: {
+                        throw new Error(`Something truly unexpected happened.`)
+                      }
+                    }
+                  }
+                  case '1-to-many': {
+                    /**
+                     * 1-to-many takes from 0 or 1 to min/max number of ids from the pool
+                     * and creates no new ids along the way. We don't have to worry about that
+                     * though since we have taken care of everything during the order generation
+                     * step.
+                     */
+                    const [newPool, ids] = getIDInstancesFromPool(
+                      pool,
+                      fieldModel.name,
+                      field.type,
+                      units,
+                    )
+
+                    return [newPool, { ...acc, [field.name]: ids }]
+                  }
+                  case 'many-to-1': {
+                    /**
+                     * Many-to-1 relations only give out ids to be later
+                     * accessed by 1-to relations.
+                     */
+
+                    const newPool = insertIDInstancesIntoPool(
+                      pool,
+                      field.type,
+                      fieldModel.name,
+                      id,
+                      units,
+                    )
+
+                    return [newPool, acc]
+                  }
+                  case 'many-to-many': {
+                    // TODO: Implement `relationTo`!
+                    return [pool, acc]
+                  }
                 }
               }
 
@@ -515,29 +602,28 @@ export function seed(
     /**
      * Retrieves an ID from the pool and removes its instance.
      */
-    function getInstanceIDFromPool(pool: Pool, type: string): [ID, Pool] {
-      return [pool[type][0], { ...pool, [type]: pool[type].splice(1) }]
-    }
-
-    /**
-     * Retrieves an ID from the pool and removes its instance.
-     */
-    function getInstanceIDsFromPool(
+    function getIDInstancesFromPool(
       pool: Pool,
-      type: string,
-      n: number,
-    ): [ID[], Pool] {
-      return [pool[type].slice(0, n), { ...pool, [type]: pool[type].splice(n) }]
+      parent: string,
+      child: string,
+      n: number = 1,
+    ): [Pool, ID[]] {
+      const ids = _.get(pool, [parent, child])
+      return [_.set(pool, [parent, child], ids.splice(n)), ids.slice(0, n)]
     }
 
     /**
-     * Inserts an ID into the pool and returns the new pool.
+     * Inserts n-replications of ID into the pool and returns the new pool.
      */
-    function insertInstanceIDIntoPool(pool: Pool, type: string, id: ID): Pool {
-      return {
-        ...pool,
-        [type]: [...withDefault([], pool[type]), id],
-      }
+    function insertIDInstancesIntoPool(
+      pool: Pool,
+      parent: string,
+      child: string,
+      id: ID,
+      n: number = 1,
+    ): Pool {
+      const ids = _.get(pool, [parent, child], [])
+      return _.set(pool, [parent, child], [...ids, ...Array(n).fill(id)])
     }
   }
 }

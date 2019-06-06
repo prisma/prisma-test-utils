@@ -3,11 +3,13 @@
     "target": "es6",
     "module": "commonjs",
     "moduleResolution": "node",
-    "noUnusedLocals": false,
-    "esModuleInterop": true,
     "rootDir": ".",
     "outDir": "dist",
-    "sourceMap": true
+    "sourceMap": true,
+    "noUnusedLocals": false,
+    "esModuleInterop": true,
+    "suppressExcessPropertyErrors": false,
+    "noFallthroughCasesInSwitch": true
   },
   "exclude": ["node_modules", "dist"]
 }
