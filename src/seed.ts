@@ -1,10 +1,11 @@
 import { DMMF } from '@prisma/dmmf'
+import Field from '@prisma/dmmf/dist/Field'
 import Model from '@prisma/dmmf/dist/Model'
 import * as faker from 'faker'
 import * as _ from 'lodash'
 import { Dictionary } from 'lodash'
 // import { readPrismaYml, findDatamodelAndComputeSchema } from './datamodel'
-import { Faker, FakerBag, FakerSchema, ID } from './types'
+import { Faker, FakerBag, FakerSchema, ID, FixtureDefinition } from './types'
 import { withDefault } from './utils'
 
 export interface SeedOptions {
@@ -79,7 +80,8 @@ export function seed(
   interface Order {
     model: Model
     amount: number
-    relations: Dictionary<{ min: number; max: number }>
+    relations: Dictionary<{ connections: number; field: Field }>
+    // relations: Dictionary<{ min: number; max: number }>
   }
 
   /**
@@ -92,7 +94,6 @@ export function seed(
     order: number // the creation order of a step, starts with 0
     model: Model
     amount: number // number of instances created in this step
-    runningNumber: number // specifies the total number of all instances
     relations: Dictionary<{
       type: '1-1' | '1-N' | 'M-N'
       relationTo: string // determines the direction of relation
@@ -149,15 +150,20 @@ export function seed(
       /* Generate relations based on provided restrictions. */
       const relations: Order['relations'] = model.fields
         .filter(f => f.isRelation())
-        .reduce((acc, field) => {
+        .reduce<Order['relations']>((acc, field) => {
           const fakerField = fakerModel.factory[field.name]
 
           switch (typeof fakerField) {
             case 'object': {
+              /**
+               * TODO: now, max is treated as a constant, think whether it's possible
+               * to have a range. (Possible solution: change amount of objects to max_amount,
+               * and take from the pool.)
+               */
               const min = withDefault(0, fakerField.min)
               const max = withDefault(min, fakerField.max)
 
-              return { [field.name]: { min, max } }
+              return { ...acc, [field.name]: { connections: max, field } }
             }
             default: {
               throw new Error(`Expected a relation got ${typeof fakerField}`)
@@ -184,23 +190,15 @@ export function seed(
   function getStepsFromOrders(orders: Order[]): Step[] {
     type Pool = Dictionary<{
       model: Model
+      remainingUnits: number
+      allUnits: number
     }>
 
-    /* Triggers the order conversion */
+    /* Triggers the order to steps conversion */
+
     const steps = sort(orders, orders, [], {})
 
     return steps
-
-    const pool: Pool = orders.reduce(
-      (acc, order) => ({
-        ...acc,
-        [order.model.name]: {
-          model: order.model,
-          remainingUnits: order.amount,
-        },
-      }),
-      {},
-    )
 
     /* Helper functions */
 
@@ -269,7 +267,9 @@ export function seed(
      * all you need to implement meaningful topological sort on steps.
      */
     function isOrderWellDefinedInPool(pool: Pool, order: Order) {
-      return Object.keys(order.relations).every(pool.hasOwnProperty)
+      return Object.values(order.relations).every(relation =>
+        pool.hasOwnProperty(relation.field.type),
+      )
     }
 
     /**
@@ -284,17 +284,95 @@ export function seed(
       pool: Pool,
       order: Order,
     ): [Step[], Pool] {
-      // const foo = [
-      //   {
-      //     order: getStepNumber(pool),
-      //     model: o.model,
-      //     amount: pool[o.model.name].remainingUnits,
-      //     runningNumber: o.amount,
-      //     relations: getModelRelations(),
+      // const User: Step = {
+      //   order: sortedSteps.length,
+      //   amount: order.amount,
+      //   model: order.model,
+      //   relations: {
+      //     Bookmark: {
+      //       type: '1-N',
+      //       relationTo: 'Bookmark',
+      //       amount: order.relations['Bookmark'].connections,
+      //     },
       //   },
-      // ]
+      // }
 
-      return [[], {}]
+      // // Bookmark
+      // const Bookmark: Step = {
+      //   order: sortedSteps.length,
+      //   amount: order.amount,
+      //   model: order.model,
+      //   relations: {},
+      // }
+
+      const [relations, drainedPool] = getRelations(pool, order)
+
+      const step: Step = {
+        order: sortedSteps.length,
+        amount: order.amount,
+        model: order.model,
+        relations: relations,
+      }
+
+      /**
+       * Assumes that there cannot exist two models with the same name.
+       */
+      const newPool: Pool = {
+        ...drainedPool,
+        [order.model.name]: {
+          model: order.model,
+          remainingUnits: order.amount,
+          allUnits: order.amount,
+        },
+      }
+
+      return [[step], newPool]
+    }
+
+    /**
+     * Calculates the number of connections between models and drains the pool.
+     */
+    function getRelations(pool: Pool, order: Order): [Step['relations'], Pool] {
+      const [relations, drainedPool] = Object.values(order.relations).reduce<
+        [Step['relations'], Pool]
+      >(
+        ([acc, pool], relation) => {
+          const poolResources = pool[relation.field.type]
+
+          /* Resource Validation */
+
+          if (relation.connections > poolResources.remainingUnits) {
+            throw new Error(`There's not enough "${order.model.name}" units.`)
+          }
+
+          /* Pool draining */
+
+          const newPool: Pool = {
+            ...pool,
+            [relation.field.type]: {
+              model: poolResources.model,
+              remainingUnits:
+                poolResources.remainingUnits - relation.connections,
+              allUnits: poolResources.allUnits,
+            },
+          }
+
+          return [
+            {
+              ...acc,
+              [relation.field.name]: {
+                type: '1-N',
+                amount: relation.connections,
+                relationTo: '',
+              },
+            },
+            newPool,
+          ]
+        },
+        [{}, pool],
+      )
+
+      return [relations, drainedPool]
     }
   }
 
@@ -308,11 +386,11 @@ export function seed(
    */
   function getTasksFromSteps(steps: Step[]): Task[] {
     const tasks = steps.reduce<Task[]>((acc, step) => {
-      const intermediateTasks: Task[] = Array(step.amount).map(() => ({
+      const intermediateTasks: Task[] = Array(step.amount).fill({
         order: step.order,
         model: step.model,
         relations: step.relations,
-      }))
+      })
 
       return acc.concat(...intermediateTasks)
     }, [])

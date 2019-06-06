@@ -3,7 +3,7 @@
     "target": "es6",
     "module": "commonjs",
     "moduleResolution": "node",
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "rootDir": ".",
     "outDir": "dist",
     "sourceMap": true

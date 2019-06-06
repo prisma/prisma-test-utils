@@ -1,4 +1,4 @@
-// import { seed } from '../src'
+import { seed } from '../src'
 import { generateCRUDSchema } from 'prisma-generate-schema'
 import { DMMF } from '@prisma/dmmf'
 import { DatabaseType } from 'prisma-datamodel'
@@ -22,30 +22,32 @@ async function run() {
     }
   `
 
-  debugger
-
   const schema = generateCRUDSchema(typeDefs, DatabaseType.postgres)
   const dmmf = new DMMF(typeDefs, schema)
-
   console.log(dmmf)
 
-  // const data = seed(
-  //   bag => ({
-  //     User: {
-  //       factory: {
-  //         name: bag.faker.name.firstName,
-  //         posts: {
-  //           min: 3,
-  //           max: 100,
-  //         },
-  //       },
-  //     },
-  //   }),
-  //   {
-  //     silent: true,
-  //     seed: 1,
-  //   },
-  // )
+  const data = seed(
+    dmmf,
+    bag => ({
+      User: {
+        amount: 5,
+        factory: {
+          name: bag.faker.name.firstName,
+          bookmarks: {
+            min: 3,
+            max: 10,
+          },
+        },
+      },
+      Bookmark: {
+        amount: 40,
+      },
+    }),
+    {
+      silent: true,
+      seed: 1,
+    },
+  )
 
-  // console.log(data)
+  console.log(data)
 }
