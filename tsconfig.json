@@ -4,8 +4,10 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "noUnusedLocals": false,
+    "esModuleInterop": true,
     "rootDir": ".",
     "outDir": "dist",
     "sourceMap": true
-  }
+  },
+  "exclude": ["node_modules", "dist"]
 }

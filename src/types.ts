@@ -7,7 +7,7 @@ export type Faker = (bag: FakerBag) => FakerSchema
  * their model is generated.
  */
 export interface FakerBag {
-  faker: Faker.FakerStatic
+  faker: Chance.Chance
 }
 
 export type RelationConstraint = {

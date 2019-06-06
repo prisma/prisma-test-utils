@@ -32,7 +32,7 @@ async function run() {
       User: {
         amount: 5,
         factory: {
-          name: bag.faker.name.firstName,
+          name: bag.faker.name,
           bookmarks: {
             min: 3,
             max: 10,

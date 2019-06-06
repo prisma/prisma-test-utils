@@ -1,8 +1,8 @@
 import { DMMF } from '@prisma/dmmf'
 import Field from '@prisma/dmmf/dist/Field'
 import Model from '@prisma/dmmf/dist/Model'
-import * as faker from 'faker'
-import * as _ from 'lodash'
+import Chance from 'chance'
+import _ from 'lodash'
 import { Dictionary } from 'lodash'
 // import { readPrismaYml, findDatamodelAndComputeSchema } from './datamodel'
 import { Faker, FakerBag, FakerSchema, ID, FixtureDefinition } from './types'
@@ -37,6 +37,8 @@ export function seed(
   }
 
   /* FakerBag, SchemaDefinition */
+
+  const faker = new Chance(_opts.seed)
 
   const bag: FakerBag = { faker }
   const fakerSchema = typeof schemaDef === 'function' ? schemaDef(bag) : {}
@@ -411,8 +413,6 @@ export function seed(
    * @param steps
    */
   function getFixturesFromTasks(schema: FakerSchema, tasks: Task[]): Fixture[] {
-    faker.seed(opts.seed)
-
     type Pool = Dictionary<ID[]>
 
     const [fixtures] = _.sortBy(tasks, t => t.order).reduce<[Fixture[], Pool]>(
@@ -421,7 +421,7 @@ export function seed(
 
         const fixture: Fixture = {
           order: fixtures.length,
-          id: faker.random.uuid(),
+          id: faker.guid(),
           model: task.model,
           data: data,
           relations: task.relations,
@@ -455,27 +455,27 @@ export function seed(
 
           switch (field.type) {
             case 'ID': {
-              const id = mock(faker.random.uuid)
+              const id = mock(faker.guid)
 
               return [pool, { ...acc, [field.name]: id }]
             }
             case 'String': {
-              const string = mock(faker.random.word)
+              const string = mock(faker.word)
 
               return [pool, { ...acc, [field.name]: string }]
             }
             case 'Int': {
-              const number = mock(faker.random.number)
+              const number = mock(faker.integer)
 
               return [pool, { ...acc, [field.name]: number }]
             }
             case 'Float': {
-              const float = mock(faker.finance.amount)
+              const float = mock(faker.floating)
 
               return [pool, { ...acc, [field.name]: float }]
             }
             case 'Date': {
-              const date = mock(faker.date.past)
+              const date = mock(faker.date)
 
               return [pool, { ...acc, [field.name]: date }]
             }
