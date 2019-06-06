@@ -2,14 +2,9 @@ import { DMMF } from '@prisma/dmmf'
 import Model from '@prisma/dmmf/dist/Model'
 import * as faker from 'faker'
 import * as _ from 'lodash'
+import { Dictionary } from 'lodash'
 import { readPrismaYml, findDatamodelAndComputeSchema } from './datamodel'
-import {
-  FakerBag,
-  FakerSchema,
-  FixtureDefinition,
-  Dictionary,
-  ID,
-} from './types'
+import { Faker, FakerBag, FakerSchema, ID } from './types'
 import { withDefault } from './utils'
 
 /**
@@ -19,7 +14,7 @@ import { withDefault } from './utils'
  * @param opts
  */
 export function seed(
-  fakerSchemaDefinition?: (bag: FakerBag) => FakerSchema,
+  fakerSchemaDefinition?: Faker,
   opts: { seed?: number; silent?: boolean } = { seed: 42, silent: false },
 ): object[] | Promise<object[]> {
   /* FakerBag, Defaults */
@@ -108,10 +103,13 @@ export function seed(
    */
   function getOrdersFromDMMF(dmmf: DMMF): Order[] {
     return dmmf.datamodel.models.map(model => {
-      const fakerModel = withDefault<FixtureDefinition>({
-        amount: DEFAULT_AMOUNT,
-        factory: undefined,
-      })(fakerSchema[model.name])
+      const fakerModel = withDefault(
+        {
+          amount: DEFAULT_AMOUNT,
+          factory: undefined,
+        },
+        fakerSchema[model.name],
+      )
 
       /* Generate relations based on provided restrictions. */
       const relations: Order['relations'] = model.fields
@@ -121,8 +119,8 @@ export function seed(
 
           switch (typeof fakerField) {
             case 'object': {
-              const min = withDefault(0)(fakerField.min)
-              const max = withDefault(min)(fakerField.max)
+              const min = withDefault(0, fakerField.min)
+              const max = withDefault(min, fakerField.max)
 
               return { [field.name]: { min, max } }
             }

@@ -4,10 +4,10 @@ run()
 
 async function run() {
   const data = seed(
-    (b: FakerBag): FakerSchema => ({
+    bag => ({
       User: {
         factory: {
-          name: b.faker.name.firstName,
+          name: bag.faker.name.firstName,
           posts: {
             min: 3,
             max: 100,
