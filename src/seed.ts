@@ -7,6 +7,12 @@ import { Dictionary } from 'lodash'
 import { Faker, FakerBag, FakerSchema, ID } from './types'
 import { withDefault } from './utils'
 
+export interface SeedOptions {
+  seed?: number
+  silent?: boolean
+  instances?: number
+}
+
 /**
  * Seed the database with mock data.
  *
@@ -15,21 +21,32 @@ import { withDefault } from './utils'
  */
 export function seed(
   dmmf: DMMF,
-  fakerSchemaDefinition?: Faker,
-  opts: { seed?: number; silent?: boolean } = { seed: 42, silent: false },
+  schemaDef?: Faker | SeedOptions,
+  _opts?: SeedOptions,
 ): object[] | Promise<object[]> {
-  /* FakerBag, Defaults */
-  const bag: FakerBag = { faker }
-  const DEFAULT_AMOUNT = 5
-  // const DEFAULT_CONSTRAINT = bag.constraints.atMax(5)
+  /* Argument manipulation */
 
-  /* Prisma and Model evaluation */
+  const __opts = typeof schemaDef === 'object' ? schemaDef : _opts
+
+  const opts = {
+    seed: 42,
+    silent: false,
+    instances: 5,
+    ...__opts,
+  }
+
+  /* FakerBag, SchemaDefinition */
+
+  const bag: FakerBag = { faker }
+  const fakerSchema = typeof schemaDef === 'function' ? schemaDef(bag) : {}
+
+  /* Prisma Model evaluation */
+
   // const prisma = readPrismaYml()
   // const dmmf = findDatamodelAndComputeSchema(prisma.configPath, prisma.config)
 
-  const fakerSchema = fakerSchemaDefinition(bag)
-
   /* Fixture calculations */
+
   const orders: Order[] = getOrdersFromDMMF(dmmf)
   const steps: Step[] = getStepsFromOrders(orders)
   const tasks: Task[] = getTasksFromSteps(steps)

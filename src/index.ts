@@ -1,2 +1,2 @@
-export { seed } from './seed'
+export { seed, SeedOptions } from './seed'
 export * from './types'
