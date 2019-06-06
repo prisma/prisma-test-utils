@@ -1,6 +1,7 @@
-import Field from '@prisma/dmmf/dist/Field'
 import Model from '@prisma/dmmf/dist/Model'
 import { Dictionary } from 'lodash'
+
+export { Dictionary }
 
 /**
  * FakerBag is a set of tools that people can use to define how
@@ -28,7 +29,7 @@ export type FixtureDefinition = {
 
 export type ID = string
 
-export type FixtureFieldDefinition = string | number | RelationConstraint
+export type FixtureFieldDefinition = ID | string | number | RelationConstraint
 
 /**
  * Prisma Faker uses intermediate step between model-faker definition
@@ -38,15 +39,25 @@ export type FixtureFieldDefinition = string | number | RelationConstraint
 export interface Order {
   model: Model
   amount: number
-  relations: { [field: string]: number }
+  relations: Dictionary<{ min: number; max: number }>
 }
 
+/**
+ * Note the `relationTo` field; it defines the direction of a relation.
+ * This helps with the execution process calculation. If the relation is
+ * pointing towards the model, we shouldn't create it since the cyclic complement
+ * will implement it.
+ */
 export interface Step {
   order: number // the creation order of a step, starts with 0
   model: Model
   amount: number // number of instances created in this step
   runningNumber: number // specifies the total number of all instances
-  relations: { [field: string]: number }
+  relations: Dictionary<{
+    type: '1-1' | '1-N' | 'M-N'
+    relationTo: string // determines the direction of relation
+    amount: number
+  }>
 }
 
 /**

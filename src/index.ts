@@ -1,3 +1,2 @@
-export { getFixtures } from './fixtures'
-export { seedDB } from './seed'
+export { seed } from './fixtures'
 export * from './types'

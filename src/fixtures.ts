@@ -1,30 +1,27 @@
 import { DMMF } from '@prisma/dmmf'
-import PField from '@prisma/dmmf/dist/Field'
-import PModel from '@prisma/dmmf/dist/Model'
+import Model from '@prisma/dmmf/dist/Model'
 import * as faker from 'faker'
-import uuid = require('uuid/v4')
+import * as _ from 'lodash'
 import { readPrismaYml, findDatamodelAndComputeSchema } from './datamodel'
 import {
   FakerBag,
   FakerSchema,
-  Fixture,
-  Step,
-  Order,
   FixtureDefinition,
+  Dictionary,
+  ID,
 } from './types'
-import { withDefault, topologicalSort } from './utils'
+import { withDefault } from './utils'
 
 /**
- * Calculate the fixtures from the faker model definition.
+ * Seed the database with mock data.
  *
- * @param model
+ * @param fakerSchemaDefinition
+ * @param opts
  */
-export function getFixtures(
+export function seed(
   fakerSchemaDefinition?: (bag: FakerBag) => FakerSchema,
-  opts: { seed: number } = { seed: 42 },
-): Fixture[] {
-  fakerStatic.seed(opts.seed)
-
+  opts: { seed?: number; silent?: boolean } = { seed: 42, silent: false },
+): object[] | Promise<object[]> {
   /* FakerBag, Defaults */
   const bag: FakerBag = { faker }
   const DEFAULT_AMOUNT = 5
@@ -35,6 +32,19 @@ export function getFixtures(
   const dmmf = findDatamodelAndComputeSchema(prisma.configPath, prisma.config)
 
   const fakerSchema = fakerSchemaDefinition(bag)
+
+  /* Fixture calculations */
+  const orders: Order[] = getOrdersFromDMMF(dmmf)
+  const steps: Step[] = getStepsFromOrders(orders)
+  const fixtures: Fixture[] = getFixturesFromSteps(fakerSchema, steps)
+
+  // TODO: seeding
+
+  if (opts.silent) {
+    return fixtures
+  } else {
+    return Promise.resolve(fixtures)
+  }
 
   /**
    * The Core logic
@@ -47,11 +57,46 @@ export function getFixtures(
    *  of strings.
    */
 
-  const orders: Order[] = getOrdersFromDMMF(dmmf)
-  const steps: Step[] = getStepsFromOrders(orders)
-  const fixtures: Fixture[] = getFixturesFromSteps(steps)
+  /**
+   * Prisma Faker uses intermediate step between model-faker definition
+   * and database seeding. Fixture is a virtual data unit used to describe
+   * future data and calculate relations.
+   */
+  interface Order {
+    model: Model
+    amount: number
+    relations: Dictionary<{ min: number; max: number }>
+  }
 
-  return fixtures
+  /**
+   * Note the `relationTo` field; it defines the direction of a relation.
+   * This helps with the execution process calculation. If the relation is
+   * pointing towards the model, we shouldn't create it since the cyclic complement
+   * will implement it.
+   */
+  interface Step {
+    order: number // the creation order of a step, starts with 0
+    model: Model
+    amount: number // number of instances created in this step
+    runningNumber: number // specifies the total number of all instances
+    relations: Dictionary<{
+      type: '1-1' | '1-N' | 'M-N'
+      relationTo: string // determines the direction of relation
+      amount: number
+    }>
+  }
+
+  /**
+   * Represents the virtual unit.
+   */
+  interface Fixture {
+    order: number // starts with 0
+    id: string
+    model: Model
+    data: Dictionary<
+      ID | string | number | boolean | ID[] | string[] | number[] | boolean[]
+    >
+  }
 
   /* Helper functions */
 
@@ -69,7 +114,7 @@ export function getFixtures(
       })(fakerSchema[model.name])
 
       /* Generate relations based on provided restrictions. */
-      const relations: { [field: string]: number } = model.fields
+      const relations: Order['relations'] = model.fields
         .filter(f => f.isRelation())
         .reduce((acc, field) => {
           const fakerField = fakerModel.factory[field.name]
@@ -79,14 +124,10 @@ export function getFixtures(
               const min = withDefault(0)(fakerField.min)
               const max = withDefault(min)(fakerField.max)
 
-              return { [field.name]: faker.random.number({ min, max }) }
+              return { [field.name]: { min, max } }
             }
             default: {
-              throw new Error(
-                `Expected a relation definition but got ${typeof fakerField} (${
-                  model.name
-                }.${field.name})`,
-              )
+              throw new Error(`Expected a relation got ${typeof fakerField}`)
             }
           }
         }, {})
@@ -108,18 +149,92 @@ export function getFixtures(
    * @param fixtures
    */
   function getStepsFromOrders(orders: Order[]): Step[] {
-    const pool = orders.reduce((acc, order) => ({
-      ...acc,
-      [order.model.name]: order.amount,
-    }))
+    type Pool = Dictionary<{
+      model: Model
+      remainingUnits: number
+      allUnits: number
+    }>
 
-    // function sort
+    const pool: Pool = orders.reduce(
+      (acc, order) => ({
+        ...acc,
+        [order.model.name]: {
+          model: order.model,
+          remainingUnits: order.amount,
+        },
+      }),
+      {},
+    )
 
-    const relations = topologicalSort<Order>((x, y) => {
-      return true
-    }, orders)
+    /**
+     * The sort function functionally implements topological sort algorithm
+     * by making sure all relations have been defined prior to the inclusion of
+     * an order in the chain.
+     */
+    function sort(
+      remainingOrders: Order[],
+      sortedSteps: Step[],
+      pool: Pool,
+    ): Step[] {
+      switch (remainingOrders.length) {
+        case 0: {
+          return []
+        }
+        case 1: {
+          const [o] = remainingOrders
 
-    return []
+          /* Checks if the order is well defined */
+          if (Object.keys(o.relations).every(pool.hasOwnProperty)) {
+            return getStepsFromOrder().steps
+          } else {
+            throw new Error(`${o.model.name} uses undefined relations!`)
+          }
+        }
+        default: {
+          const [o, ...os] = remainingOrders
+
+          /* Checks if the order is well defined */
+          if (Object.keys(o.relations).every(pool.hasOwnProperty)) {
+            const { steps, pool: remainingPool } = getStepsFromOrder()
+            return [
+              ...steps,
+              ...sort(os, [...sortedSteps, ...steps], remainingPool),
+            ]
+          } else {
+            return sort([...os, o], sortedSteps, pool)
+          }
+        }
+      }
+      return []
+    }
+
+    function getStepsFromOrder(): { steps: Step[]; pool: Pool } {
+      const foo = [
+        {
+          order: getStepNumber(pool),
+          model: o.model,
+          amount: pool[o.model.name].remainingUnits,
+          runningNumber: o.amount,
+          relations: getModelRelations(),
+        },
+      ]
+
+      return { steps: [], pool: {} }
+    }
+
+    /**
+     * Calculates the step number from the pool.
+     *
+     * @param pool
+     */
+    function getStepNumber(pool: Pool): number {
+      return _.sum(Object.values(pool).map(m => m.allUnits - m.remainingUnits))
+    }
+
+    /* Triggers the order conversion */
+    const steps = sort(orders, [], {})
+
+    return steps
   }
 
   /**
@@ -128,7 +243,114 @@ export function getFixtures(
    *
    * @param steps
    */
-  function getFixturesFromSteps(steps: Step[]): Fixture[] {
-    return []
+  function getFixturesFromSteps(schema: FakerSchema, steps: Step[]): Fixture[] {
+    faker.seed(opts.seed)
+
+    type Pool = Dictionary<ID[]>
+
+    const { fixtures } = _.sortBy(steps, s => s.order).reduce<{
+      fixtures: Fixture[]
+      pool: Pool
+    }>(
+      (acc, step) => {
+        const fixture = {
+          order: 0,
+          id: faker.random.uuid(),
+          model: step.model,
+          data: {},
+        }
+
+        const pool = insertInstanceIDIntoPool(
+          acc.pool,
+          step.model.name,
+          fixture.id,
+        )
+
+        return { fixtures: acc.fixtures.concat(fixture), pool }
+      },
+      {
+        fixtures: [],
+        pool: {},
+      },
+    )
+
+    return fixtures
+
+    /* Helper functions */
+
+    /**
+     * Generates mock data from the provided model. Scalars return a mock scalar or
+     * list of mock scalars, relations return an ID or lists of IDs.
+     */
+    function getMockDataForStep(_pool: Pool, step: Step): [object, Pool] {
+      const [finalPool, fixture] = step.model.fields.reduce(
+        ([pool, acc], field) => {
+          const fieldModel = field.getModel()
+
+          /* Relations */
+          if (field.isRelation()) {
+            if (field.isList) {
+              const [id, newPool] = getInstanceIDsFromPool(
+                pool,
+                fieldModel.name,
+                step.relations[fieldModel.name].amount,
+              )
+              return [newPool, { ...acc, [field.name]: id }]
+            } else {
+              const [id, newPool] = getInstanceIDFromPool(pool, fieldModel.name)
+              return [newPool, { ...acc, [field.name]: id }]
+            }
+          }
+
+          if (field.isScalar()) {
+            switch (field.type) {
+              default: {
+                return [
+                  pool,
+                  {
+                    ...acc,
+                    [field.name]: withDefault(
+                      faker.random.number,
+                      schema[fieldModel.name][field.type],
+                    ),
+                  },
+                ]
+              }
+            }
+          }
+        },
+        [_pool, {}],
+      )
+
+      return [fixture, finalPool]
+    }
+
+    /**
+     * Retrieves an ID from the pool and removes its instance.
+     */
+    function getInstanceIDFromPool(pool: Pool, type: string): [ID, Pool] {
+      return [pool[type][0], { ...pool, [type]: pool[type].splice(1) }]
+    }
+
+    /**
+     * Retrieves an ID from the pool and removes its instance.
+     */
+    function getInstanceIDsFromPool(
+      pool: Pool,
+      type: string,
+      n: number,
+    ): [ID[], Pool] {
+      return [pool[type].slice(0, n), { ...pool, [type]: pool[type].splice(n) }]
+    }
+
+    /**
+     * Inserts an ID into the pool and returns the new pool.
+     */
+    function insertInstanceIDIntoPool(pool: Pool, type: string, id: ID): Pool {
+      return {
+        ...pool,
+        [type]: [...withDefault([], pool[type]), id],
+      }
+    }
   }
 }
