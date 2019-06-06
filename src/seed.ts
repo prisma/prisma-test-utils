@@ -473,8 +473,11 @@ export function seed(
       const [finalPool, fixture] = task.model.fields.reduce(
         ([pool, acc], field) => {
           const fieldModel = field.getModel()
-          const mock = fallback =>
-            withDefault(fallback, schema[task.model.name][fieldModel.name])()
+
+          /* Custom field mocks */
+          if (schema[task.model.name][fieldModel.name]) {
+            return schema[task.model.name][fieldModel.name]()
+          }
 
           switch (field.type) {
             case 'ID': {
@@ -581,11 +584,6 @@ export function seed(
                     return [pool, acc]
                   }
                 }
-              }
-
-              /* Custom field mocks */
-              if (schema[task.model.name][fieldModel.name]) {
-                return schema[task.model.name][fieldModel.name]()
               }
 
               /* Fallback for unsupported scalars */
