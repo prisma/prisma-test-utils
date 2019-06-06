@@ -140,7 +140,7 @@ export function seed(
     return dmmf.datamodel.models.map(model => {
       const fakerModel = withDefault(
         {
-          amount: DEFAULT_AMOUNT,
+          amount: opts.instances,
           factory: undefined,
         },
         fakerSchema[model.name],
