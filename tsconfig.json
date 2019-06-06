@@ -4,11 +4,8 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "noUnusedLocals": true,
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "dist",
-    "sourceMap": true,
-    "lib": ["dom", "es2017"]
-  },
-  "include": ["./src/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+    "sourceMap": true
+  }
 }

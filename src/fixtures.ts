@@ -3,7 +3,7 @@ import Model from '@prisma/dmmf/dist/Model'
 import * as faker from 'faker'
 import * as _ from 'lodash'
 import { Dictionary } from 'lodash'
-import { readPrismaYml, findDatamodelAndComputeSchema } from './datamodel'
+// import { readPrismaYml, findDatamodelAndComputeSchema } from './datamodel'
 import { Faker, FakerBag, FakerSchema, ID } from './types'
 import { withDefault } from './utils'
 
@@ -14,6 +14,7 @@ import { withDefault } from './utils'
  * @param opts
  */
 export function seed(
+  dmmf: DMMF,
   fakerSchemaDefinition?: Faker,
   opts: { seed?: number; silent?: boolean } = { seed: 42, silent: false },
 ): object[] | Promise<object[]> {
@@ -23,8 +24,8 @@ export function seed(
   // const DEFAULT_CONSTRAINT = bag.constraints.atMax(5)
 
   /* Prisma and Model evaluation */
-  const prisma = readPrismaYml()
-  const dmmf = findDatamodelAndComputeSchema(prisma.configPath, prisma.config)
+  // const prisma = readPrismaYml()
+  // const dmmf = findDatamodelAndComputeSchema(prisma.configPath, prisma.config)
 
   const fakerSchema = fakerSchemaDefinition(bag)
 
@@ -81,6 +82,10 @@ export function seed(
     }>
   }
 
+  type FixtureData = Dictionary<
+    ID | string | number | boolean | ID[] | string[] | number[] | boolean[]
+  >
+
   /**
    * Represents the virtual unit.
    */
@@ -88,9 +93,7 @@ export function seed(
     order: number // starts with 0
     id: string
     model: Model
-    data: Dictionary<
-      ID | string | number | boolean | ID[] | string[] | number[] | boolean[]
-    >
+    data: FixtureData
   }
 
   /* Helper functions */
@@ -207,15 +210,15 @@ export function seed(
     }
 
     function getStepsFromOrder(): { steps: Step[]; pool: Pool } {
-      const foo = [
-        {
-          order: getStepNumber(pool),
-          model: o.model,
-          amount: pool[o.model.name].remainingUnits,
-          runningNumber: o.amount,
-          relations: getModelRelations(),
-        },
-      ]
+      // const foo = [
+      //   {
+      //     order: getStepNumber(pool),
+      //     model: o.model,
+      //     amount: pool[o.model.name].remainingUnits,
+      //     runningNumber: o.amount,
+      //     relations: getModelRelations(),
+      //   },
+      // ]
 
       return { steps: [], pool: {} }
     }
@@ -246,30 +249,26 @@ export function seed(
 
     type Pool = Dictionary<ID[]>
 
-    const { fixtures } = _.sortBy(steps, s => s.order).reduce<{
-      fixtures: Fixture[]
-      pool: Pool
-    }>(
-      (acc, step) => {
-        const fixture = {
+    const [fixtures] = _.sortBy(steps, s => s.order).reduce<[Fixture[], Pool]>(
+      ([fixtures, pool], step) => {
+        const [data, newPool] = getMockDataForStep(pool, step)
+
+        const fixture: Fixture = {
           order: 0,
           id: faker.random.uuid(),
           model: step.model,
-          data: {},
+          data: data,
         }
 
-        const pool = insertInstanceIDIntoPool(
-          acc.pool,
+        const poolWithFixture = insertInstanceIDIntoPool(
+          newPool,
           step.model.name,
           fixture.id,
         )
 
-        return { fixtures: acc.fixtures.concat(fixture), pool }
+        return [fixtures.concat(fixture), poolWithFixture]
       },
-      {
-        fixtures: [],
-        pool: {},
-      },
+      [[], {}],
     )
 
     return fixtures
@@ -280,40 +279,65 @@ export function seed(
      * Generates mock data from the provided model. Scalars return a mock scalar or
      * list of mock scalars, relations return an ID or lists of IDs.
      */
-    function getMockDataForStep(_pool: Pool, step: Step): [object, Pool] {
+    function getMockDataForStep(_pool: Pool, step: Step): [FixtureData, Pool] {
       const [finalPool, fixture] = step.model.fields.reduce(
         ([pool, acc], field) => {
           const fieldModel = field.getModel()
+          const mock = fallback =>
+            withDefault(fallback, schema[step.model.name][fieldModel.name])()
 
-          /* Relations */
-          if (field.isRelation()) {
-            if (field.isList) {
-              const [id, newPool] = getInstanceIDsFromPool(
-                pool,
-                fieldModel.name,
-                step.relations[fieldModel.name].amount,
-              )
-              return [newPool, { ...acc, [field.name]: id }]
-            } else {
-              const [id, newPool] = getInstanceIDFromPool(pool, fieldModel.name)
-              return [newPool, { ...acc, [field.name]: id }]
+          switch (field.type) {
+            case 'ID': {
+              const id = mock(faker.random.uuid)
+
+              return [pool, { ...acc, [field.name]: id }]
             }
-          }
+            case 'String': {
+              const string = mock(faker.random.word)
 
-          if (field.isScalar()) {
-            switch (field.type) {
-              default: {
-                return [
-                  pool,
-                  {
-                    ...acc,
-                    [field.name]: withDefault(
-                      faker.random.number,
-                      schema[fieldModel.name][field.type],
-                    ),
-                  },
-                ]
+              return [pool, { ...acc, [field.name]: string }]
+            }
+            case 'Int': {
+              const number = mock(faker.random.number)
+
+              return [pool, { ...acc, [field.name]: number }]
+            }
+            case 'Float': {
+              const float = mock(faker.finance.amount)
+
+              return [pool, { ...acc, [field.name]: float }]
+            }
+            case 'Date': {
+              const date = mock(faker.date.past)
+
+              return [pool, { ...acc, [field.name]: date }]
+            }
+            default: {
+              /* Relations */
+              if (field.isRelation()) {
+                if (field.isList) {
+                  const [id, newPool] = getInstanceIDsFromPool(
+                    pool,
+                    fieldModel.name,
+                    step.relations[fieldModel.name].amount,
+                  )
+                  return [newPool, { ...acc, [field.name]: id }]
+                } else {
+                  const [id, newPool] = getInstanceIDFromPool(
+                    pool,
+                    fieldModel.name,
+                  )
+                  return [newPool, { ...acc, [field.name]: id }]
+                }
               }
+
+              /* Custom field mocks */
+              if (schema[step.model.name][fieldModel.name]) {
+                return schema[step.model.name][fieldModel.name]()
+              }
+
+              /* Fallback for unsupported scalars */
+              throw new Error(`Unsupported field type "${field.type}".`)
             }
           }
         },
