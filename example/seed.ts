@@ -58,7 +58,7 @@ async function run() {
       label: String!
       page: String!
       numberOfVisits: Int!
-      user: User!
+      user: User! # limitation for now, magical links should solve it!
     }
   `
 
@@ -72,15 +72,17 @@ async function run() {
       User: {
         amount: 5,
         factory: {
-          name: bag.faker.name,
+          // name: bag.faker.name,
           bookmarks: {
-            min: 3,
-            max: 10,
+            max: 5,
           },
         },
       },
       Bookmark: {
-        amount: 40,
+        amount: 10,
+        factory: {
+          // numberOfVisits: bag.faker.integer,
+        },
       },
     }),
     {

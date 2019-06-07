@@ -542,40 +542,52 @@ export function seed(
           const fieldModel = field.getModel()
 
           /* Custom field mocks */
-          if (schema[task.model.name][fieldModel.name]) {
-            switch (typeof schema[task.model.name][fieldModel.name]) {
+
+          if (
+            schema[task.model.name] &&
+            schema[task.model.name].factory &&
+            schema[task.model.name].factory[field.name]
+          ) {
+            const mock = schema[task.model.name].factory[field.name]
+            switch (typeof mock) {
               case 'function': {
-                return schema[task.model.name][fieldModel.name]()
+                const value = mock()
+                return [pool, { ...acc, [field.name]: value }]
+              }
+              case 'object': {
+                /* Relation constraint */
+                break
               }
               default: {
-                return schema[task.model.name][fieldModel.name]
+                const value = mock
+                return [pool, { ...acc, [field.name]: value }]
               }
             }
           }
 
           switch (field.type) {
             case 'ID': {
-              const id = faker.guid() //mock(faker.guid)
+              const id = faker.guid()
 
               return [pool, { ...acc, [field.name]: id }]
             }
             case 'String': {
-              const string = faker.word() //mock(faker.word)
+              const string = faker.word()
 
               return [pool, { ...acc, [field.name]: string }]
             }
             case 'Int': {
-              const number = faker.integer() //mock(faker.integer)
+              const number = faker.integer()
 
               return [pool, { ...acc, [field.name]: number }]
             }
             case 'Float': {
-              const float = faker.floating() //mock(faker.floating)
+              const float = faker.floating()
 
               return [pool, { ...acc, [field.name]: float }]
             }
             case 'Date': {
-              const date = faker.date() //mock(faker.date)
+              const date = faker.date()
 
               return [pool, { ...acc, [field.name]: date }]
             }
@@ -613,7 +625,10 @@ export function seed(
 
                       case 1: {
                         const [id] = ids
-                        return [newPool, { ...acc, [field.name]: id }]
+                        return [
+                          newPool,
+                          { ...acc, [field.name]: { connect: { id } } },
+                        ]
                       }
 
                       default: {
@@ -635,7 +650,19 @@ export function seed(
                       units,
                     )
 
-                    return [newPool, { ...acc, [field.name]: ids }]
+                    const connections = ids.reduce((acc, id) => {
+                      return [...acc, { id }]
+                    }, [])
+
+                    return [
+                      newPool,
+                      {
+                        ...acc,
+                        [field.name]: {
+                          connect: connections,
+                        },
+                      },
+                    ]
                   }
                   case 'many-to-1': {
                     /**
@@ -670,6 +697,8 @@ export function seed(
 
       return [fixture, finalPool]
     }
+
+    // TODO: Is it possible that a relation gets multiple same ids?
 
     /**
      * Retrieves an ID from the pool and removes its instance.
@@ -712,7 +741,7 @@ export function seed(
     opts: { silent: boolean } = { silent: false },
   ): object[] | Promise<object[]> {
     if (opts.silent) {
-      return fixtures
+      return _.sortBy(fixtures, f => f.order).map(f => f.data)
     } else {
       /**
        * Generates a chain of promises that create DB instances.
@@ -721,7 +750,7 @@ export function seed(
         Promise<object[]>
       >(async (acc, f) => {
         return acc.then(async res => {
-          const seed = await photon[f.mapping.create](f.data)
+          const seed = await photon[f.mapping.create]({ data: f.data })
           return res.concat(seed)
         })
       }, Promise.resolve([]))
