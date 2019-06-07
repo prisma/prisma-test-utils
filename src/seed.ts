@@ -567,8 +567,6 @@ export function seed(
 
           switch (field.type) {
             case 'ID': {
-              const id = faker.guid()
-
               return [pool, { ...acc, [field.name]: id }]
             }
             case 'String': {
