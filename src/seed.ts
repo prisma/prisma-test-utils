@@ -162,7 +162,14 @@ export function seed(
       const relations: Order['relations'] = model.fields
         .filter(f => f.isRelation())
         .reduce<Order['relations']>((acc, field) => {
-          const fakerField = fakerModel.factory[field.name]
+          const fakerField: RelationConstraint = _.get(
+            fakerModel,
+            ['factory', field.name],
+            {
+              min: 1,
+              max: 1,
+            },
+          )
 
           switch (typeof fakerField) {
             case 'object': {
@@ -185,7 +192,9 @@ export function seed(
               }
             }
             default: {
-              throw new Error(`Expected a relation got ${typeof fakerField}`)
+              throw new Error(
+                `Expected a relation constraint got ${typeof fakerField}`,
+              )
             }
           }
         }, {})
@@ -409,8 +418,11 @@ export function seed(
      * all you need to implement meaningful topological sort on steps.
      */
     function isOrderWellDefinedInPool(pool: Pool, order: Order) {
-      return Object.values(order.relations).every(relation =>
-        pool.hasOwnProperty(relation.field.type),
+      return Object.values(order.relations).every(
+        relation =>
+          pool.hasOwnProperty(relation.field.type) ||
+          relation.type === 'many-to-1' ||
+          relation.type === 'many-to-many',
       )
     }
 
