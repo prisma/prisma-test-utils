@@ -8,6 +8,7 @@ import { Dictionary } from 'lodash'
 // import { readPrismaYml, findDatamodelAndComputeSchema } from './datamodel'
 import { Faker, FakerBag, FakerSchema, ID, RelationConstraint } from './types'
 import { withDefault } from './utils'
+import { readPrismaYml, findDatamodelAndComputeSchema } from './datamodel'
 
 export interface SeedOptions {
   seed?: number
@@ -22,7 +23,7 @@ export interface SeedOptions {
  * @param opts
  */
 export function seed(
-  dmmf: DMMF,
+  photon: any,
   schemaDef?: Faker | SeedOptions,
   _opts?: SeedOptions,
 ): object[] | Promise<object[]> {
@@ -46,9 +47,8 @@ export function seed(
 
   /* Prisma Model evaluation */
 
-  // const prisma = readPrismaYml()
-  // const dmmf = findDatamodelAndComputeSchema(prisma.configPath, prisma.config)
-  const photon: any = {}
+  const prisma = readPrismaYml()
+  const dmmf = findDatamodelAndComputeSchema(prisma.configPath, prisma.config)
 
   /* Fixture calculations */
 

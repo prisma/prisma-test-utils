@@ -1,7 +1,8 @@
 import { seed } from '../src'
-import { generateCRUDSchema } from 'prisma-generate-schema'
-import { DMMF } from '@prisma/dmmf'
-import { DatabaseType } from 'prisma-datamodel'
+// import { generateCRUDSchema } from 'prisma-generate-schema'
+// import { DMMF } from '@prisma/dmmf'
+// import { DatabaseType } from 'prisma-datamodel'
+import { prisma } from './prisma/prisma-client'
 
 run()
 
@@ -45,29 +46,16 @@ run()
 // `
 
 async function run() {
-  const typeDefs = `
-    type User {
-      id: ID! @id
-      name: String!
-      phoneNumber: String!
-      bookmarks: [Bookmark!]!
-    } 
+  // const typeDefs = `
 
-    type Bookmark {
-      id: ID! @id
-      label: String!
-      page: String!
-      numberOfVisits: Int!
-      user: User! # limitation for now, magical links should solve it!
-    }
-  `
+  // `
 
-  const schema = generateCRUDSchema(typeDefs, DatabaseType.postgres)
-  const dmmf = new DMMF(typeDefs, schema)
-  console.log(dmmf)
+  // const schema = generateCRUDSchema(typeDefs, DatabaseType.postgres)
+  // const dmmf = new DMMF(typeDefs, schema)
+  // console.log(dmmf)
 
   const data = seed(
-    dmmf,
+    prisma,
     bag => ({
       User: {
         amount: 5,
@@ -86,7 +74,7 @@ async function run() {
       },
     }),
     {
-      silent: true,
+      silent: false,
       seed: 1,
     },
   )

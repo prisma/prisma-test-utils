@@ -1,0 +1,14 @@
+type User {
+  id: ID! @id
+  name: String!
+  phoneNumber: String!
+  bookmarks: [Bookmark!]!
+} 
+
+type Bookmark {
+  id: ID! @id
+  label: String!
+  page: String!
+  numberOfVisits: Int!
+  user: User! # limitation for now, magical links should solve it!
+}

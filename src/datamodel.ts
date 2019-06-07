@@ -28,7 +28,7 @@ export function findDatamodelAndComputeSchema(
 }
 
 export function readPrismaYml() {
-  const configPath = path.join(__dirname, '../src/prisma/prisma.yml')
+  const configPath = path.join(__dirname, '../example/prisma/prisma.yml')
 
   if (!configPath) {
     throw new Error('Could not find `prisma.yml` file')
