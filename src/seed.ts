@@ -245,7 +245,7 @@ export function seed(
         {
           kind: '',
           name: '',
-          isRequired: true,
+          isRequired: false,
           isList: false,
           isId: false,
           type: field.type,
