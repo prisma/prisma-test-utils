@@ -160,10 +160,12 @@ export type UserOrderByInput =
 
 export type MutationType = 'CREATED' | 'UPDATED' | 'DELETED'
 
-export interface UserUpdateOneRequiredWithoutBookmarksInput {
+export interface UserUpdateOneWithoutBookmarksInput {
   create?: Maybe<UserCreateWithoutBookmarksInput>
   update?: Maybe<UserUpdateWithoutBookmarksDataInput>
   upsert?: Maybe<UserUpsertWithoutBookmarksInput>
+  delete?: Maybe<Boolean>
+  disconnect?: Maybe<Boolean>
   connect?: Maybe<UserWhereUniqueInput>
 }
 
@@ -223,7 +225,7 @@ export interface BookmarkCreateInput {
   label: String
   page: String
   numberOfVisits: Int
-  user: UserCreateOneWithoutBookmarksInput
+  user?: Maybe<UserCreateOneWithoutBookmarksInput>
 }
 
 export interface UserUpdateManyMutationInput {
@@ -255,7 +257,7 @@ export interface BookmarkUpdateInput {
   label?: Maybe<String>
   page?: Maybe<String>
   numberOfVisits?: Maybe<Int>
-  user?: Maybe<UserUpdateOneRequiredWithoutBookmarksInput>
+  user?: Maybe<UserUpdateOneWithoutBookmarksInput>
 }
 
 export interface BookmarkUpdateWithoutUserDataInput {
@@ -871,6 +873,6 @@ export const models: Model[] = [
 export const Prisma = makePrismaClientClass<ClientConstructor<Prisma>>({
   typeDefs,
   models,
-  endpoint: `https://eu1.prisma.sh/flavian/prisma-faker/dev`,
+  endpoint: `https://eu1.prisma.sh/matic-zavadlal-03c51f/prisma-faker/dev`,
 })
 export const prisma = new Prisma()

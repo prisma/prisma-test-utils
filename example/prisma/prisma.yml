@@ -6,4 +6,4 @@ generate:
   - generator: typescript-client
     output: ./example/prisma/prisma-client
 
-endpoint: https://eu1.prisma.sh/flavian/prisma-faker/dev
+endpoint: https://eu1.prisma.sh/matic-zavadlal-03c51f/prisma-faker/dev

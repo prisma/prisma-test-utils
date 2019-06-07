@@ -10,5 +10,5 @@ type Bookmark {
   label: String!
   page: String!
   numberOfVisits: Int!
-  user: User! # limitation for now, magical links should solve it!
+  user: User # limitation for now, magical links should solve it!
 }

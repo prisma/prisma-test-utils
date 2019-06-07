@@ -20,7 +20,7 @@ export const typeDefs = /* GraphQL */ `
     label: String!
     page: String!
     numberOfVisits: Int!
-    user: User!
+    user: User
   }
 
   type BookmarkConnection {
@@ -34,7 +34,7 @@ export const typeDefs = /* GraphQL */ `
     label: String!
     page: String!
     numberOfVisits: Int!
-    user: UserCreateOneWithoutBookmarksInput!
+    user: UserCreateOneWithoutBookmarksInput
   }
 
   input BookmarkCreateManyWithoutUserInput {
@@ -150,7 +150,7 @@ export const typeDefs = /* GraphQL */ `
     label: String
     page: String
     numberOfVisits: Int
-    user: UserUpdateOneRequiredWithoutBookmarksInput
+    user: UserUpdateOneWithoutBookmarksInput
   }
 
   input BookmarkUpdateManyDataInput {
@@ -446,10 +446,12 @@ export const typeDefs = /* GraphQL */ `
     phoneNumber: String
   }
 
-  input UserUpdateOneRequiredWithoutBookmarksInput {
+  input UserUpdateOneWithoutBookmarksInput {
     create: UserCreateWithoutBookmarksInput
     update: UserUpdateWithoutBookmarksDataInput
     upsert: UserUpsertWithoutBookmarksInput
+    delete: Boolean
+    disconnect: Boolean
     connect: UserWhereUniqueInput
   }
 

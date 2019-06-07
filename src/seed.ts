@@ -507,7 +507,8 @@ export function seed(
 
     const [fixtures] = _.sortBy(tasks, t => t.order).reduce<[Fixture[], Pool]>(
       ([fixtures, pool], task) => {
-        const id = faker.guid()
+        // TODO: implement proper ID generators
+        const id = faker.guid().slice(0, 25)
         const [data, newPool] = getMockDataForTask(id, pool, task)
 
         const fixture: Fixture = {
@@ -575,7 +576,10 @@ export function seed(
               return [pool, { ...acc, [field.name]: string }]
             }
             case 'Int': {
-              const number = faker.integer()
+              const number = faker.integer({
+                min: -2147483647,
+                max: 2147483647,
+              })
 
               return [pool, { ...acc, [field.name]: number }]
             }
@@ -748,10 +752,11 @@ export function seed(
         Promise<object[]>
       >(async (acc, f) => {
         return acc.then(async res => {
-          const seed = await photon[f.mapping.create]({ data: f.data })
+          const seed = await photon[f.mapping.create](f.data)
           return res.concat(seed)
         })
       }, Promise.resolve([]))
+
       return actions
     }
   }
