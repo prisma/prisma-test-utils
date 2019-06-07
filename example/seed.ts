@@ -72,7 +72,7 @@ async function run() {
       User: {
         amount: 5,
         factory: {
-          // name: bag.faker.name,
+          name: bag.faker.name,
           bookmarks: {
             max: 5,
           },

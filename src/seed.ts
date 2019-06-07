@@ -551,7 +551,7 @@ export function seed(
             const mock = schema[task.model.name].factory[field.name]
             switch (typeof mock) {
               case 'function': {
-                const value = mock()
+                const value = mock.call(faker)
                 return [pool, { ...acc, [field.name]: value }]
               }
               case 'object': {
