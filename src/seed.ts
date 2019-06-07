@@ -1,5 +1,6 @@
 import { DMMF } from '@prisma/dmmf'
 import Field from '@prisma/dmmf/dist/Field'
+import Mapping from '@prisma/dmmf/dist/Mapping'
 import Model from '@prisma/dmmf/dist/Model'
 import Chance from 'chance'
 import _ from 'lodash'
@@ -47,6 +48,7 @@ export function seed(
 
   // const prisma = readPrismaYml()
   // const dmmf = findDatamodelAndComputeSchema(prisma.configPath, prisma.config)
+  const photon: any = {}
 
   /* Fixture calculations */
 
@@ -55,13 +57,11 @@ export function seed(
   const tasks: Task[] = getTasksFromSteps(steps)
   const fixtures: Fixture[] = getFixturesFromTasks(fakerSchema, tasks)
 
-  // TODO: seeding
+  const seeds = seedFixturesToDatabase(photon, fixtures, {
+    silent: opts.silent,
+  })
 
-  if (opts.silent) {
-    return fixtures
-  } else {
-    return Promise.resolve(fixtures)
-  }
+  return seeds
 
   /**
    * The Core logic
@@ -81,6 +81,7 @@ export function seed(
    */
   type Order = {
     model: Model
+    mapping: Mapping
     amount: number
     relations: Dictionary<Relation>
   }
@@ -104,6 +105,7 @@ export function seed(
   type Step = {
     order: number // the creation order of a step, starts with 0
     model: Model
+    mapping: Mapping
     amount: number // number of instances created in this step
     relations: Dictionary<Relation>
   }
@@ -111,6 +113,7 @@ export function seed(
   type Task = {
     order: number // the creation order of a step, starts with 0
     model: Model
+    mapping: Mapping
     relations: Dictionary<Relation>
   }
 
@@ -125,6 +128,7 @@ export function seed(
     order: number // starts with 0
     id: string
     model: Model
+    mapping: Mapping
     data: FixtureData
     relations: Dictionary<{
       type: RelationType
@@ -142,6 +146,7 @@ export function seed(
    */
   function getOrdersFromDMMF(dmmf: DMMF): Order[] {
     return dmmf.datamodel.models.map(model => {
+      /* User defined settings */
       const fakerModel = withDefault(
         {
           amount: opts.instances,
@@ -149,6 +154,9 @@ export function seed(
         },
         fakerSchema[model.name],
       )
+
+      /* Find Photon mappings for seeding step */
+      const mapping = dmmf.mappings.find(m => m.model === model.name)
 
       /* Generate relations based on provided restrictions. */
       const relations: Order['relations'] = model.fields
@@ -158,9 +166,7 @@ export function seed(
 
           switch (typeof fakerField) {
             case 'object': {
-              // const min = withDefault(0, fakerField.min)
-              // const max = withDefault(min, fakerField.max)
-
+              /* Calculate the relation properties */
               const { type, min, max } = getRelationType(
                 dmmf.datamodel.models,
                 field,
@@ -175,7 +181,7 @@ export function seed(
                   max: max,
                   relationTo: '',
                   field,
-                } as Relation,
+                },
               }
             }
             default: {
@@ -186,6 +192,7 @@ export function seed(
 
       return {
         model: model,
+        mapping: mapping,
         amount: fakerModel.amount,
         relations: relations,
       }
@@ -225,12 +232,29 @@ export function seed(
       const fieldModel = field.getModel()
       const relationModel = allModels.find(m => m.name === field.type)
 
-      const relationField = relationModel.fields.find(
-        f => f.type === fieldModel.name,
+      const relationField = withDefault<Field>(
+        {
+          kind: '',
+          name: '',
+          isRequired: true,
+          isList: false,
+          isId: false,
+          type: field.type,
+        } as Field,
+        relationModel.fields.find(f => f.type === fieldModel.name),
       )
 
       if (field.isList && relationField.isList) {
-        /* many-to-many */
+        /**
+         * many-to-many (A)
+         *
+         * model A {
+         *  bs: [B]
+         * }
+         * model B {
+         *  as: [A]
+         * }
+         */
         const min = withDefault(0, definition.min)
         const max = withDefault(min, definition.max)
 
@@ -239,16 +263,35 @@ export function seed(
           min: min,
           max: max,
         }
-      } else if (field.isList && !relationField.isList) {
-        /* many-to-1 */
+      } else if (!field.isList && relationField.isList) {
+        /**
+         * many-to-1 (A)
+         *
+         * model A {
+         *  b: B
+         * }
+         * model B {
+         *  as: [A]
+         * }
+         */
 
         return {
           type: 'many-to-1',
           min: field.isRequired ? 1 : 0,
           max: 1,
         }
-      } else if (!field.isList && relationField.isList) {
-        /* 1-to-many */
+      } else if (field.isList && !relationField.isList) {
+        /**
+         * 1-to-many (A)
+         *
+         * model A {
+         *  bs: [B]
+         * }
+         *
+         * model B {
+         *  a: A
+         * }
+         */
 
         const min = withDefault(field.isRequired ? 1 : 0, definition.min)
         const max = withDefault(min, definition.max)
@@ -259,7 +302,16 @@ export function seed(
           max: max,
         }
       } else {
-        /* 1-to-1 */
+        /**
+         * 1-to-1 (A)
+         *
+         * model A {
+         *  b: B
+         * }
+         * model B {
+         *  a: A
+         * }
+         */
 
         return {
           type: '1-to-1',
@@ -381,6 +433,7 @@ export function seed(
         order: sortedSteps.length,
         amount: order.amount,
         model: order.model,
+        mapping: order.mapping,
         relations: order.relations,
       }
 
@@ -409,9 +462,10 @@ export function seed(
    */
   function getTasksFromSteps(steps: Step[]): Task[] {
     const tasks = steps.reduce<Task[]>((acc, step) => {
-      const intermediateTasks: Task[] = Array(step.amount).fill({
+      const intermediateTasks: Task[] = Array<Task>(step.amount).fill({
         order: step.order,
         model: step.model,
+        mapping: step.mapping,
         relations: step.relations,
       })
 
@@ -448,6 +502,7 @@ export function seed(
           order: fixtures.length,
           id: id,
           model: task.model,
+          mapping: task.mapping,
           data: data,
           relations: task.relations,
         }
@@ -629,6 +684,36 @@ export function seed(
     ): Pool {
       const ids = _.get(pool, [parent, child], [])
       return _.set(pool, [parent, child], [...ids, ...Array(n).fill(id)])
+    }
+  }
+
+  /**
+   * Seeds the fixtures to the database. Based on the `silent` option
+   * it performs data push. Photon is provided globally.
+   *
+   * @param fixtures
+   * @param opts
+   */
+  function seedFixturesToDatabase(
+    photon: any,
+    fixtures: Fixture[],
+    opts: { silent: boolean } = { silent: false },
+  ): object[] | Promise<object[]> {
+    if (opts.silent) {
+      return fixtures
+    } else {
+      /**
+       * Generates a chain of promises that create DB instances.
+       */
+      const actions = _.sortBy(fixtures, f => f.order).reduce<
+        Promise<object[]>
+      >(async (acc, f) => {
+        return acc.then(async res => {
+          const seed = await photon[f.mapping.create](f.data)
+          return res.concat(seed)
+        })
+      }, Promise.resolve([]))
+      return actions
     }
   }
 }
