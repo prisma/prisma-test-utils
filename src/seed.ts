@@ -508,7 +508,7 @@ export function seed(
     const [fixtures] = _.sortBy(tasks, t => t.order).reduce<[Fixture[], Pool]>(
       ([fixtures, pool], task) => {
         // TODO: implement proper ID generators
-        const id = faker.guid().slice(0, 25)
+        const id = getFixtureId()
         const [data, newPool] = getMockDataForTask(id, pool, task)
 
         const fixture: Fixture = {
@@ -528,6 +528,13 @@ export function seed(
     return fixtures
 
     /* Helper functions */
+
+    /**
+     * Generates a unique identifier based on the database kind.
+     */
+    function getFixtureId(): ID {
+      return faker.guid().slice(0, 25)
+    }
 
     /**
      * Generates mock data from the provided model. Scalars return a mock scalar or
