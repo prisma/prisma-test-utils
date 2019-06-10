@@ -1,7 +1,7 @@
 type User {
   id: ID! @id
   name: String!
-  dog: Dog
+  dog: Dog!
   phoneNumber: String!
   bookmarks: [Bookmark!]!
 }
