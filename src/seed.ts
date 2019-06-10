@@ -5,10 +5,18 @@ import Model from '@prisma/dmmf/dist/Model'
 import Chance from 'chance'
 import _ from 'lodash'
 import { Dictionary } from 'lodash'
-// import { readPrismaYml, findDatamodelAndComputeSchema } from './datamodel'
-import { Faker, FakerBag, FakerSchema, ID, RelationConstraint } from './types'
-import { withDefault } from './utils'
+import mls from 'multilines'
 import { readPrismaYml, findDatamodelAndComputeSchema } from './datamodel'
+import {
+  Faker,
+  FakerBag,
+  FakerSchema,
+  ID,
+  RelationConstraint,
+  FixtureDefinition,
+  FixtureFieldDefinition,
+} from './types'
+import { withDefault } from './utils'
 
 export interface SeedOptions {
   seed?: number
@@ -139,21 +147,16 @@ export function seed(
   /* Helper functions */
 
   /**
-   * Converts dmmf to fixtures. Fixtures represent the summary of a mock requirements
-   * for particular model.
+   * Converts dmmf to orders. Orders represent the summary of a mock requirements
+   * for particular model. During generation the function detects relation types,
+   * and validates the bulk of the request.
    *
    * @param dmmf
    */
   function getOrdersFromDMMF(dmmf: DMMF): Order[] {
     return dmmf.datamodel.models.map(model => {
       /* User defined settings */
-      const fakerModel = withDefault(
-        {
-          amount: opts.instances,
-          factory: undefined,
-        },
-        fakerSchema[model.name],
-      )
+      const fakerModel = getFakerModel(fakerSchema, model.name)
 
       /* Find Photon mappings for seeding step */
       const mapping = dmmf.mappings.find(m => m.model === model.name)
@@ -174,8 +177,9 @@ export function seed(
           switch (typeof fakerField) {
             case 'object': {
               /* Calculate the relation properties */
-              const { type, min, max } = getRelationType(
+              const { type, min, max, relationTo } = getRelationType(
                 dmmf.datamodel.models,
+                fakerSchema,
                 field,
                 fakerField,
               )
@@ -186,7 +190,7 @@ export function seed(
                   type: type,
                   min: min,
                   max: max,
-                  relationTo: '',
+                  relationTo: relationTo,
                   field,
                 },
               }
@@ -208,7 +212,21 @@ export function seed(
     })
 
     /**
-     * Derives the relation type and constraints from the field
+     * Finds a model definition in faker schema or returns default
+     * faker model.
+     */
+    function getFakerModel(
+      schema: FakerSchema,
+      model: string,
+    ): FixtureDefinition {
+      return _.get(schema, model, {
+        amount: opts.instances,
+        factory: undefined,
+      })
+    }
+
+    /**
+     * Derives the relation type, relation direction, and constraints from the field
      * and definition.
      *
      * We have four different relation types:
@@ -220,27 +238,40 @@ export function seed(
      *  ~ We'll connect the nodes from this model (a child model).
      * 3. many-to-1
      *  ~ A particular instance can either connect or not connect if optional.
-     *  ~ We'll fill the pool with ids of this model (a parent model).
+     *  ~ We'll fill the pool with ids of this model (a parent model) or create nodes
+     *    if the relation is required in both directions.
      * 4. many-to-many
      *  ~ A particular instance can have 0 to infinite connections (we'll use min/max spec).
-     *  ~ We'll use `relationTo` to determine whether this is a parent or child model.
+     *  ~ We'll use `relationTo` to determine whether this is a parent or child model and
+     *    create nodes accordingly.
      *
      * We presume that the field is a relation.
      */
     function getRelationType(
       allModels: Model[],
+      schema: FakerSchema,
       field: Field,
       definition: RelationConstraint,
     ): {
       type: RelationType
       min: number
       max: number
+      relationTo: string
     } {
-      /* Models */
-
+      /**
+       * model A {
+       *  field: Relation
+       * }
+       */
+      /* Field definitions */
       const fieldModel = field.getModel()
-      const relationModel = allModels.find(m => m.name === field.type)
 
+      /**
+       * Relation definitions
+       *
+       * NOTE: relaitonField is a back reference to the examined model.
+       */
+      const relationModel = allModels.find(m => m.name === field.type)
       const relationField = withDefault<Field>(
         {
           kind: '',
@@ -252,7 +283,9 @@ export function seed(
         } as Field,
         relationModel.fields.find(f => f.type === fieldModel.name),
       )
+      const relationFakerModel = getFakerModel(schema, field.type)
 
+      /* Relation type definitions */
       if (field.isList && relationField.isList) {
         /**
          * many-to-many (A)
@@ -267,10 +300,38 @@ export function seed(
         const min = withDefault(0, definition.min)
         const max = withDefault(min, definition.max)
 
-        return {
-          type: 'many-to-many',
-          min: min,
-          max: max,
+        /* Validation */
+
+        if (min > max) {
+          /* Inconsistent mock definition. */
+          throw new Error(
+            /* prettier-ignore */
+            mls`
+            | ${fieldModel.name}.${field.name}: number of minimum instances is higher than maximum.
+            `,
+          )
+        } else if (max > relationFakerModel.amount) {
+          /* Missing relation instances */
+          const missingInstances = max - relationFakerModel.amount
+          throw new Error(
+            /* prettier-ignore */
+            mls`
+            | ${fieldModel.name}.${field.name} requests more(${max}) instances of | ${relationModel.name}(${relationFakerModel.amount}) than available.
+            | Please add more(${missingInstances}) ${relationModel.name} instances.
+            `,
+          )
+        } else {
+          /* Valid declaration */
+          return {
+            type: 'many-to-many',
+            min: min,
+            max: max,
+            relationTo: getRelationDirection(
+              'many-to-many',
+              field,
+              relationField,
+            ),
+          }
         }
       } else if (!field.isList && relationField.isList) {
         /**
@@ -288,13 +349,14 @@ export function seed(
           type: 'many-to-1',
           min: field.isRequired ? 1 : 0,
           max: 1,
+          relationTo: getRelationDirection('many-to-1', field, relationField),
         }
       } else if (field.isList && !relationField.isList) {
         /**
          * 1-to-many (A)
          *
          * model A {
-         *  bs: [B]
+         *  bs: b[]
          * }
          *
          * model B {
@@ -305,10 +367,34 @@ export function seed(
         const min = withDefault(field.isRequired ? 1 : 0, definition.min)
         const max = withDefault(min, definition.max)
 
-        return {
-          type: '1-to-many',
-          min: min,
-          max: max,
+        /* Validation */
+
+        if (min > max) {
+          /* Inconsistent mock definition. */
+          throw new Error(
+            /* prettier-ignore */
+            mls`
+            | ${fieldModel.name}.${field.name}: number of minimum instances is higher than maximum.
+            `,
+          )
+        } else if (max > relationFakerModel.amount) {
+          /* Missing relation instances */
+          const missingInstances = max - relationFakerModel.amount
+          throw new Error(
+            /* prettier-ignore */
+            mls`
+            | ${fieldModel.name}.${field.name} requests more (${max}) instances of ${relationModel.name}(${relationFakerModel.amount}) than available.
+            | Please add more (${missingInstances}) ${relationModel.name} instances.
+            `,
+          )
+        } else {
+          /* Valid declaration */
+          return {
+            type: '1-to-many',
+            min: min,
+            max: max,
+            relationTo: getRelationDirection('1-to-many', field, relationField),
+          }
         }
       } else {
         /**
@@ -326,18 +412,157 @@ export function seed(
           type: '1-to-1',
           min: field.isRequired ? 1 : 0,
           max: 1,
+          relationTo: getRelationDirection('1-to-1', field, relationField),
+        }
+      }
+    }
+
+    /**
+     * Determines relation direction based on the type of fields
+     * connecting the two types together.
+     */
+    function getRelationDirection(
+      relationType: RelationType,
+      field: Field,
+      relation: Field,
+    ): string {
+      /**
+       * Relation is binding if it's a required relation and not a list.
+       * Lists are by default required but can be empty.
+       */
+      const fieldBinding = field.isRequired || !field.isList
+      const relationBinding = relation.isRequired || !field.isList
+
+      switch (relationType) {
+        case '1-to-1': {
+          if (fieldBinding && relationBinding) {
+            /**
+             * model A {
+             *  b: B
+             * }
+             * model B {
+             *  a: A
+             * }
+             */
+            // TODO
+            return ''
+          } else if (!fieldBinding && relationBinding) {
+            /**
+             * model A {
+             *  b: B?
+             * }
+             * model B {
+             *  a: A
+             * }
+             *
+             * We should create A first.
+             */
+            return relation.type
+          } else if (fieldBinding && !relationBinding) {
+            /**
+             * model A {
+             *  b: B
+             * }
+             * model B {
+             *  a: A?
+             * }
+             *
+             * We should create B first.
+             */
+            return field.type
+          } else {
+            /**
+             * model A {
+             *  b: B?
+             * }
+             * model B {
+             *  a: A?
+             * }
+             */
+            // TODO
+            return ''
+          }
+        }
+        case '1-to-many': {
+          if (relationBinding) {
+            /**
+             * model A {
+             *  b: B[]
+             * }
+             * model B {
+             *  a: A
+             * }
+             *
+             * -> We should create A and B together while creating A.
+             */
+            return relation.type
+          } else {
+            /**
+             * model A {
+             *  b: B[]
+             * }
+             * model B {
+             *  a: A?
+             * }
+             *
+             * -> We should create B first.
+             */
+            return field.type
+          }
+        }
+        case 'many-to-1': {
+          if (fieldBinding) {
+            /**
+             * model A {
+             *  b: B
+             * }
+             * model B {
+             *  a: A[]
+             * }
+             *
+             * -> We should create B while creating A.
+             */
+            return relation.type
+          } else {
+            /**
+             * model A {
+             *  b: B?
+             * }
+             * model B {
+             *  a: A[]
+             * }
+             *
+             * -> We should create A first.
+             */
+            return field.type
+          }
+        }
+        case 'many-to-many': {
+          /**
+           * model A {
+           *  b: B[]
+           * }
+           * model B {
+           *  a: A[]
+           * }
+           *
+           * // TODO
+           */
+          return ''
         }
       }
     }
   }
 
   /**
-   * Coverts fixtures to steps. Steps represent an ordered entity that specifies the creation
+   * Coverts orders to steps. Steps represent an ordered entity that specifies the creation
    * of a virtual data.
    *
-   * Creates a pool of available instances and validates relation constraints.
+   * Creates a pool of available instances and validates relation constraints. Using
+   * `isOrderWellDefined` and `getStepsFromOrder` functions, you should be able to implement
+   * the topological sort algorithm.
    *
-   * @param fixtures
+   * @param orders
    */
   function getStepsFromOrders(orders: Order[]): Step[] {
     type Pool = Dictionary<{
@@ -348,7 +573,6 @@ export function seed(
     /* Triggers the order to steps conversion */
 
     const steps = sort(orders, orders, [], {})
-
     return steps
 
     /* Helper functions */
@@ -377,7 +601,8 @@ export function seed(
 
             return steps
           } else {
-            /** Since this is the last order, we cannot obtain any new resources,
+            /**
+             * Since this is the last order, we cannot obtain any new resources,
              * meaning that there's an issue with the order.
              */
             throw new Error(`${o.model.name} uses undefined relations!`)
@@ -421,8 +646,7 @@ export function seed(
       return Object.values(order.relations).every(
         relation =>
           pool.hasOwnProperty(relation.field.type) ||
-          relation.type === 'many-to-1' ||
-          relation.type === 'many-to-many',
+          relation.relationTo === order.model.name,
       )
     }
 
@@ -488,7 +712,7 @@ export function seed(
   }
 
   /**
-   * Converts fixtures from steps by creating a pool of available instances
+   * Converts tasks to fixtures by creating a pool of available instances
    * and assigning relations to particular types.
    *
    * This function assumes that:
@@ -507,7 +731,6 @@ export function seed(
 
     const [fixtures] = _.sortBy(tasks, t => t.order).reduce<[Fixture[], Pool]>(
       ([fixtures, pool], task) => {
-        // TODO: implement proper ID generators
         const id = getFixtureId()
         const [data, newPool] = getMockDataForTask(id, pool, task)
 
@@ -614,8 +837,11 @@ export function seed(
                   case '1-to-1': {
                     /**
                      * 1-to-1 relation should take at most one id from the resource pool
-                     * and submit no new ids. Because we already manage requirements during
+                     * and submit no new ids. Because we already manage constraints during
                      * order creation step, we can ignore it now.
+                     *
+                     * Based on the relation direction we should either create the instance
+                     * or ignore it.
                      */
                     const [newPool, ids] = getIDInstancesFromPool(
                       pool,

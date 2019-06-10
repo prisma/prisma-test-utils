@@ -28,6 +28,7 @@ export function findDatamodelAndComputeSchema(
 }
 
 export function readPrismaYml() {
+  // const configPath = `/Users/maticzavadlal/Code/work/prisma/prisma-faker/example/prisma/prisma.yml`
   const configPath = path.join(__dirname, '../example/prisma/prisma.yml')
 
   if (!configPath) {

@@ -1,5 +1,5 @@
 # Defines your models, each model is mapped to the database as a table.
-datamodel: datamodels/simple-2.prisma
+datamodel: datamodel.prisma
 
 # Specifies the language and directory for the generated Prisma client.
 generate:
