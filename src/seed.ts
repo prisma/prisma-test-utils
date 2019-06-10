@@ -962,7 +962,6 @@ export function seed(
                    */
                   if (relation.relationTo === fieldModel.name) {
                     /* Create the relation while creating this model instance. */
-                    // TODO:
                     const [newTasks, newPool, instances] = getInstances(
                       tasks,
                       pool,

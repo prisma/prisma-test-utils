@@ -1,8 +1,15 @@
 type User {
   id: ID! @id
   name: String!
+  dog: Dog
   phoneNumber: String!
   bookmarks: [Bookmark!]!
+}
+
+type Dog {
+  id: ID! @id
+  name: String!
+  owner: User!
 }
 
 type Bookmark {
@@ -10,5 +17,5 @@ type Bookmark {
   label: String!
   page: String!
   numberOfVisits: Int!
-  user: User
+  user: User!
 }

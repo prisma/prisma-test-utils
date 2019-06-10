@@ -17,6 +17,9 @@ async function run() {
             },
           },
         },
+        Dog: {
+          amount: 2,
+        },
         Bookmark: {
           amount: 6,
           factory: {
