@@ -14,7 +14,6 @@ import {
   ID,
   RelationConstraint,
   FixtureDefinition,
-  FixtureFieldDefinition,
 } from './types'
 import { withDefault } from './utils'
 
@@ -62,7 +61,6 @@ export function seed(
 
   const orders: Order[] = getOrdersFromDMMF(dmmf)
   const steps: Step[] = getStepsFromOrders(orders)
-  debugger
   const tasks: Task[] = getTasksFromSteps(steps)
   const fixtures: Fixture[] = getFixturesFromTasks(fakerSchema, tasks)
 
@@ -101,6 +99,7 @@ export function seed(
     type: RelationType
     relationTo: string
     field: Field
+    relation: Field // signifies the back relation
     min: number
     max: number
   }
@@ -178,7 +177,7 @@ export function seed(
           switch (typeof fakerField) {
             case 'object': {
               /* Calculate the relation properties */
-              const { type, min, max, relationTo } = getRelationType(
+              const { type, min, max, relation, relationTo } = getRelationType(
                 dmmf.datamodel.models,
                 fakerSchema,
                 field,
@@ -193,6 +192,7 @@ export function seed(
                   max: max,
                   relationTo: relationTo,
                   field,
+                  relation,
                 },
               }
             }
@@ -258,6 +258,7 @@ export function seed(
       min: number
       max: number
       relationTo: string
+      relation: Field
     } {
       /**
        * model A {
@@ -333,6 +334,7 @@ export function seed(
               field,
               relationField,
             ),
+            relation: relationField,
           }
         }
       } else if (!field.isList && relationField.isList) {
@@ -352,6 +354,7 @@ export function seed(
           min: field.isRequired ? 1 : 0,
           max: 1,
           relationTo: getRelationDirection('many-to-1', field, relationField),
+          relation: relationField,
         }
       } else if (field.isList && !relationField.isList) {
         /**
@@ -396,6 +399,7 @@ export function seed(
             min: min,
             max: max,
             relationTo: getRelationDirection('1-to-many', field, relationField),
+            relation: relationField,
           }
         }
       } else {
@@ -445,6 +449,7 @@ export function seed(
             min: field.isRequired ? 1 : 0,
             max: 1,
             relationTo: getRelationDirection('1-to-1', field, relationField),
+            relation: relationField,
           }
         }
       }
@@ -925,7 +930,6 @@ export function seed(
                    * and submit no new ids. Because we already manage constraints during
                    * order creation step, we can ignore it now.
                    */
-                  debugger
                   if (relation.relationTo === fieldModel.name) {
                     if (relation.field.isOptional()) {
                       /* Insert the ID of an instance into the pool. */
@@ -959,7 +963,7 @@ export function seed(
                     }
                   } else {
                     /* Create an instance and connect it to the relation. */
-                    if (relation.field.isOptional()) {
+                    if (relation.relation.isOptional()) {
                       const [newPool, ids] = getIDInstancesFromPool(
                         pool,
                         fieldModel.name,
@@ -996,7 +1000,7 @@ export function seed(
                         }
                       }
                     } else {
-                      /* Is probably created by the parent. */
+                      /* Is created by the parent. */
                       return [pool, tasks, acc]
                     }
                   }
@@ -1227,7 +1231,6 @@ export function seed(
       model: string,
       n: number = 1,
     ): [Task[], Pool, FixtureData[]] {
-      debugger
       /* Find the requested tasks. */
       const [instanceTasks, remainingTasks] = _tasks.reduce(
         ([acc, otherTasks], task) => {
