@@ -265,6 +265,7 @@ export function seed(
        */
       /* Field definitions */
       const fieldModel = field.getModel()
+      const fieldFakerModel = getFakerModel(schema, fieldModel.name)
 
       /**
        * Relation definitions
@@ -408,11 +409,42 @@ export function seed(
          * }
          */
 
-        return {
-          type: '1-to-1',
-          min: field.isRequired ? 1 : 0,
-          max: 1,
-          relationTo: getRelationDirection('1-to-1', field, relationField),
+        /* Validation */
+
+        if (
+          field.isRequired &&
+          relationField.isRequired &&
+          fieldFakerModel.amount !== relationFakerModel.amount
+        ) {
+          /* Required 1-to-1 relation unit amount mismatch. */
+          throw new Error(
+            /* prettier-ignore */
+            mls`
+            | A 1-to-1 required relation ${fieldModel.name}.${field.name}-${relationModel.name} has different number of units assigned.
+            | Please make sure that number of ${fieldModel.name} and ${relationModel.name} match.
+            `,
+          )
+        } else if (
+          !field.isRequired &&
+          relationField.isRequired &&
+          fieldFakerModel.amount < relationFakerModel.amount
+        ) {
+          /* An optional 1-to-1 relation inadequate unit amount. */
+          throw new Error(
+            /* prettier-ignore */
+            mls`
+            | A 1-to-1 relation ${relationModel.name} needs at least ${relationFakerModel.amount} ${fieldModel.name}, but only ${fieldFakerModel.amount} were provided.
+            | Please make sure there's an adequate amount of resources available.
+            `,
+          )
+        } else {
+          /* Sufficient amounts. */
+          return {
+            type: '1-to-1',
+            min: field.isRequired ? 1 : 0,
+            max: 1,
+            relationTo: getRelationDirection('1-to-1', field, relationField),
+          }
         }
       }
     }
@@ -833,6 +865,7 @@ export function seed(
                   max: relation.max,
                 })
 
+                // TODO: `create`
                 switch (relation.type) {
                   case '1-to-1': {
                     /**
