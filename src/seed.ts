@@ -1122,17 +1122,40 @@ export function seed(
      * Creates instances of a requested relation and drains the remaining tasks.
      */
     function getInstances(
-      tasks: Task[],
-      pool: Pool,
+      _tasks: Task[],
+      _pool: Pool,
       model: string,
       n: number = 1,
     ): [Task[], Pool, FixtureData[]] {
-      const instances = _.takeWhile(
-        _.dropWhile(tasks, task => task.model.name === model),
+      /* Find the requested tasks. */
+      const instanceTasks = _.takeWhile(
+        _.dropWhile(_tasks, task => task.model.name === model),
         (task, i) => task.model.name === model && i < n,
       )
+      const remainingTasks = tasks.splice(instanceTasks[0].order, n)
 
-      return [[], {}, []]
+      /* Validation check, though it should never trigger */
+      if (instanceTasks.length !== n) {
+        throw new Error('Something very unexpected occured.')
+      }
+
+      /* Generate mock data for them. */
+      const [finalPool, finalTasks, instances] = instanceTasks.reduce(
+        ([pool, tasks, acc], task) => {
+          const id = getFixtureId()
+          const [fixture, newPool, newTasks] = getMockDataForTask(
+            id,
+            pool,
+            tasks,
+            task,
+          )
+
+          return [newPool, newTasks, acc.concat(fixture)]
+        },
+        [_pool, remainingTasks, []],
+      )
+
+      return [finalTasks, finalPool, instances]
     }
   }
 
