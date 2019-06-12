@@ -1,4 +1,4 @@
-import { seed } from '../../../packages/prisma-faker/src'
+import { seed } from '../../packages/prisma-faker/src'
 import * as photon from '@generated/photon'
 
 debugger

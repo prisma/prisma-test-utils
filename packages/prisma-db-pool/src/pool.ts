@@ -143,13 +143,13 @@ export class Pool {
   /**
    * Makes the instance available.
    */
-  async releaseDBInstance(cwd: string): Promise<void> {
+  async releaseDBInstance(db: DBInstance): Promise<void> {
     /**
      * Find the busy instance, remove that instance and give
      * it to the next in line.
      */
-    const instance = this.dbs.busy.find(db => db.cwd === cwd)
-    this.dbs.busy.filter(db => db.cwd !== cwd)
+    const instance = this.dbs.busy.find(bdb => bdb.cwd === db.cwd)
+    this.dbs.busy.filter(bdb => bdb.cwd !== db.cwd)
 
     /* Add to the next in line or make idle. */
     if (this.waiters.length > 0) {

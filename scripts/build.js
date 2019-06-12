@@ -29,7 +29,8 @@ const directoriesWithTs = directories.filter(p =>
 const args = ['-b', ...directoriesWithTs, ...process.argv.slice(2)]
 
 console.log(chalk.inverse('Building TypeScript definition files'))
-process.stdout.write('Building\n')
+const listOfBuilds = directoriesWithTs.map(dir => `* ${dir}`).join('\n')
+process.stdout.write(`Building\n${listOfBuilds}\n`)
 
 try {
   execa.sync('tsc', args, { stdio: 'inherit' })
