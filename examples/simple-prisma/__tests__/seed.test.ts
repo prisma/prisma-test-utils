@@ -18,7 +18,7 @@ debugger
 
 // test('user is queried correctly', async () => {
 //   const client = new photon.Photon()
-//   const posts = await client.blogs.create()
+//   const posts = await client.blogs({})
 
 //   expect(posts.length).toBe(5)
 

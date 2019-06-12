@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "simple-prisma build",
+      "type": "shell",
+      "command": "npm run build && mkdir -p ${workspaceFolder}/node_modules/@generated && cp -rf ${workspaceFolder}/examples/simple-prisma/node_modules/@generated/ ${workspaceFolder}/dist/node_modules/@generated",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    }
+  ]
+}

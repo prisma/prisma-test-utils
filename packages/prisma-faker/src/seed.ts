@@ -1302,7 +1302,10 @@ export function seed<
         Promise<object[]>
       >(async (acc, f) => {
         return acc.then(async res => {
-          const seed = await photon[f.mapping.model].create(f.data)
+          /* Create a single instance */
+          const seed = await photon[f.mapping.findMany]['create']({
+            data: f.data,
+          })
           return res.concat(seed)
         })
       }, Promise.resolve([]))

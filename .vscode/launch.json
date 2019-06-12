@@ -6,11 +6,8 @@
       "request": "launch",
       "name": "Launch Program",
       "program": "${workspaceFolder}/examples/simple-prisma/__tests__/seed.test.ts",
-      "preLaunchTask": "npm: build",
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js",
-        "${workspaceFolder}/examples/*/node_modules/**/*.js"
-      ]
+      "preLaunchTask": "simple-prisma build",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
     }
   ]
 }
