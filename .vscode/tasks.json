@@ -4,7 +4,7 @@
     {
       "label": "simple-prisma build",
       "type": "shell",
-      "command": "npm run build && mkdir -p ${workspaceFolder}/dist/node_modules/@generated && cp -rf ${workspaceFolder}/examples/simple-prisma/node_modules/@generated/ ${workspaceFolder}/dist/node_modules/@generated",
+      "command": "rm -rf dist && npm run build && mkdir -p ${workspaceFolder}/dist/node_modules/@generated && cp -rf ${workspaceFolder}/examples/simple-prisma/node_modules/@generated/ ${workspaceFolder}/dist/node_modules/@generated",
       "group": "test",
       "presentation": {
         "reveal": "always",
@@ -14,7 +14,7 @@
     {
       "label": "advanced-prisma build",
       "type": "shell",
-      "command": "npm run build && mkdir -p ${workspaceFolder}/dist/node_modules/@generated && cp -rf ${workspaceFolder}/examples/advanced-prisma/node_modules/@generated/ ${workspaceFolder}/dist/node_modules/@generated",
+      "command": "rm -rf dist && npm run build && mkdir -p ${workspaceFolder}/dist/node_modules/@generated && cp -rf ${workspaceFolder}/examples/advanced-prisma/node_modules/@generated/ ${workspaceFolder}/dist/node_modules/@generated",
       "group": "test",
       "presentation": {
         "reveal": "always",

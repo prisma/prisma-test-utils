@@ -1,8 +1,6 @@
 import { Pool } from '../../packages/prisma-db-pool/src'
 import { dmmf, Photon } from '@generated/photon'
 
-debugger
-
 let pool = new Pool({
   dmmf: dmmf,
   pool: {

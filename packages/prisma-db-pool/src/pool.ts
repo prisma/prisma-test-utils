@@ -71,18 +71,23 @@ export class Pool {
           config: {},
         },
       ]
-      const dbFolder = path.join(tmpDir, './db/')
 
       /* Occupy resource pool. */
       this.dbs.booting = [...this.dbs.booting, id]
 
-      /* Migrate Datamodel */
+      /* Migrate Datamodel. */
       const lift = new LiftEngine({
         projectDir: tmpDir,
       })
 
+      const datamodelDmmf = {
+        enums: [],
+        models: [],
+        ...this.dmmf.datamodel,
+      }
+
       const { datamodel } = await lift.convertDmmfToDml({
-        dmmf: JSON.stringify(this.dmmf),
+        dmmf: JSON.stringify(datamodelDmmf),
         config: { datasources, generators: [] },
       })
 
