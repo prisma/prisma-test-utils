@@ -1288,7 +1288,7 @@ export function seed<
    * @param opts
    */
   function seedFixturesToDatabase(
-    photon: any,
+    photon: PhotonType,
     fixtures: Fixture[],
     opts: { silent: boolean } = { silent: false },
   ): object[] | Promise<object[]> {
@@ -1302,7 +1302,7 @@ export function seed<
         Promise<object[]>
       >(async (acc, f) => {
         return acc.then(async res => {
-          const seed = await photon[f.mapping.create](f.data)
+          const seed = await photon[f.mapping.model].create(f.data)
           return res.concat(seed)
         })
       }, Promise.resolve([]))

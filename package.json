@@ -5,7 +5,9 @@
   "main": "index.js",
   "repository": "https://github.com/maticzav/prisma-faker.git",
   "author": "maticzav <matic.zavadlal@gmail.com>",
-  "scripts": {},
+  "scripts": {
+    "build": "node scripts/build.js"
+  },
   "dependencies": {},
   "devDependencies": {
     "husky": "^2.3.0",

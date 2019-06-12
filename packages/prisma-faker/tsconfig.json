@@ -4,5 +4,6 @@
     "rootDir": "src",
     "outDir": "dist",
     "composite": true
-  }
+  },
+  "exclude": ["node_modules", "dist"]
 }

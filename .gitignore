@@ -8,3 +8,4 @@ db/*.db
 .DS_Store
 *.log*
 failed-*.md
+*.tsbuildinfo
