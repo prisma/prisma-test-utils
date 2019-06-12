@@ -5,7 +5,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch Simple Prisma debugger",
-      "program": "${workspaceFolder}/examples/simple-prisma/__tests__/index.test.ts",
+      "program": "${workspaceFolder}/examples/simple-prisma/debug.ignore.ts",
       "preLaunchTask": "simple-prisma build",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
     },
@@ -15,7 +15,8 @@
       "name": "Launch Advanced Prisma debugger",
       "program": "${workspaceFolder}/examples/advanced-prisma/debugger.ignore.ts",
       "preLaunchTask": "advanced-prisma build",
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "runtimeArgs": ["--harmony", "--no-deprecation"]
     }
   ]
 }

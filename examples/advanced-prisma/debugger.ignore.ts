@@ -20,6 +20,8 @@ debugger
 async function run() {
   /* Acquire new db instance. */
   const db = await pool.getDBInstance()
+  console.log(db)
+  debugger
   const client = new Photon(db)
 
   const authors = await client.authors()
