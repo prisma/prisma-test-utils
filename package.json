@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "chalk": "^2.4.2",
+    "execa": "^1.0.0",
     "husky": "^2.3.0",
     "prettier": "^1.17.1",
     "pretty-quick": "^1.11.0",
