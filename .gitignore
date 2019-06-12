@@ -1,5 +1,10 @@
 node_modules
 dist
+migrations
+
+db/*.db
+@generated
 
 .DS_Store
 *.log*
+failed-*.md

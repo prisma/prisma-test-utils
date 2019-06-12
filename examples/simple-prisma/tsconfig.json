@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsproject.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src"],
+  "references": [{ "path": "../../packages/prisma-faker" }]
+}

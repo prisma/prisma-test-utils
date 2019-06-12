@@ -1,9 +1,0 @@
-# Defines your models, each model is mapped to the database as a table.
-datamodel: datamodel.prisma
-
-# Specifies the language and directory for the generated Prisma client.
-generate:
-  - generator: typescript-client
-    output: ./example/prisma/prisma-client
-
-endpoint: https://eu1.prisma.sh/matic-zavadlal-03c51f/prisma-faker/dev
