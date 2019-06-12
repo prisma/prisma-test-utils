@@ -1,2 +1,1 @@
-export { Pool } from './pool'
-export * from './types'
+export { Pool, DBInstance, PoolDefinition } from './pool'

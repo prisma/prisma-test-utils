@@ -305,10 +305,25 @@
   dependencies:
     arg "^4.1.0"
 
+"@prisma/cli@^0.0.7":
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/@prisma/cli/-/cli-0.0.7.tgz#9f0fa3f8595a8e52b928890148cfa47839867925"
+  integrity sha512-pcKqpnQC6RaTSPOWOIsWhhBGbWeEmVFJzBvQCjbiLqukbvPILvqfV8uC0BZsCHBa23jzatoqNmxbXQseG2zYhA==
+  dependencies:
+    arg "^4.1.0"
+
 "@prisma/engine-core@0.0.38":
   version "0.0.38"
   resolved "https://registry.yarnpkg.com/@prisma/engine-core/-/engine-core-0.0.38.tgz#f90567a747ca020eb3f9e7602975f6572681e137"
   integrity sha512-XVCuOQeW7EMmKxRoHa5BeQrLfWl2VM+mw8Ifp34jERyRQIX1xHJqYuGNrLNkIMY6q3m6c4oLlkpF/ZQHfcsA0A==
+  dependencies:
+    cross-fetch "^3.0.2"
+    debug "^4.1.1"
+
+"@prisma/engine-core@0.0.42":
+  version "0.0.42"
+  resolved "https://registry.yarnpkg.com/@prisma/engine-core/-/engine-core-0.0.42.tgz#b22c85fc9e948c50c18662bf3e9e73709fae1cad"
+  integrity sha512-BkXVnztg2BEoyL+KZ5rN/uql7GwEw1r0pndiihDS6rEi5XZcYTMost9TpGl6jzYwwNwtZWM2iKFEQDov9UzJ1Q==
   dependencies:
     cross-fetch "^3.0.2"
     debug "^4.1.1"
@@ -385,6 +400,31 @@
     is-regexp "^2.1.0"
     js-levenshtein "^1.1.6"
     js-yaml "^3.13.1"
+    make-dir "^3.0.0"
+    node-fetch "^2.6.0"
+    prisma-datamodel "^1.36.0-alpha.8"
+    set-value "^3.0.0"
+    strip-ansi "^5.2.0"
+    strip-indent "^3.0.0"
+    v8-callsites "^1.2.1"
+
+"@prisma/photon@^0.0.44":
+  version "0.0.44"
+  resolved "https://registry.yarnpkg.com/@prisma/photon/-/photon-0.0.44.tgz#7ea0b5382b1b28a178a3997cb5c3c1ba6447c8fe"
+  integrity sha512-Ipr8yQM7gXQAUQx6XmNkRLPvpxht+CS4K7hJr3EQnL/ywlqYNZpFMm8WVJUlvYyHxXOSVZOWALjjSki21zIpyA==
+  dependencies:
+    "@prisma/cli" "^0.0.7"
+    "@prisma/engine-core" "0.0.42"
+    "@prisma/fetch-engine" "^0.0.19"
+    callsites "^3.1.0"
+    chalk "^2.4.2"
+    dotenv "^8.0.0"
+    flat-map-polyfill "^0.3.8"
+    fs-monkey "^0.3.3"
+    indent-string "^4.0.0"
+    is-obj "^2.0.0"
+    is-regexp "^2.1.0"
+    js-levenshtein "^1.1.6"
     make-dir "^3.0.0"
     node-fetch "^2.6.0"
     prisma-datamodel "^1.36.0-alpha.8"

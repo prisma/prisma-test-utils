@@ -1,17 +1,31 @@
-import { LiftEngine } from '@prisma/lift'
+import { LiftEngine, DataSource } from '@prisma/lift'
+import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import pify from 'pify'
-import { prismaConfig } from './constants'
-import { PoolDefinition, DBInstance } from './types'
 import { withDefault } from './utils'
 
 const writeFile = pify(fs.writeFile)
 const makeDir = pify(fs.mkdir)
 
+export type PoolDefinition = {
+  dmmf: DMMF.Document
+  pool: {
+    min?: number
+    max: number
+  }
+  cwd?: string
+}
+
+export type DBInstance = {
+  cwd: string
+  datamodel: string
+}
+
 export class Pool {
-  private datamodel: string
+  private dmmf: DMMF.Document
+  private cwd: string
   private dbs: {
     booting: string[]
     idle: DBInstance[]
@@ -21,7 +35,8 @@ export class Pool {
   private capacity: number
 
   constructor(definition: PoolDefinition) {
-    this.datamodel = definition.datamodel
+    this.dmmf = definition.dmmf
+    this.cwd = withDefault(process.cwd(), definition.cwd)
     this.dbs = {
       booting: [],
       idle: [],
@@ -44,58 +59,41 @@ export class Pool {
    */
   private async createDBInstance(): Promise<DBInstance> {
     try {
+      /* Constants */
+
       const id = Math.random()
         .toString(36)
         .slice(2)
       const tmpDir = os.tmpdir()
-      const prismaYMLPath = path.join(tmpDir, './prismal.yml')
+      const datasources: DataSource[] = [
+        {
+          name: 'db',
+          connectorType: 'sqlite',
+          url: `file:${tmpDir}`,
+          config: {},
+        },
+      ]
       const dbFolder = path.join(tmpDir, './db/')
 
       /* Occupy resource pool. */
       this.dbs.booting = [...this.dbs.booting, id]
 
-      /* Write prisma.yml file and create db-dir. */
-      await Promise.all([
-        writeFile(prismaYMLPath, prismaConfig),
-        makeDir(dbFolder),
-      ])
-
       /* Migrate Datamodel */
       const lift = new LiftEngine({
-        projectDir: tmpDir,
+        projectDir: this.cwd,
       })
 
-      const { datamodelSteps, errors } = await lift.inferMigrationSteps({
-        dataModel: this.datamodel,
-        migrationId: id,
-        assumeToBeApplied: [],
+      const { datamodel } = await lift.convertDmmfToDml({
+        dmmf: JSON.stringify(this.dmmf.datamodel),
+        dataSources: datasources,
       })
-
-      if (errors.length !== 0) {
-        throw new Error(errors.toString())
-      }
-
-      await lift.applyMigration({
-        migrationId: id,
-        steps: datamodelSteps,
-        force: true,
-      })
-
-      const progress = () =>
-        lift.migrationProgess({
-          migrationId: id,
-        })
-
-      while ((await progress()).status !== 'Success') {
-        /* Just wait */
-      }
 
       /* Release resource pool. */
       this.dbs.booting = this.dbs.booting.filter(dbId => dbId !== id)
 
       return {
-        prismaConfig: prismaConfig,
-        prismaYmlPath: prismaYMLPath,
+        cwd: tmpDir,
+        datamodel: datamodel,
       }
     } catch (err) {
       throw err
@@ -145,15 +143,13 @@ export class Pool {
   /**
    * Makes the instance available.
    */
-  async releaseDBInstance(prismaYmlPath: string): Promise<void> {
+  async releaseDBInstance(cwd: string): Promise<void> {
     /**
      * Find the busy instance, remove that instance and give
      * it to the next in line.
      */
-    const instance = this.dbs.busy.find(
-      db => db.prismaYmlPath === prismaYmlPath,
-    )
-    this.dbs.busy.filter(db => db.prismaYmlPath !== prismaYmlPath)
+    const instance = this.dbs.busy.find(db => db.cwd === cwd)
+    this.dbs.busy.filter(db => db.cwd !== cwd)
 
     /* Add to the next in line or make idle. */
     if (this.waiters.length > 0) {
