@@ -4,7 +4,9 @@
     "rootDir": ".",
     "outDir": "../../dist/examples/simple-prisma"
   },
-  "references": [{ "path": "../../packages/prisma-faker" }],
-  "include": ["."],
+  "references": [
+    { "path": "../../packages/prisma-faker" },
+    { "path": "../../packages/prisma-db-pool" }
+  ],
   "exclude": ["__tests__"]
 }

@@ -9,3 +9,4 @@ db/*.db
 *.log*
 failed-*.md
 *.tsbuildinfo
+*.lock

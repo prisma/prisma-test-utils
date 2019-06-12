@@ -5,6 +5,6 @@
     "outDir": "../../dist/examples/simple-prisma"
   },
   "references": [{ "path": "../../packages/prisma-faker" }],
-  "include": ["."],
+  "include": ["./**/*.ts"],
   "exclude": ["__tests__"]
 }

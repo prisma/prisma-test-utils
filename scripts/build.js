@@ -22,6 +22,43 @@ const directories = [...packageDirs, ...exampleDirs]
   .map(file => path.resolve(PACKAGES_DIR, file))
   .filter(f => fs.lstatSync(path.resolve(f)).isDirectory())
 
+/* Prebuild */
+
+const directoriesWithPrebuildStep = directories.filter(p => {
+  const pkgJson = path.resolve(p, 'package.json')
+  return (
+    fs.existsSync(pkgJson) &&
+    require(pkgJson).scripts &&
+    require(pkgJson).scripts.prebuild
+  )
+})
+
+console.log(chalk.inverse('Prebuilding packages...'))
+const listOfPreBuilds = directoriesWithPrebuildStep
+  .map(dir => `* ${dir}`)
+  .join('\n')
+process.stdout.write(`Prebuilding\n${listOfPreBuilds}\n`)
+
+try {
+  directoriesWithPrebuildStep.forEach(dir => {
+    const args = [
+      '--cwd',
+      dir,
+      'run',
+      ...require(path.resolve(dir, 'package.json')).scripts.prebuild.split(' '),
+    ]
+    execa.sync('yarn', args, { stdio: 'inherit' })
+    process.stdout.write(`${chalk.reset.inverse.bold.green(dir)}\n`)
+  })
+} catch (e) {
+  process.stdout.write('\n')
+  console.error(chalk.inverse.red(`Unable to prebuild packages.`))
+  console.error(e.stack)
+  process.exit(1)
+}
+
+/* Build */
+
 const directoriesWithTs = directories.filter(p =>
   fs.existsSync(path.resolve(p, 'tsconfig.json')),
 )
@@ -41,5 +78,5 @@ try {
     chalk.inverse.red('Unable to build TypeScript definition files'),
   )
   console.error(e.stack)
-  process.exitCode = 1
+  process.exit(1)
 }

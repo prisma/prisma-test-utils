@@ -1,5 +1,5 @@
 {
-  "name": "prisma-db-pool",
+  "name": "@prisma/pool",
   "version": "1.0.0",
   "repository": "https://github.com/prisma/db-testing-pool.git",
   "author": "Matic Zavadlal <matic.zavadlal@gmail.com>",

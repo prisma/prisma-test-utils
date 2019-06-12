@@ -30,17 +30,3 @@ test('authors are queried correctly', async () => {
   client.disconnect()
   pool.releaseDBInstance(db)
 })
-
-test('posts are queried correctly', async () => {
-  /* Acquire an instance. */
-  const db = await pool.getDBInstance()
-  const client = new Photon(db)
-
-  const posts = await client.posts()
-
-  expect(posts.length).toBe(3)
-
-  /* Release an instance. */
-  client.disconnect()
-  pool.releaseDBInstance(db)
-})

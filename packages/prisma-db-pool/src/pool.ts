@@ -48,16 +48,14 @@ export class Pool {
     /* Start init */
 
     for (let index = 0; index < withDefault(0, definition.pool.min); index++) {
-      this.createDBInstance().then(db => {
-        this.dbs.idle = [...this.dbs.idle, db]
-      })
+      this.createDBInstance()
     }
   }
 
   /**
    * Creates a new DB instances and lifts a migration.
    */
-  private async createDBInstance(): Promise<DBInstance> {
+  private async createDBInstance(): Promise<void> {
     try {
       /* Constants */
 
@@ -80,7 +78,7 @@ export class Pool {
 
       /* Migrate Datamodel */
       const lift = new LiftEngine({
-        projectDir: this.cwd,
+        projectDir: tmpDir,
       })
 
       const { datamodel } = await lift.convertDmmfToDml({
@@ -88,12 +86,56 @@ export class Pool {
         dataSources: datasources,
       })
 
+      const {
+        datamodelSteps,
+        errors: stepErrors,
+      } = await lift.inferMigrationSteps({
+        migrationId: id,
+        dataModel: datamodel,
+        assumeToBeApplied: [],
+      })
+
+      if (stepErrors.length > 0) {
+        throw stepErrors
+      }
+
+      const { errors } = await lift.applyMigration({
+        force: true,
+        migrationId: id,
+        steps: datamodelSteps,
+      })
+
+      if (errors.length > 0) {
+        throw errors
+      }
+
+      const progress = () =>
+        lift.migrationProgess({
+          migrationId: id,
+        })
+
+      while ((await progress()).status !== 'Success') {
+        /* Just wait */
+      }
+
       /* Release resource pool. */
       this.dbs.booting = this.dbs.booting.filter(dbId => dbId !== id)
 
-      return {
+      const instance: DBInstance = {
         cwd: tmpDir,
         datamodel: datamodel,
+      }
+
+      /**
+       * If there's a waiter in line allocate an instance, otherwise make it idle.
+       */
+      if (this.waiters.length > 0) {
+        const [waiter, ...remainingWaiters] = this.waiters
+        this.waiters = remainingWaiters
+        this.dbs.busy = [...this.dbs.busy, instance]
+        waiter.allocate(instance)
+      } else {
+        this.dbs.idle = [...this.dbs.idle, instance]
       }
     } catch (err) {
       throw err
@@ -122,19 +164,18 @@ export class Pool {
       this.dbs.busy = [...this.dbs.busy, db]
 
       return db
-    } else if (
-      this.dbs.idle.length + this.dbs.busy.length + this.dbs.booting.length <
-      this.capacity
-    ) {
-      /* If full capacity is not yet reached create new instance. */
-      const db = await this.createDBInstance()
-      this.dbs.busy = [...this.dbs.busy, db]
-
-      return db
     } else {
       /* Add to the line. */
       const waiter = new Waiter()
       this.waiters = [...this.waiters, waiter]
+
+      /* If full capacity is not yet reached create new instance. */
+      if (
+        this.dbs.idle.length + this.dbs.busy.length < this.capacity &&
+        this.dbs.booting.length === 0
+      ) {
+        this.createDBInstance()
+      }
 
       return waiter.wait()
     }
@@ -151,7 +192,7 @@ export class Pool {
     const instance = this.dbs.busy.find(bdb => bdb.cwd === db.cwd)
     this.dbs.busy.filter(bdb => bdb.cwd !== db.cwd)
 
-    /* Add to the next in line or make idle. */
+    /* Allocate to the next waiter in line or make idle. */
     if (this.waiters.length > 0) {
       const [waiter, ...remainingWaiters] = this.waiters
       this.waiters = remainingWaiters
