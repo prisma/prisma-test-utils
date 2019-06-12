@@ -4,6 +4,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "sourceMap": true,
+
     "noUnusedLocals": false,
     "esModuleInterop": true,
     "suppressExcessPropertyErrors": false,
