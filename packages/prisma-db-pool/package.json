@@ -5,8 +5,8 @@
   "author": "Matic Zavadlal <matic.zavadlal@gmail.com>",
   "scripts": {},
   "dependencies": {
-    "@prisma/lift": "^0.0.31",
-    "@prisma/photon": "^0.0.44",
+    "@prisma/lift": "^0.0.38",
+    "@prisma/photon": "^0.0.48",
     "pify": "^4.0.1"
   },
   "devDependencies": {

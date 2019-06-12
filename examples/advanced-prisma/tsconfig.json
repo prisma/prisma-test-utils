@@ -2,7 +2,7 @@
   "extends": "../../tsproject.json",
   "compilerOptions": {
     "rootDir": ".",
-    "outDir": "../../dist/examples/simple-prisma"
+    "outDir": "../../dist/examples/advanced-prisma"
   },
   "references": [
     { "path": "../../packages/prisma-faker" },

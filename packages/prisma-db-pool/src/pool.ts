@@ -82,8 +82,8 @@ export class Pool {
       })
 
       const { datamodel } = await lift.convertDmmfToDml({
-        dmmf: JSON.stringify(this.dmmf.datamodel),
-        dataSources: datasources,
+        dmmf: JSON.stringify(this.dmmf),
+        config: { datasources, generators: [] },
       })
 
       const {
@@ -91,8 +91,9 @@ export class Pool {
         errors: stepErrors,
       } = await lift.inferMigrationSteps({
         migrationId: id,
-        dataModel: datamodel,
+        datamodel: datamodel,
         assumeToBeApplied: [],
+        sourceConfig: datamodel,
       })
 
       if (stepErrors.length > 0) {
@@ -103,6 +104,7 @@ export class Pool {
         force: true,
         migrationId: id,
         steps: datamodelSteps,
+        sourceConfig: datamodel,
       })
 
       if (errors.length > 0) {
@@ -112,6 +114,7 @@ export class Pool {
       const progress = () =>
         lift.migrationProgess({
           migrationId: id,
+          sourceConfig: datamodel,
         })
 
       while ((await progress()).status !== 'Success') {

@@ -36,7 +36,7 @@ export function seed<
   },
   schemaDef?: Faker | SeedOptions<PhotonOptions>,
   _opts?: SeedOptions<PhotonOptions>,
-): object[] | Promise<object[]> {
+): Promise<object[]> {
   /* Argument manipulation */
 
   const __opts = typeof schemaDef === 'object' ? schemaDef : _opts
@@ -63,11 +63,10 @@ export function seed<
   const fixtures: Fixture[] = getFixturesFromTasks(fakerSchema, tasks)
 
   /* Creates Photon instance and pushes data. */
-  const photon = new client.Photon(opts.photon)
-  const seeds = seedFixturesToDatabase(photon, fixtures, {
+
+  const seeds = seedFixturesToDatabase(client.Photon, opts.photon, fixtures, {
     silent: opts.silent,
   })
-  photon.disconnect()
 
   return seeds
 
@@ -1287,30 +1286,40 @@ export function seed<
    * @param fixtures
    * @param opts
    */
-  function seedFixturesToDatabase(
-    photon: PhotonType,
+  async function seedFixturesToDatabase(
+    Photon: { new (opts: PhotonOptions): PhotonType },
+    photonOptions: PhotonOptions,
     fixtures: Fixture[],
     opts: { silent: boolean } = { silent: false },
-  ): object[] | Promise<object[]> {
+  ): Promise<object[]> {
     if (opts.silent) {
       return _.sortBy(fixtures, f => f.order).map(f => f.data)
     } else {
-      /**
-       * Generates a chain of promises that create DB instances.
-       */
-      const actions = _.sortBy(fixtures, f => f.order).reduce<
-        Promise<object[]>
-      >(async (acc, f) => {
-        return acc.then(async res => {
-          /* Create a single instance */
-          const seed = await photon[f.mapping.findMany]['create']({
-            data: f.data,
+      const photon = new Photon(photonOptions)
+      try {
+        /**
+         * Generates a chain of promises that create DB instances.
+         */
+        const actions = _.sortBy(fixtures, f => f.order).reduce<
+          Promise<object[]>
+        >(async (acc, f) => {
+          return acc.then(async res => {
+            /* Create a single instance */
+            const seed = await photon[f.mapping.findMany]['create']({
+              data: f.data,
+            })
+            return res.concat(seed)
           })
-          return res.concat(seed)
-        })
-      }, Promise.resolve([]))
+        }, Promise.resolve([]))
 
-      return actions
+        /* Internally executes the chain. */
+        const seeds = await actions
+        return seeds
+      } catch (err) {
+        throw err
+      } finally {
+        photon.disconnect()
+      }
     }
   }
 }

@@ -13,7 +13,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch Advanced Prisma debugger",
-      "program": "${workspaceFolder}/examples/advanced-prisma/debugger.ignore.ts",
+      "program": "${workspaceFolder}/examples/advanced-prisma/debug.ignore.ts",
       "preLaunchTask": "advanced-prisma build",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
       "runtimeArgs": ["--harmony", "--no-deprecation"]

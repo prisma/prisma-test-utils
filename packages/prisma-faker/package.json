@@ -12,7 +12,7 @@
     "reset": "yarn prisma reset -p ./example/prisma/prisma.yml"
   },
   "dependencies": {
-    "@prisma/photon": "^0.0.38",
+    "@prisma/photon": "^0.0.48",
     "@types/chance": "^1.0.4",
     "chance": "^1.0.18",
     "lodash": "^4.17.11",
