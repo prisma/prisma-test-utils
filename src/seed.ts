@@ -1,12 +1,8 @@
-import { DMMF } from '@prisma/dmmf'
-import Field from '@prisma/dmmf/dist/Field'
-import Mapping from '@prisma/dmmf/dist/Mapping'
-import Model from '@prisma/dmmf/dist/Model'
+import { ExternalDMMF } from '@prisma/photon/runtime/dmmf-types'
 import Chance from 'chance'
 import _ from 'lodash'
 import { Dictionary } from 'lodash'
 import mls from 'multilines'
-import { readPrismaYml, findDatamodelAndComputeSchema } from './datamodel'
 import {
   Faker,
   FakerBag,
@@ -17,10 +13,11 @@ import {
 } from './types'
 import { withDefault } from './utils'
 
-export interface SeedOptions {
+export interface SeedOptions<PhotonOptions> {
   seed?: number
   silent?: boolean
   instances?: number
+  photon?: PhotonOptions
 }
 
 /**
@@ -29,10 +26,13 @@ export interface SeedOptions {
  * @param fakerSchemaDefinition
  * @param opts
  */
-export function seed(
-  photon: any,
-  schemaDef?: Faker | SeedOptions,
-  _opts?: SeedOptions,
+export function seed<PhotonType, PhotonOptions>(
+  client: {
+    dmmf: ExternalDMMF.Document
+    Photon: { new (opts?: PhotonOptions): PhotonType }
+  },
+  schemaDef?: Faker | SeedOptions<PhotonOptions>,
+  _opts?: SeedOptions<PhotonOptions>,
 ): object[] | Promise<object[]> {
   /* Argument manipulation */
 
@@ -52,18 +52,15 @@ export function seed(
   const bag: FakerBag = { faker }
   const fakerSchema = typeof schemaDef === 'function' ? schemaDef(bag) : {}
 
-  /* Prisma Model evaluation */
-
-  const prisma = readPrismaYml()
-  const dmmf = findDatamodelAndComputeSchema(prisma.configPath, prisma.config)
-
   /* Fixture calculations */
 
-  const orders: Order[] = getOrdersFromDMMF(dmmf)
+  const orders: Order[] = getOrdersFromDMMF(client.dmmf)
   const steps: Step[] = getStepsFromOrders(orders)
   const tasks: Task[] = getTasksFromSteps(steps)
   const fixtures: Fixture[] = getFixturesFromTasks(fakerSchema, tasks)
 
+  /* Creates Photon instance and pushes data. */
+  const photon = new client.Photon(opts.photon)
   const seeds = seedFixturesToDatabase(photon, fixtures, {
     silent: opts.silent,
   })
@@ -87,8 +84,8 @@ export function seed(
    * future data and calculate relations.
    */
   type Order = {
-    model: Model
-    mapping: Mapping
+    model: ExternalDMMF.Model
+    mapping: ExternalDMMF.Mapping
     amount: number
     relations: Dictionary<Relation>
   }
@@ -98,8 +95,8 @@ export function seed(
   type Relation = {
     type: RelationType
     relationTo: string
-    field: Field
-    relation: Field // signifies the back relation
+    field: ExternalDMMF.Field
+    relation: ExternalDMMF.Field // signifies the back relation
     min: number
     max: number
   }
@@ -112,16 +109,16 @@ export function seed(
    */
   type Step = {
     order: number // the creation order of a step, starts with 0
-    model: Model
-    mapping: Mapping
+    model: ExternalDMMF.Model
+    mapping: ExternalDMMF.Mapping
     amount: number // number of instances created in this step
     relations: Dictionary<Relation>
   }
 
   type Task = {
     order: number // the creation order of a step, starts with 0
-    model: Model
-    mapping: Mapping
+    model: ExternalDMMF.Model
+    mapping: ExternalDMMF.Mapping
     relations: Dictionary<Relation>
   }
 
@@ -135,8 +132,8 @@ export function seed(
   type Fixture = {
     order: number // starts with 0
     id: string
-    model: Model
-    mapping: Mapping
+    model: ExternalDMMF.Model
+    mapping: ExternalDMMF.Mapping
     data: FixtureData
     relations: Dictionary<{
       type: RelationType
@@ -153,7 +150,7 @@ export function seed(
    *
    * @param dmmf
    */
-  function getOrdersFromDMMF(dmmf: DMMF): Order[] {
+  function getOrdersFromDMMF(dmmf: ExternalDMMF.Document): Order[] {
     return dmmf.datamodel.models.map(model => {
       /* User defined settings */
       const fakerModel = getFakerModel(fakerSchema, model.name)
@@ -163,7 +160,7 @@ export function seed(
 
       /* Generate relations based on provided restrictions. */
       const relations: Order['relations'] = model.fields
-        .filter(f => f.isRelation())
+        .filter(f => f.kind === 'relation')
         .reduce<Order['relations']>((acc, field) => {
           const fakerField: RelationConstraint = _.get(
             fakerModel,
@@ -181,6 +178,7 @@ export function seed(
                 dmmf.datamodel.models,
                 fakerSchema,
                 field,
+                model,
                 fakerField,
               )
 
@@ -227,6 +225,16 @@ export function seed(
     }
 
     /**
+     * Finds the prescribed model from the DMMF models.
+     */
+    function getDMMFModel(
+      models: ExternalDMMF.Model[],
+      model: string,
+    ): ExternalDMMF.Model {
+      return models.find(m => m.name === model)
+    }
+
+    /**
      * Derives the relation type, relation direction, and constraints from the field
      * and definition.
      *
@@ -249,16 +257,17 @@ export function seed(
      * We presume that the field is a relation.
      */
     function getRelationType(
-      allModels: Model[],
+      allModels: ExternalDMMF.Model[],
       schema: FakerSchema,
-      field: Field,
+      field: ExternalDMMF.Field,
+      fieldModel: ExternalDMMF.Model,
       definition: RelationConstraint,
     ): {
       type: RelationType
       min: number
       max: number
       relationTo: string
-      relation: Field
+      relation: ExternalDMMF.Field
     } {
       /**
        * model A {
@@ -266,7 +275,6 @@ export function seed(
        * }
        */
       /* Field definitions */
-      const fieldModel = field.getModel()
       const fieldFakerModel = getFakerModel(schema, fieldModel.name)
 
       /**
@@ -274,16 +282,19 @@ export function seed(
        *
        * NOTE: relaitonField is a back reference to the examined model.
        */
-      const relationModel = allModels.find(m => m.name === field.type)
-      const relationField = withDefault<Field>(
+      const relationModel = getDMMFModel(allModels, field.type)
+      const relationField = withDefault<ExternalDMMF.Field>(
         {
-          kind: '',
+          kind: 'relation',
           name: '',
           isRequired: false,
           isList: false,
           isId: false,
           type: field.type,
-        } as Field,
+          isGenerated: false,
+          isUnique: false,
+          dbName: '',
+        },
         relationModel.fields.find(f => f.type === fieldModel.name),
       )
       const relationFakerModel = getFakerModel(schema, field.type)
@@ -463,8 +474,8 @@ export function seed(
      */
     function getRelationDirection(
       relationType: RelationType,
-      field: Field,
-      relation: Field,
+      field: ExternalDMMF.Field,
+      relation: ExternalDMMF.Field,
     ): string {
       /**
        * Relation is binding if it's a required relation and not a list,
@@ -608,7 +619,7 @@ export function seed(
    */
   function getStepsFromOrders(orders: Order[]): Step[] {
     type Pool = Dictionary<{
-      model: Model
+      model: ExternalDMMF.Model
       units: number
     }>
 
@@ -840,7 +851,7 @@ export function seed(
     ): [FixtureData, Pool, Task[]] {
       const [finalPool, finalTasks, fixture] = task.model.fields.reduce(
         ([pool, tasks, acc], field) => {
-          const fieldModel = field.getModel()
+          const fieldModel = task.model
 
           /* Custom field mocks */
 
@@ -898,7 +909,7 @@ export function seed(
             default: {
               /* Relations */
 
-              if (!field.isRelation()) {
+              if (!(field.kind === 'relation')) {
                 /* Fallback for unsupported scalars */
                 throw new Error(
                   /* prettier-ignore */
@@ -931,7 +942,7 @@ export function seed(
                    * order creation step, we can ignore it now.
                    */
                   if (relation.relationTo === fieldModel.name) {
-                    if (relation.field.isOptional()) {
+                    if (!relation.field.isRequired) {
                       /* Insert the ID of an instance into the pool. */
                       const newPool = insertIDInstancesIntoPool(
                         pool,
@@ -963,7 +974,7 @@ export function seed(
                     }
                   } else {
                     /* Create an instance and connect it to the relation. */
-                    if (relation.relation.isOptional()) {
+                    if (!relation.relation.isRequired) {
                       const [newPool, ids] = getIDInstancesFromPool(
                         pool,
                         fieldModel.name,
