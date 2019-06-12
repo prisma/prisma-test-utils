@@ -10,6 +10,7 @@
     "clean": "rm -rf ./node_modules/ && rm -rf ./*/node_modules/"
   },
   "devDependencies": {
+    "chalk": "^2.4.2",
     "husky": "^2.3.0",
     "prettier": "^1.17.1",
     "pretty-quick": "^1.11.0",
