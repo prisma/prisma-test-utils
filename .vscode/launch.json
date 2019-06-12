@@ -4,9 +4,17 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program",
-      "program": "${workspaceFolder}/examples/simple-prisma/__tests__/seed.test.ts",
+      "name": "Launch Simple Prisma debugger",
+      "program": "${workspaceFolder}/examples/simple-prisma/__tests__/index.test.ts",
       "preLaunchTask": "simple-prisma build",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Advanced Prisma debugger",
+      "program": "${workspaceFolder}/examples/advanced-prisma/__tests__/index.test.ts",
+      "preLaunchTask": "advanced-prisma build",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
     }
   ]

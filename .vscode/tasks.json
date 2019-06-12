@@ -10,6 +10,16 @@
         "reveal": "always",
         "panel": "new"
       }
+    },
+    {
+      "label": "advanced-prisma build",
+      "type": "shell",
+      "command": "npm run build && mkdir -p ${workspaceFolder}/node_modules/@generated && cp -rf ${workspaceFolder}/examples/advanced-prisma/node_modules/@generated/ ${workspaceFolder}/dist/node_modules/@generated",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
     }
   ]
 }
