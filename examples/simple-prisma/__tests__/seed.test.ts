@@ -1,5 +1,5 @@
-import { seed } from '@prisma/faker'
-import photon from '@generated/photon'
+import { seed } from '../../../packages/prisma-faker/src'
+import * as photon from '@generated/photon'
 
 beforeAll(async () => {
   debugger
@@ -13,4 +13,6 @@ test('user is queried correctly', async () => {
   const posts = await client.blogs()
 
   expect(posts.length).toBe(5)
+
+  client.disconnect()
 })

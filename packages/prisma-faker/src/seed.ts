@@ -1,4 +1,4 @@
-import { ExternalDMMF } from '@prisma/photon/runtime/dmmf-types'
+import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import Chance from 'chance'
 import _ from 'lodash'
 import { Dictionary } from 'lodash'
@@ -26,9 +26,12 @@ export interface SeedOptions<PhotonOptions> {
  * @param fakerSchemaDefinition
  * @param opts
  */
-export function seed<PhotonType, PhotonOptions>(
+export function seed<
+  PhotonType extends { disconnect: () => void },
+  PhotonOptions
+>(
   client: {
-    dmmf: ExternalDMMF.Document
+    dmmf: DMMF.Document
     Photon: { new (opts?: PhotonOptions): PhotonType }
   },
   schemaDef?: Faker | SeedOptions<PhotonOptions>,
@@ -47,7 +50,7 @@ export function seed<PhotonType, PhotonOptions>(
 
   /* FakerBag, SchemaDefinition */
 
-  const faker = new Chance(_opts.seed)
+  const faker = new Chance(opts.seed)
 
   const bag: FakerBag = { faker }
   const fakerSchema = typeof schemaDef === 'function' ? schemaDef(bag) : {}
@@ -64,6 +67,7 @@ export function seed<PhotonType, PhotonOptions>(
   const seeds = seedFixturesToDatabase(photon, fixtures, {
     silent: opts.silent,
   })
+  photon.disconnect()
 
   return seeds
 
@@ -84,8 +88,8 @@ export function seed<PhotonType, PhotonOptions>(
    * future data and calculate relations.
    */
   type Order = {
-    model: ExternalDMMF.Model
-    mapping: ExternalDMMF.Mapping
+    model: DMMF.Model
+    mapping: DMMF.Mapping
     amount: number
     relations: Dictionary<Relation>
   }
@@ -95,8 +99,8 @@ export function seed<PhotonType, PhotonOptions>(
   type Relation = {
     type: RelationType
     relationTo: string
-    field: ExternalDMMF.Field
-    relation: ExternalDMMF.Field // signifies the back relation
+    field: DMMF.Field
+    relation: DMMF.Field // signifies the back relation
     min: number
     max: number
   }
@@ -109,16 +113,16 @@ export function seed<PhotonType, PhotonOptions>(
    */
   type Step = {
     order: number // the creation order of a step, starts with 0
-    model: ExternalDMMF.Model
-    mapping: ExternalDMMF.Mapping
+    model: DMMF.Model
+    mapping: DMMF.Mapping
     amount: number // number of instances created in this step
     relations: Dictionary<Relation>
   }
 
   type Task = {
     order: number // the creation order of a step, starts with 0
-    model: ExternalDMMF.Model
-    mapping: ExternalDMMF.Mapping
+    model: DMMF.Model
+    mapping: DMMF.Mapping
     relations: Dictionary<Relation>
   }
 
@@ -132,8 +136,8 @@ export function seed<PhotonType, PhotonOptions>(
   type Fixture = {
     order: number // starts with 0
     id: string
-    model: ExternalDMMF.Model
-    mapping: ExternalDMMF.Mapping
+    model: DMMF.Model
+    mapping: DMMF.Mapping
     data: FixtureData
     relations: Dictionary<{
       type: RelationType
@@ -150,7 +154,7 @@ export function seed<PhotonType, PhotonOptions>(
    *
    * @param dmmf
    */
-  function getOrdersFromDMMF(dmmf: ExternalDMMF.Document): Order[] {
+  function getOrdersFromDMMF(dmmf: DMMF.Document): Order[] {
     return dmmf.datamodel.models.map(model => {
       /* User defined settings */
       const fakerModel = getFakerModel(fakerSchema, model.name)
@@ -160,7 +164,7 @@ export function seed<PhotonType, PhotonOptions>(
 
       /* Generate relations based on provided restrictions. */
       const relations: Order['relations'] = model.fields
-        .filter(f => f.kind === 'relation')
+        .filter(f => f.kind === 'object')
         .reduce<Order['relations']>((acc, field) => {
           const fakerField: RelationConstraint = _.get(
             fakerModel,
@@ -227,10 +231,7 @@ export function seed<PhotonType, PhotonOptions>(
     /**
      * Finds the prescribed model from the DMMF models.
      */
-    function getDMMFModel(
-      models: ExternalDMMF.Model[],
-      model: string,
-    ): ExternalDMMF.Model {
+    function getDMMFModel(models: DMMF.Model[], model: string): DMMF.Model {
       return models.find(m => m.name === model)
     }
 
@@ -257,17 +258,17 @@ export function seed<PhotonType, PhotonOptions>(
      * We presume that the field is a relation.
      */
     function getRelationType(
-      allModels: ExternalDMMF.Model[],
+      allModels: DMMF.Model[],
       schema: FakerSchema,
-      field: ExternalDMMF.Field,
-      fieldModel: ExternalDMMF.Model,
+      field: DMMF.Field,
+      fieldModel: DMMF.Model,
       definition: RelationConstraint,
     ): {
       type: RelationType
       min: number
       max: number
       relationTo: string
-      relation: ExternalDMMF.Field
+      relation: DMMF.Field
     } {
       /**
        * model A {
@@ -283,9 +284,9 @@ export function seed<PhotonType, PhotonOptions>(
        * NOTE: relaitonField is a back reference to the examined model.
        */
       const relationModel = getDMMFModel(allModels, field.type)
-      const relationField = withDefault<ExternalDMMF.Field>(
+      const relationField = withDefault<DMMF.Field>(
         {
-          kind: 'relation',
+          kind: 'object',
           name: '',
           isRequired: false,
           isList: false,
@@ -474,8 +475,8 @@ export function seed<PhotonType, PhotonOptions>(
      */
     function getRelationDirection(
       relationType: RelationType,
-      field: ExternalDMMF.Field,
-      relation: ExternalDMMF.Field,
+      field: DMMF.Field,
+      relation: DMMF.Field,
     ): string {
       /**
        * Relation is binding if it's a required relation and not a list,
@@ -619,7 +620,7 @@ export function seed<PhotonType, PhotonOptions>(
    */
   function getStepsFromOrders(orders: Order[]): Step[] {
     type Pool = Dictionary<{
-      model: ExternalDMMF.Model
+      model: DMMF.Model
       units: number
     }>
 
@@ -909,7 +910,7 @@ export function seed<PhotonType, PhotonOptions>(
             default: {
               /* Relations */
 
-              if (!(field.kind === 'relation')) {
+              if (!(field.kind === 'object')) {
                 /* Fallback for unsupported scalars */
                 throw new Error(
                   /* prettier-ignore */
