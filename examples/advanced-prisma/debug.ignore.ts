@@ -20,8 +20,7 @@ async function run() {
     const client = new Photon(db)
 
     const authors = await client.authors()
-
-    expect(authors.length).toBe(3)
+    console.log(authors)
 
     /* Release the instance. */
     client.disconnect()

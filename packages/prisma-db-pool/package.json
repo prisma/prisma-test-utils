@@ -6,12 +6,10 @@
   "scripts": {},
   "dependencies": {
     "@prisma/lift": "^0.0.38",
-    "@prisma/photon": "^0.0.48",
-    "pify": "^4.0.1"
+    "@prisma/photon": "^0.0.48"
   },
   "devDependencies": {
-    "@types/node": "^12.0.4",
-    "@types/pify": "^3.0.2"
+    "@types/node": "^12.0.4"
   },
   "license": "MIT"
 }

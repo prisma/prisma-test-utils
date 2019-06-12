@@ -1,13 +1,8 @@
 import { LiftEngine, DataSource } from '@prisma/lift'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
-import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import pify from 'pify'
 import { withDefault } from './utils'
-
-const writeFile = pify(fs.writeFile)
-const makeDir = pify(fs.mkdir)
 
 export type PoolDefinition = {
   dmmf: DMMF.Document
@@ -15,7 +10,6 @@ export type PoolDefinition = {
     min?: number
     max: number
   }
-  cwd?: string
 }
 
 export type DBInstance = {
@@ -25,7 +19,6 @@ export type DBInstance = {
 
 export class Pool {
   private dmmf: DMMF.Document
-  private cwd: string
   private dbs: {
     booting: string[]
     idle: DBInstance[]
@@ -36,7 +29,6 @@ export class Pool {
 
   constructor(definition: PoolDefinition) {
     this.dmmf = definition.dmmf
-    this.cwd = withDefault(process.cwd(), definition.cwd)
     this.dbs = {
       booting: [],
       idle: [],
@@ -63,11 +55,13 @@ export class Pool {
         .toString(36)
         .slice(2)
       const tmpDir = os.tmpdir()
+      const dbFolder = path.join(tmpDir, `prisma-pool-${id}`)
+      const dbFile = path.join(dbFolder, './db.db')
       const datasources: DataSource[] = [
         {
           name: 'db',
           connectorType: 'sqlite',
-          url: `file:${tmpDir}`,
+          url: `file:${dbFile}`,
           config: {},
         },
       ]
