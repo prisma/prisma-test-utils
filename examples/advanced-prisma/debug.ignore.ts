@@ -20,53 +20,40 @@ async function run() {
     debugger
     const client = new photon.Photon(db)
 
-    debugger
-
-    const foo = await client.blogs.create({
-      data: {
-        id: '70c6744ccba25f4c8a060dac0',
-        name: 'Ro celel.',
-        viewCount: 2,
-      },
-    })
-
-    debugger
-
-    const data = await seed(photon, bag => ({
-      Blog: {
-        amount: 3,
-        factory: {
-          name: () => bag.faker.sentence({ words: 2 }),
-          viewCount: () => bag.faker.natural({ max: 25 }),
-          posts: {
-            max: 3,
-          },
-          authors: {
-            max: 2,
+    const data = await seed(
+      photon,
+      bag => ({
+        Blog: {
+          amount: 3,
+          factory: {
+            name: () => bag.faker.sentence({ words: 2 }),
+            viewCount: () => bag.faker.natural({ max: 25 }),
+            posts: {
+              max: 3,
+            },
+            authors: {
+              max: 2,
+            },
           },
         },
-      },
-      Author: {
-        amount: 4,
-        factory: {
-          name: bag.faker.name,
+        Author: {
+          amount: 4,
+          factory: {
+            name: bag.faker.name,
+          },
         },
+        Post: {
+          amount: 10,
+          title: () => bag.faker.sentence({ words: 5 }),
+        },
+      }),
+      {
+        photon: db,
       },
-      Post: {
-        amount: 10,
-        title: () => bag.faker.sentence({ words: 5 }),
-      },
-    }))
+    )
 
     debugger
 
-    const blog = await client.blogs.create({
-      data: {
-        id: '123=123',
-        name: 'Matic',
-        viewCount: 20,
-      },
-    })
     const blogs = await client.blogs()
     console.log(blogs)
 

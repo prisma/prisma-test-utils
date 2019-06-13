@@ -1312,6 +1312,10 @@ export function seed<
     opts: { silent: boolean } = { silent: false },
   ): Promise<object[]> {
     if (opts.silent) {
+      /**
+       * Create Map, reduce ID references, and return model-type based
+       * collection of instances.
+       */
       return _.sortBy(fixtures, f => f.order).map(f => f.data)
     } else {
       const photon = new Photon(photonOptions)
@@ -1323,14 +1327,15 @@ export function seed<
           Promise<object[]>
         >(async (acc, f) => {
           return acc.then(async res => {
-            console.log(f.order, f.data)
-            debugger
             /* Create a single instance */
-            const seed = await photon[f.mapping.findMany]['create']({
-              data: f.data,
-            })
-            console.log({ seed })
-            debugger
+            // TODO:
+            let seed
+            try {
+              seed = await photon[f.mapping.findMany]['create']({
+                data: f.data,
+              })
+            } catch (err) {}
+
             return res.concat(seed)
           })
         }, Promise.resolve([]))
