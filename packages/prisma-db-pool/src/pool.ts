@@ -54,9 +54,8 @@ export class Pool {
       const id = Math.random()
         .toString(36)
         .slice(2)
-      const tmpDir = os.tmpdir()
-      const dbFolder = path.join(tmpDir, `prisma-pool-${id}`)
-      const dbFile = path.join(dbFolder, './db.db')
+      const tmpDir = path.join(os.tmpdir(), `prisma-pool-${id}`)
+      const dbFile = path.join(tmpDir, './db.db')
       const datasources: DataSource[] = [
         {
           name: 'db',

@@ -4,6 +4,11 @@ datasource db {
   default  = true
 }
 
+generator photon {
+  provider = "typescript"
+  output = "node_modules/@generated/photon"
+}
+
 model Blog {
   id Int @id
   name String

@@ -11,7 +11,7 @@
   "devDependencies": {
     "@types/jest": "^24.0.13",
     "jest": "^24.8.0",
-    "prisma2": "^0.0.9",
+    "prisma2": "^0.0.15",
     "ts-jest": "^24.0.2"
   }
 }

@@ -305,17 +305,10 @@
   dependencies:
     arg "^4.1.0"
 
-"@prisma/cli@^0.0.9":
-  version "0.0.9"
-  resolved "https://registry.yarnpkg.com/@prisma/cli/-/cli-0.0.9.tgz#b594badeae7f3b3b0f029d4846a66bca7299f4fa"
-  integrity sha512-kL/fTh7iWtjZG8U2FfrluzdnRAYx0wyjiVRxs6DfeS9OlVdM5cInoFJ2Vhj1bPXT3GR/T+TM2vDnEsQLfQN63Q==
-  dependencies:
-    arg "^4.1.0"
-
-"@prisma/engine-core@0.0.42":
-  version "0.0.42"
-  resolved "https://registry.yarnpkg.com/@prisma/engine-core/-/engine-core-0.0.42.tgz#b22c85fc9e948c50c18662bf3e9e73709fae1cad"
-  integrity sha512-BkXVnztg2BEoyL+KZ5rN/uql7GwEw1r0pndiihDS6rEi5XZcYTMost9TpGl6jzYwwNwtZWM2iKFEQDov9UzJ1Q==
+"@prisma/engine-core@0.0.43":
+  version "0.0.43"
+  resolved "https://registry.yarnpkg.com/@prisma/engine-core/-/engine-core-0.0.43.tgz#7e6eb53fb54986b76e413216d787d4ee7a9ac728"
+  integrity sha512-wQ+HSL4vZxGh6OP3TMZ627tWYDD8M7D6OHyfeEyv48lOM1ij2BFpDWR2vUt4prCo9s9auqUn71peeFJ/YwYrJA==
   dependencies:
     cross-fetch "^3.0.2"
     debug "^4.1.1"
@@ -334,10 +327,10 @@
     p-retry "^4.1.0"
     progress "^2.0.3"
 
-"@prisma/lift@^0.0.38":
-  version "0.0.38"
-  resolved "https://registry.yarnpkg.com/@prisma/lift/-/lift-0.0.38.tgz#c7710a9729f6714a2feb9a9a85422984eb1fa333"
-  integrity sha512-H2bQI+gU1B/RrtxBEDXLEYlbap959qPvrrDChaZeAV3+3Cbq353hMReRm7WjqTh73jqY1F5hGIvXqBVhxHvaJQ==
+"@prisma/lift@^0.0.39":
+  version "0.0.39"
+  resolved "https://registry.yarnpkg.com/@prisma/lift/-/lift-0.0.39.tgz#0eeb5bf9f7059577da8387c5dd3e692892413a51"
+  integrity sha512-6zxyQ4r+xawtM+Gu7A/nojJbiuJjD/nn1qkAQwdfXHKhFYztTn7UzB9Elf0zZkabwZblqY8ZBUVzXGgepUOttw==
   dependencies:
     "@prisma/cli" "^0.0.10"
     "@prisma/fetch-engine" "^0.0.19"
@@ -362,15 +355,14 @@
     strip-ansi "^5.2.0"
     strip-indent "^3.0.0"
 
-"@prisma/photon@^0.0.48":
-  version "0.0.48"
-  resolved "https://registry.yarnpkg.com/@prisma/photon/-/photon-0.0.48.tgz#a732c22052c2237561a0e38169aab551fdcec436"
-  integrity sha512-gTj+2u8N2Cs9g+GJkGJ35TMihqClwxKgGfV+IjebfMxvBpIwU9E+vHLaeaAzhEWVJPqEwt5KcUtJTD1OlUtBqA==
+"@prisma/photon@^0.0.51":
+  version "0.0.51"
+  resolved "https://registry.yarnpkg.com/@prisma/photon/-/photon-0.0.51.tgz#4e9e8d9c56fa83ab14852966e9f05bfdb4f6a4bd"
+  integrity sha512-xWbGPce/hs8C5vz0o3T2Kdxsj0BWMVDO5yct+KPE+7JjP+yWKp9RPPDEAlz4vVeNUwSPHYcIzLSnlQuE6x2b4A==
   dependencies:
-    "@prisma/cli" "^0.0.9"
-    "@prisma/engine-core" "0.0.42"
+    "@prisma/cli" "^0.0.10"
+    "@prisma/engine-core" "0.0.43"
     "@prisma/fetch-engine" "^0.0.19"
-    callsites "^3.1.0"
     chalk "^2.4.2"
     dotenv "^8.0.0"
     flat-map-polyfill "^0.3.8"
@@ -386,7 +378,6 @@
     set-value "^3.0.0"
     strip-ansi "^5.2.0"
     strip-indent "^3.0.0"
-    v8-callsites "^1.2.1"
 
 "@types/babel__core@^7.1.0":
   version "7.1.2"
@@ -889,7 +880,7 @@ callsites@^2.0.0:
   resolved "https://registry.yarnpkg.com/callsites/-/callsites-2.0.0.tgz#06eb84f00eea413da86affefacbffb36093b3c50"
   integrity sha1-BuuE8A7qQT2oav/vrL/7Ngk7PFA=
 
-callsites@^3.0.0, callsites@^3.1.0:
+callsites@^3.0.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/callsites/-/callsites-3.1.0.tgz#b3630abd8943432f54b3f0519238e33cd7df2f73"
   integrity sha512-P8BjAsXvZS+VIDUI11hHCQEv74YT67YUi5JJFNWIqL235sBmjX4+qx9Muvls5ivyNENctx46xQLQ3aTuE7ssaQ==
@@ -3600,10 +3591,10 @@ prisma-datamodel@^1.36.0-alpha.8:
     pluralize "^7.0.0"
     popsicle "10"
 
-prisma2@^0.0.9:
-  version "0.0.9"
-  resolved "https://registry.yarnpkg.com/prisma2/-/prisma2-0.0.9.tgz#641e96f685f23283785247f7b0a59e43d8b94863"
-  integrity sha512-f+3LHIU363T7/ulXamcDZYrEi4+LCFgL8WwkJJhWCJZrBdjw+SJoqmK9us3y/QjhfVHFuWgasGdexu0nER4s3w==
+prisma2@^0.0.15:
+  version "0.0.15"
+  resolved "https://registry.yarnpkg.com/prisma2/-/prisma2-0.0.15.tgz#e0691b127922dd5933967575f391a27e3ecd7879"
+  integrity sha512-CeM8Sa1xdP0hQJ/1EK1oYqstjC55wkvOs03jphhmVHuONmaq2qbVr3QPoIjpzHICzIeVaJh63Ni8QbiWq40LRg==
 
 process-nextick-args@~2.0.0:
   version "2.0.0"
@@ -4466,11 +4457,6 @@ uuid@^3.3.2:
   version "3.3.2"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.3.2.tgz#1b4af4955eb3077c501c23872fc6513811587131"
   integrity sha512-yXJmeNaw3DnnKAOKJE51sL/ZaYfWJRl1pK9dr19YFCu0ObS231AB1/LbqTKRAQ5kw8A90rA6fr4riOUpTZvQZA==
-
-v8-callsites@^1.2.1:
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/v8-callsites/-/v8-callsites-1.2.1.tgz#3ca4e2dedf50eb489e37056ed64b0255e95ef386"
-  integrity sha1-PKTi3t9Q60ieNwVu1ksCVele84Y=
 
 validate-npm-package-license@^3.0.1:
   version "3.0.4"
