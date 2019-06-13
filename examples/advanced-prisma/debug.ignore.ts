@@ -20,6 +20,18 @@ async function run() {
     debugger
     const client = new photon.Photon(db)
 
+    debugger
+
+    const foo = await client.blogs.create({
+      data: {
+        id: '70c6744ccba25f4c8a060dac0',
+        name: 'Ro celel.',
+        viewCount: 2,
+      },
+    })
+
+    debugger
+
     const data = await seed(photon, bag => ({
       Blog: {
         amount: 3,
