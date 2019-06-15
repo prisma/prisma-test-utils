@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsproject.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "../../dist/examples/advanced-prisma"
+  },
+  "references": [
+    { "path": "../../packages/prisma-faker" },
+    { "path": "../../packages/prisma-db-pool" }
+  ],
+  "exclude": ["__tests__"]
+}

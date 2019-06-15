@@ -1,0 +1,17 @@
+{
+  "name": "simple-prisma-demo",
+  "version": "0.0.0",
+  "scripts": {
+    "prebuild": "prisma2 generate",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@prisma/faker": "1.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.14",
+    "jest": "^24.8.0",
+    "prisma2": "^0.0.35",
+    "ts-jest": "^24.0.2"
+  }
+}

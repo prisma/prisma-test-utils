@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsproject.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "../../dist/packages/prisma-faker",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true
+  }
+}

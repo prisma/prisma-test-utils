@@ -1,0 +1,30 @@
+{
+  "name": "prisma-test-utils",
+  "private": true,
+  "version": "0.1.1",
+  "files": [
+    "dist/packages/**/*"
+  ],
+  "repository": "https://github.com/prisma/prisma-test-utils.git",
+  "author": "maticzav <matic.zavadlal@gmail.com>",
+  "scripts": {
+    "build:dev": "rimiraf dist && node scripts/build.js",
+    "build:prod": "rimraf dist && node scripts/build.js --prod",
+    "clean": "rm -rf ./node_modules/ && rm -rf ./*/node_modules/"
+  },
+  "devDependencies": {
+    "chalk": "^2.4.2",
+    "execa": "^1.0.0",
+    "husky": "^2.3.0",
+    "prettier": "^1.17.1",
+    "pretty-quick": "^1.11.1",
+    "rimraf": "^2.6.3",
+    "ts-node": "^8.3.0",
+    "typescript": "^3.5.2"
+  },
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "license": "MIT"
+}
