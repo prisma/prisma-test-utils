@@ -4,10 +4,6 @@
 
 Please checkout the `/examples` directory or the standalone [`prisma-faker-example`](https://github.com/divyenduz/prisma-faker-example) readme.
 
-## Workflow
-
-1.
-
 ### Seeding
 
 In testing workflows, generating seed data usually includes a lot of boilerplate. We either rely on hardcoded fixtures that need to be migrated with changing code.
