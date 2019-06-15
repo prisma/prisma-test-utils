@@ -1,1 +1,1 @@
-# prisma-faker
+# prisma-test-utils
