@@ -4,6 +4,8 @@ const path = require('path')
 const chalk = require('chalk')
 const execa = require('execa')
 
+const [_node, _path, env] = process.argv
+
 /* Constants */
 
 const PACKAGES_DIR = path.resolve(__dirname, '../packages')
@@ -14,11 +16,22 @@ const EXAMPLES_DIR = path.resolve(__dirname, '../examples')
 const packageDirs = findProjectsInPath(PACKAGES_DIR)
 const exampleDirs = findProjectsInPath(EXAMPLES_DIR)
 
+function getCompileDirs(env) {
+  switch (env) {
+    case '--prod': {
+      return packageDirs
+    }
+    default: {
+      return [...packageDirs, ...exampleDirs]
+    }
+  }
+}
+
 function findProjectsInPath(dir) {
   return fs.readdirSync(dir).map(file => path.resolve(dir, file))
 }
 
-const directories = [...packageDirs, ...exampleDirs]
+const directories = getCompileDirs(env)
   .map(file => path.resolve(PACKAGES_DIR, file))
   .filter(f => fs.lstatSync(path.resolve(f)).isDirectory())
 
@@ -63,7 +76,7 @@ const directoriesWithTs = directories.filter(p =>
   fs.existsSync(path.resolve(p, 'tsconfig.json')),
 )
 
-const args = ['-b', ...directoriesWithTs, ...process.argv.slice(2)]
+const args = ['-b', ...directoriesWithTs]
 
 console.log(chalk.inverse('Building TypeScript definition files'))
 const listOfBuilds = directoriesWithTs.map(dir => `* ${dir}`).join('\n')

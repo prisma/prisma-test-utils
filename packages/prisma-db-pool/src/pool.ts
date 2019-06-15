@@ -115,7 +115,7 @@ export class Pool {
           sourceConfig: datamodel,
         })
 
-      while ((await progress()).status !== 'Success') {
+      while ((await progress()).status !== 'MigrationSuccess') {
         /* Just wait */
       }
 
@@ -190,7 +190,7 @@ export class Pool {
      * Find the busy instance, remove that instance and give
      * it to the next in line.
      */
-    const instance = this.dbs.busy.find(bdb => bdb.cwd === db.cwd)
+    const instance = this.dbs.busy.find(bdb => bdb.cwd === db.cwd)!
     this.dbs.busy.filter(bdb => bdb.cwd !== db.cwd)
 
     /* Allocate to the next waiter in line or make idle. */
@@ -213,7 +213,7 @@ export class Pool {
 
 class Waiter {
   private promise: Promise<DBInstance>
-  private resolve: (dbi: DBInstance) => void
+  private resolve: (dbi: DBInstance) => void = () => {}
 
   constructor() {
     this.promise = new Promise((resolve, reject) => {

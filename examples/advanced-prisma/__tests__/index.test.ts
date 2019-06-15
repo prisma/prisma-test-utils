@@ -1,6 +1,6 @@
 import { Pool } from '../../../packages/prisma-db-pool/src'
 import { seed, Faker } from '../../../packages/prisma-faker/src'
-import * as photon from '@generated/photon'
+import Photon, { dmmf } from '@generated/photon'
 
 const schema: Faker = bag => ({
   Blog: {
@@ -32,7 +32,7 @@ let pool: Pool
 
 beforeAll(async () => {
   pool = new Pool({
-    dmmf: photon.dmmf,
+    dmmf: dmmf,
     pool: {
       min: 3,
       max: 5,
@@ -48,17 +48,14 @@ test.only('authors are created correctly', async () => {
   /* Acquire new db instance. */
   const db = await pool.getDBInstance()
 
+  const client = new Photon(db)
   console.log({ db })
 
-  const data = await seed(photon, schema, {
-    photon: db,
-    silent: false,
-  })
+  const data = await seed(client, dmmf, schema)
 
   console.log({ db, data: JSON.stringify(data) })
 
   /* Create authors. */
-  const client = new photon.Photon(db)
   const authors = await client.authors()
 
   expect(authors.length).toBe(4)
@@ -71,14 +68,10 @@ test.only('authors are created correctly', async () => {
 test('blogs are created correctly', async () => {
   /* Acquire new db instance. */
   const db = await pool.getDBInstance()
-  const data = await seed(photon, schema, {
-    photon: db,
-  })
-
-  console.log({ db, data })
+  const client = new Photon(db)
+  const data = await seed(client, dmmf, schema)
 
   /* Create authors. */
-  const client = new photon.Photon(db)
   const blogs = await client.blogs()
 
   expect(blogs.length).toBe(3)

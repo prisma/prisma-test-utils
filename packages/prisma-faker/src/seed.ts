@@ -9,15 +9,15 @@ import {
   FakerSchema,
   ID,
   RelationConstraint,
-  FixtureDefinition,
+  FixtureDefinition as FixtureDefinitionConstructor,
+  FixtureFieldDefinition,
 } from './types'
 import { withDefault } from './utils'
 
-export interface SeedOptions<PhotonOptions> {
+export interface SeedOptions {
   seed?: number
-  silent?: boolean
+  persist?: boolean
   instances?: number
-  photon?: PhotonOptions
 }
 
 /**
@@ -26,16 +26,11 @@ export interface SeedOptions<PhotonOptions> {
  * @param fakerSchemaDefinition
  * @param opts
  */
-export function seed<
-  PhotonType extends { disconnect: () => void },
-  PhotonOptions
->(
-  client: {
-    dmmf: DMMF.Document
-    Photon: { new (opts?: PhotonOptions): PhotonType }
-  },
-  schemaDef?: Faker | SeedOptions<PhotonOptions>,
-  _opts?: SeedOptions<PhotonOptions>,
+export function seed<PhotonType>(
+  client: PhotonType,
+  dmmf: DMMF.Document,
+  schemaDef?: Faker | SeedOptions,
+  _opts?: SeedOptions,
 ): Promise<object[]> {
   /* Argument manipulation */
 
@@ -43,7 +38,7 @@ export function seed<
 
   const opts = {
     seed: 42,
-    silent: false,
+    persist: true,
     instances: 5,
     ...__opts,
   }
@@ -57,15 +52,15 @@ export function seed<
 
   /* Fixture calculations */
 
-  const orders: Order[] = getOrdersFromDMMF(client.dmmf)
+  const orders: Order[] = getOrdersFromDMMF(dmmf)
   const steps: Step[] = getStepsFromOrders(orders)
   const tasks: Task[] = getTasksFromSteps(steps)
   const fixtures: Fixture[] = getFixturesFromTasks(fakerSchema, tasks)
 
   /* Creates Photon instance and pushes data. */
 
-  const seeds = seedFixturesToDatabase(client.Photon, opts.photon, fixtures, {
-    silent: opts.silent,
+  const seeds = seedFixturesToDatabase(client, fixtures, {
+    persist: opts.persist,
   })
 
   return seeds
@@ -154,12 +149,19 @@ export function seed<
    * @param dmmf
    */
   function getOrdersFromDMMF(dmmf: DMMF.Document): Order[] {
+    type FixtureDefinition = {
+      amount: number
+      factory: Dictionary<
+        FixtureFieldDefinition | (() => FixtureFieldDefinition)
+      >
+    }
+
     return dmmf.datamodel.models.map(model => {
       /* User defined settings */
       const fakerModel = getFakerModel(fakerSchema, model.name)
 
       /* Find Photon mappings for seeding step */
-      const mapping = dmmf.mappings.find(m => m.model === model.name)
+      const mapping = dmmf.mappings.find(m => m.model === model.name)!
 
       /* Generate relations based on provided restrictions. */
       const relations: Order['relations'] = model.fields
@@ -221,17 +223,20 @@ export function seed<
       schema: FakerSchema,
       model: string,
     ): FixtureDefinition {
-      return _.get(schema, model, {
+      const definitionConstructor = _.get(schema, model)
+
+      return {
         amount: opts.instances,
-        factory: undefined,
-      })
+        factory: {},
+        ...definitionConstructor,
+      }
     }
 
     /**
      * Finds the prescribed model from the DMMF models.
      */
     function getDMMFModel(models: DMMF.Model[], model: string): DMMF.Model {
-      return models.find(m => m.name === model)
+      return models.find(m => m.name === model)!
     }
 
     /**
@@ -497,7 +502,7 @@ export function seed<
              *
              * -> Create B while creating A, the order doesn't matter.
              */
-            return _.head([field.type, relation.type].sort())
+            return _.head([field.type, relation.type].sort())!
           } else if (!fieldBinding && relationBinding) {
             /**
              * model A {
@@ -533,7 +538,7 @@ export function seed<
              *
              * -> The order doesn't matter just be consistent.
              */
-            return _.head([field.type, relation.type].sort())
+            return _.head([field.type, relation.type].sort())!
           }
         }
         case '1-to-many': {
@@ -601,7 +606,7 @@ export function seed<
            *
            * -> The order doesn't matter, just be consistent.
            */
-          return _.head([field.type, relation.type].sort())
+          return _.head([field.type, relation.type].sort())!
         }
       }
     }
@@ -852,7 +857,9 @@ export function seed<
       _tasks: Task[],
       task: Task,
     ): [FixtureData, Pool, Task[]] {
-      const [finalPool, finalTasks, fixture] = task.model.fields.reduce(
+      const [finalPool, finalTasks, fixture] = task.model.fields.reduce<
+        [Pool, Task[], FixtureData]
+      >(
         ([pool, tasks, acc], field) => {
           const fieldModel = task.model
 
@@ -860,10 +867,10 @@ export function seed<
 
           if (
             schema[task.model.name] &&
-            schema[task.model.name].factory &&
-            schema[task.model.name].factory[field.name]
+            schema[task.model.name]!.factory &&
+            schema[task.model.name]!.factory![field.name]
           ) {
-            const mock = schema[task.model.name].factory[field.name]
+            const mock = schema[task.model.name]!.factory![field.name]
             switch (typeof mock) {
               case 'function': {
                 const value = mock.call(faker)
@@ -938,7 +945,6 @@ export function seed<
                   `,
                 )
               }
-
               /* Resources calculation */
               const relation = task.relations[field.name]
               const units = faker.integer({
@@ -1017,7 +1023,7 @@ export function seed<
                             {
                               ...acc,
                               [field.name]: {
-                                connect: { id },
+                                connect: { id: id! },
                               },
                             },
                           ]
@@ -1057,23 +1063,6 @@ export function seed<
                     )
 
                     return [newPool, tasks, acc]
-                    // const [newTasks, newPool, instances] = getInstances(
-                    //   tasks,
-                    //   pool,
-                    //   relation.field.type,
-                    //   units,
-                    // )
-
-                    // return [
-                    //   newPool,
-                    //   newTasks,
-                    //   {
-                    //     ...acc,
-                    //     [field.name]: {
-                    //       create: instances,
-                    //     },
-                    //   },
-                    // ]
                   } else {
                     /* Create this instance and connect to others. */
                     const [newPool, ids] = getIDInstancesFromPool(
@@ -1083,9 +1072,12 @@ export function seed<
                       units,
                     )
 
-                    const connections = ids.reduce((acc, id) => {
-                      return [...acc, { id }]
-                    }, [])
+                    const connections = ids.reduce<{ id: string }[]>(
+                      (acc, id) => {
+                        return [...acc, { id }]
+                      },
+                      [],
+                    )
 
                     return [
                       newPool,
@@ -1131,9 +1123,12 @@ export function seed<
                       units,
                     )
 
-                    const connections = ids.reduce((acc, id) => {
-                      return [...acc, { id }]
-                    }, [])
+                    const connections = ids.reduce<{ id: string }[]>(
+                      (acc, id) => {
+                        return [...acc, { id }]
+                      },
+                      [],
+                    )
 
                     return [
                       newPool,
@@ -1145,24 +1140,6 @@ export function seed<
                         },
                       },
                     ]
-                    // /* Create relation instances while creating this model instance. */
-                    // const [newTasks, newPool, instances] = getInstances(
-                    //   tasks,
-                    //   pool,
-                    //   relation.field.type,
-                    //   units,
-                    // )
-
-                    // return [
-                    //   newPool,
-                    //   newTasks,
-                    //   {
-                    //     ...acc,
-                    //     [field.name]: {
-                    //       create: instances,
-                    //     },
-                    //   },
-                    // ]
                   }
                 }
                 case 'many-to-many': {
@@ -1197,9 +1174,12 @@ export function seed<
                       units,
                     )
 
-                    const connections = ids.reduce((acc, id) => {
-                      return [...acc, { id }]
-                    }, [])
+                    const connections = ids.reduce<{ id: string }[]>(
+                      (acc, id) => {
+                        return [...acc, { id }]
+                      },
+                      [],
+                    )
 
                     return [
                       newPool,
@@ -1262,7 +1242,7 @@ export function seed<
       n: number = 1,
     ): [Task[], Pool, FixtureData[]] {
       /* Find the requested tasks. */
-      const [instanceTasks, remainingTasks] = _tasks.reduce(
+      const [instanceTasks, remainingTasks] = _tasks.reduce<[Task[], Task[]]>(
         ([acc, otherTasks], task) => {
           if (task.model.name === model && acc.length < n) {
             return [acc.concat(task), otherTasks]
@@ -1279,7 +1259,9 @@ export function seed<
       }
 
       /* Generate mock data for them. */
-      const [finalPool, finalTasks, instances] = instanceTasks.reduce(
+      const [finalPool, finalTasks, instances] = instanceTasks.reduce<
+        [Pool, Task[], FixtureData[]]
+      >(
         ([pool, tasks, acc], task) => {
           const id = getFixtureId()
           const [fixture, newPool, newTasks] = getMockDataForTask(
@@ -1306,48 +1288,59 @@ export function seed<
    * @param opts
    */
   async function seedFixturesToDatabase(
-    Photon: { new (opts: PhotonOptions): PhotonType },
-    photonOptions: PhotonOptions,
+    photon: any, // TODO: generate photon type
     fixtures: Fixture[],
-    opts: { silent: boolean } = { silent: false },
+    opts: { persist: boolean } = { persist: false },
   ): Promise<object[]> {
-    if (opts.silent) {
+    if (!opts.persist) {
       /**
        * Create Map, reduce ID references, and return model-type based
        * collection of instances.
        */
       return _.sortBy(fixtures, f => f.order).map(f => f.data)
     } else {
-      const photon = new Photon(photonOptions)
-      try {
-        /**
-         * Generates a chain of promises that create DB instances.
-         */
-        const actions = _.sortBy(fixtures, f => f.order).reduce<
-          Promise<object[]>
-        >(async (acc, f) => {
-          return acc.then(async res => {
-            /* Create a single instance */
-            // TODO:
-            let seed
-            try {
-              seed = await photon[f.mapping.findMany]['create']({
-                data: f.data,
-              })
-            } catch (err) {}
+      /**
+       * Generates a chain of promises that create DB instances.
+       */
+      const actions = _.sortBy(fixtures, f => f.order).reduce<
+        Promise<{ data: any; model: string }[]>
+      >(async (acc, f) => {
+        return acc.then(async res => {
+          /* Create a single instance */
 
-            return res.concat(seed)
+          // TODO:
+          let seed
+          try {
+            seed = await photon[f.mapping.findMany!]['create']({
+              data: f.data,
+            })
+          } catch (err) {}
+
+          return res.concat({
+            data: seed,
+            model: f.mapping.model,
           })
-        }, Promise.resolve([]))
+        })
+      }, Promise.resolve([]))
 
-        /* Internally executes the chain. */
-        const seeds = await actions
-        return seeds
-      } catch (err) {
-        throw err
-      } finally {
-        photon.disconnect()
-      }
+      /* Internally executes the chain. */
+      const seeds: { data: any; model: string }[] = (await actions) as any
+      return seeds.reduce(
+        (acc, seed) => {
+          if (!Boolean(acc[seed.model])) {
+            return {
+              ...acc,
+              [`${seed.model}`]: [seed.data],
+            }
+          } else {
+            return {
+              ...acc,
+              [`${seed.model}`]: acc[seed.model].concat(seed.data),
+            }
+          }
+        },
+        {} as any,
+      )
     }
   }
 }

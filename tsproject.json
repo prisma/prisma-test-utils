@@ -4,7 +4,9 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "sourceMap": true,
+    "skipLibCheck": true,
 
+    "strict": false,
     "noUnusedLocals": false,
     "esModuleInterop": true,
     "suppressExcessPropertyErrors": false,
