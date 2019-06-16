@@ -1,5 +1,5 @@
 import { Pool } from '../../../packages/prisma-db-pool/src'
-import { seed, Faker } from '../../../packages/prisma-faker/src'
+import { seed, Faker } from '../../../src'
 import Photon, { dmmf } from '@generated/photon'
 
 const schema: Faker = bag => ({

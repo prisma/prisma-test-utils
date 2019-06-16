@@ -1,5 +1,5 @@
 import { Pool } from '../../packages/prisma-db-pool/src'
-import { seed } from '../../packages/prisma-faker/src'
+import { seed } from '../../src'
 import Photon, { dmmf } from '@generated/photon'
 
 let pool = new Pool({

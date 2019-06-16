@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+
     "target": "es6",
     "module": "commonjs",
     "moduleResolution": "node",
@@ -12,5 +15,6 @@
     "suppressExcessPropertyErrors": false,
     "noFallthroughCasesInSwitch": true
   },
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
