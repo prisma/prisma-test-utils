@@ -1,6 +1,6 @@
 {
   "name": "prisma-test-utils",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "files": [],
   "repository": "https://github.com/prisma/prisma-test-utils.git",
   "author": "maticzav <matic.zavadlal@gmail.com>",
