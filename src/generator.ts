@@ -1,6 +1,5 @@
 import { GeneratorDefinition, GeneratorOptions } from '@prisma/cli'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
-import ncc from '@zeit/ncc'
 import _ from 'lodash'
 import mls from 'multilines'
 import * as path from 'path'
@@ -23,7 +22,7 @@ export async function generatePrismaTestUtils(
     ['photonPath'],
     '@generated/photon',
   )
-  const staticPath = path.join(__dirname, '../static/index.ts')
+  const staticPath = path.resolve(__dirname, './_static/index.js')
 
   /**
    * The generation process is separated into three parts:
@@ -36,7 +35,7 @@ export async function generatePrismaTestUtils(
   const dmmf = require(photonPath).dmmf as DMMF.Document
 
   const seedLib = mls`
-  | import { seed as staticSeed, SeedOptions } from './_static'
+  | import { seed as staticSeed, SeedOptions } from '${staticPath}'
   |
   | const dmmf = ${JSON.stringify(dmmf)};
   |
@@ -44,7 +43,7 @@ export async function generatePrismaTestUtils(
   | export { SeedOptions };
   `
   const poolLib = mls`
-  | import { pool as staticPool, PoolOptions } from './_static'
+  | import { pool as staticPool, PoolOptions } from '${staticPath}'
   |
   | const dmmf = ${JSON.stringify(dmmf)};
   |
@@ -53,12 +52,10 @@ export async function generatePrismaTestUtils(
   `
 
   /* Static files */
-  const staticLib = await ncc(staticPath)
 
   const vfs: VirtualFS = {
     'pool.js': poolLib,
     'seed.js': seedLib,
-    '_static.js': staticLib.files['index.js'].source,
   }
 
   /**
