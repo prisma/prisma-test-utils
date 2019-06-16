@@ -35,29 +35,27 @@ export async function compileVFS(vfs: VirtualFS): Promise<VirtualFS> {
     suppressOutputPathCheck: false,
   }
 
+  debugger
   const files = Object.keys(vfs).filter(file => file.endsWith('.ts'))
-
-  console.log({ files })
 
   /* Compiler Configuration */
 
   const compilerHost = createCompilerHost(compilerOptions)
-  const { getSourceFile } = compilerHost
+  const { getSourceFile, fileExists } = compilerHost
 
-  compilerHost.getSourceFile = fileName => {
+  compilerHost.getSourceFile = (fileName, target) => {
     /**
      * Load from the VFS or the system.
      */
     if (Object.hasOwnProperty(fileName)) {
-      return createSourceFile(
-        fileName,
-        vfs[fileName],
-        ScriptTarget.ES2015,
-        true,
-      )
+      return createSourceFile(fileName, vfs[fileName], target, true)
     } else {
-      return getSourceFile.call(compilerHost, fileName)
+      return getSourceFile(fileName, target)
     }
+  }
+
+  compilerHost.fileExists = fileName => {
+    return fileExists(fileName)
   }
 
   compilerHost.writeFile = (fileName, data) => {

@@ -4,19 +4,10 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Simple Prisma debugger",
-      "program": "${workspaceFolder}/examples/simple-prisma/debug.ignore.ts",
-      "preLaunchTask": "simple-prisma build",
+      "name": "Launch Debugger",
+      "program": "${workspaceFolder}/src/test.ts",
+      "preLaunchTask": "tsc: build - tsconfig.json",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
-    },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Launch Advanced Prisma debugger",
-      "program": "${workspaceFolder}/examples/advanced-prisma/debug.ignore.ts",
-      "preLaunchTask": "advanced-prisma build",
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "runtimeArgs": ["--harmony", "--no-deprecation"]
     }
   ]
 }

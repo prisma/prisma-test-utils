@@ -1,5 +1,5 @@
 import { generatePrismaTestUtils } from './generator'
-
+debugger
 generatePrismaTestUtils({
   cwd: process.cwd(),
   generator: {
