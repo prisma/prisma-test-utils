@@ -5,8 +5,6 @@ import {
   createCompilerHost,
   createProgram,
   createSourceFile,
-  ModuleKind,
-  ScriptTarget,
 } from 'typescript'
 import { promisify } from 'util'
 

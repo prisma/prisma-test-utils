@@ -4,7 +4,7 @@ import * as os from 'os'
 import * as path from 'path'
 import { withDefault } from '../utils'
 
-export type PoolDefinition = {
+export type PoolOptions = {
   pool: {
     max?: number
   }
@@ -26,7 +26,7 @@ export default (dmmf: DMMF.Document) =>
     private waiters: Waiter[]
     private capacity: number
 
-    constructor(definition: PoolDefinition) {
+    constructor(definition: PoolOptions) {
       this.dbs = {
         booting: [],
         idle: [],

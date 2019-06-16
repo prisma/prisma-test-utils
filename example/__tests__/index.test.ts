@@ -50,7 +50,7 @@ test(
     const client = new Photon(db)
     console.log({ db })
 
-    const data = await seed({})
+    const data = await seed({ client })
 
     console.log({ db, data: JSON.stringify(data) })
 

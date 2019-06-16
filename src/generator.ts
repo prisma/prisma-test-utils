@@ -24,7 +24,7 @@ export async function generatePrismaTestUtils(
     ['photonPath'],
     '@generated/photon',
   )
-  const staticPath = path.resolve(__dirname, './static/index.ts')
+  const staticPath = path.resolve(__dirname, './static/index')
 
   /**
    * The generation process is separated into three parts:
@@ -37,17 +37,20 @@ export async function generatePrismaTestUtils(
   const dmmf = require(photonPath).dmmf as DMMF.Document
 
   const seedLib = mls`
+  | import Photon from '${photonPath}'
+  | import { DMMF } from '@prisma/photon/runtime/dmmf-types' 
   | import { seed as staticSeed, SeedOptions } from '${staticPath}'
   |
-  | const dmmf = ${JSON.stringify(dmmf)};
+  | const dmmf: DMMF.Document = ${JSON.stringify(dmmf)};
   |
-  | export default staticSeed(dmmf);
+  | export default staticSeed<Photon>(dmmf);
   | export { SeedOptions };
   `
   const poolLib = mls`
+  | import { DMMF } from '@prisma/photon/runtime/dmmf-types' 
   | import { pool as staticPool, PoolOptions } from '${staticPath}'
   |
-  | const dmmf = ${JSON.stringify(dmmf)};
+  | const dmmf: DMMF.Document = ${JSON.stringify(dmmf)};
   |
   | export default staticPool(dmmf);
   | export { PoolOptions };
