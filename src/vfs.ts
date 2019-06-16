@@ -22,26 +22,31 @@ export type VirtualFS = {
 
 /**
  * Searches virtual file system for TS files and compiles them.
+ * Leaves non-TS files untacked.
  *
  * @param vfs
  */
-export async function compileVFS(vfs: VirtualFS): Promise<VirtualFS> {
-  /* Compiler options */
-  const compilerOptions: CompilerOptions = {
-    module: ModuleKind.CommonJS,
-    target: ScriptTarget.ES2016,
-    lib: ['lib.esnext.d.ts', 'lib.dom.d.ts'],
-    declaration: true,
-    suppressOutputPathCheck: false,
-  }
+export async function compileVFS(
+  vfs: VirtualFS,
+  options: CompilerOptions,
+): Promise<VirtualFS> {
+  /* Files */
 
-  debugger
-  const files = Object.keys(vfs).filter(file => file.endsWith('.ts'))
+  const tsFiles = Object.keys(vfs).filter(file => file.endsWith('.ts'))
+  const nonTsFiles = Object.keys(vfs).filter(file => !file.endsWith('.ts'))
+
+  const compiledVFS: VirtualFS = nonTsFiles.reduce(
+    (acc, file) => ({
+      ...acc,
+      [file]: vfs[file],
+    }),
+    {},
+  )
 
   /* Compiler Configuration */
 
-  const compilerHost = createCompilerHost(compilerOptions)
-  const { getSourceFile, fileExists } = compilerHost
+  const compilerHost = createCompilerHost(options)
+  const { getSourceFile, fileExists, readFile } = compilerHost
 
   compilerHost.getSourceFile = (fileName, target) => {
     /**
@@ -58,18 +63,24 @@ export async function compileVFS(vfs: VirtualFS): Promise<VirtualFS> {
     return fileExists(fileName)
   }
 
+  compilerHost.readFile = fileName => {
+    if (vfs.hasOwnProperty(fileName)) {
+      return vfs[fileName]
+    } else {
+      return readFile(fileName)
+    }
+  }
+
   compilerHost.writeFile = (fileName, data) => {
-    throw new Error('HEY!')
+    compiledVFS[fileName] = data
   }
 
-  try {
-    const program = createProgram(files, compilerOptions, compilerHost)
-    const result = program.emit()
+  /* Run the compiler */
 
-    return {}
-  } catch (err) {
-    throw err
-  }
+  const program = createProgram(tsFiles, options, compilerHost)
+  program.emit()
+
+  return compiledVFS
 }
 
 /**

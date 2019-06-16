@@ -3,6 +3,7 @@ import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import _ from 'lodash'
 import mls from 'multilines'
 import * as path from 'path'
+import { ModuleKind, ScriptTarget } from 'typescript'
 
 import { withDefault } from './utils'
 import { VirtualFS, writeToFS, compileVFS } from './vfs'
@@ -63,7 +64,14 @@ export async function generatePrismaTestUtils(
    * Write files to file system.
    */
   try {
-    const compiledVFS = await compileVFS(vfs)
+    const compiledVFS = await compileVFS(vfs, {
+      module: ModuleKind.CommonJS,
+      target: ScriptTarget.ES2016,
+      lib: ['lib.esnext.d.ts', 'lib.dom.d.ts'],
+      declaration: true,
+      sourceMap: true,
+      suppressOutputPathCheck: false,
+    })
     await writeToFS(outputDir, compiledVFS)
   } catch (err) {
     throw err

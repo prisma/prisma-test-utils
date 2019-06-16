@@ -28,7 +28,7 @@ import Pool from '@generated/test-utils/pool'
 //   },
 // })
 
-let pool: Pool
+let pool
 
 beforeAll(async () => {
   pool = new Pool({
