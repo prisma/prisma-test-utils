@@ -1,5 +1,14 @@
 # prisma-test-utils
 
+## Docs
+
+```
+generator test-utils {
+  provider = "prisma-test-utils"
+  output = "node_modules/@generated/test-utils"
+}
+```
+
 ## Example
 
 Please checkout the `/examples` directory or the standalone [`prisma-faker-example`](https://github.com/divyenduz/prisma-faker-example) readme.

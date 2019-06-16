@@ -9,6 +9,11 @@ generator photon {
   output = "node_modules/@generated/photon"
 }
 
+generator test-utils {
+  provider = "prisma-test-utils"
+  output = "node_modules/@generated/test-utils"
+}
+
 model Blog {
   id String @id @default(cuid()) 
   name String

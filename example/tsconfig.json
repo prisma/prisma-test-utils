@@ -1,12 +1,12 @@
 {
-  "extends": "../../tsproject.json",
   "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "sourceMap": true,
     "rootDir": ".",
-    "outDir": "../../dist/examples/advanced-prisma"
+    "outDir": "dist"
   },
-  "references": [
-    { "path": "../../packages/prisma-faker" },
-    { "path": "../../packages/prisma-db-pool" }
-  ],
-  "exclude": ["__tests__"]
+  "include": ["src/**/*"],
+  "exclude": ["dist", "__tests__"]
 }

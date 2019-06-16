@@ -19,7 +19,7 @@ export type VirtualFS = {
  */
 export async function writeToFS(root: string, vfs: VirtualFS): Promise<void> {
   const actions = Object.keys(vfs).map(async filePath => {
-    await mkdir(path.join(root, filePath))
+    await mkdir(path.dirname(path.join(root, filePath)), { recursive: true })
     await writeFile(path.join(root, filePath), vfs[filePath])
   })
 
