@@ -3,67 +3,87 @@ import Chance from 'chance'
 import _ from 'lodash'
 import { Dictionary } from 'lodash'
 import mls from 'multilines'
-import {
-  Faker,
-  FakerBag,
-  FakerSchema,
-  ID,
-  RelationConstraint,
-  FixtureDefinition as FixtureDefinitionConstructor,
-  FixtureFieldDefinition,
-} from './types'
 import { withDefault } from './utils'
 
-export interface SeedOptions {
-  seed?: number
-  persist?: boolean
-  instances?: number
+/**
+ * Types used to describe the seed models.
+ */
+export type ModelsDefinition = (kit: SeedKit) => SeedModels
+
+export interface SeedKit {
+  faker: Chance.Chance
+}
+
+export type SeedModels = {
+  '*': { amount: number }
+  [type: string]: SeedModel
+}
+
+export type SeedModel = {
+  amount: number
+  factory?: Dictionary<
+    SeedModelFieldDefinition | (() => SeedModelFieldDefinition)
+  >
+}
+
+export type ID = string
+
+export type SeedModelFieldDefinition = ID | string | number | RelationConstraint
+
+export type RelationConstraint = {
+  min?: number
+  max?: number
 }
 
 /**
- * Seed the database with mock data.
+ * Types used to describe seed options.
+ */
+export type SeedOptions<PhotonType> = {
+  client: PhotonType
+  models?: ModelsDefinition
+  seed?: number
+  persist?: boolean
+}
+
+/**
+ * Creates a function which can be used to seed mock data to database.
  *
- * @param fakerSchemaDefinition
- * @param opts
+ * @param dmmf
  */
 export function seed<PhotonType>(
-  client: PhotonType,
   dmmf: DMMF.Document,
-  schemaDef?: Faker | SeedOptions,
-  _opts?: SeedOptions,
-): Promise<object[]> {
-  /* Argument manipulation */
+): (options: SeedOptions<PhotonType>) => Promise<object[]> {
+  return (options: SeedOptions<PhotonType>) => {
+    /**
+     * The wrapped function which handles the execution of
+     * the seeding algorithm.
+     */
+    const opts = {
+      seed: 42,
+      persist: true,
+      ...options,
+    }
 
-  const __opts = typeof schemaDef === 'object' ? schemaDef : _opts
+    const faker = new Chance(opts.seed)
 
-  const opts = {
-    seed: 42,
-    persist: true,
-    instances: 5,
-    ...__opts,
+    const kit: SeedKit = { faker }
+    const models = options.models(kit)
+
+    /* Fixture calculations */
+
+    const orders: Order[] = getOrdersFromDMMF(dmmf, models)
+    const steps: Step[] = getStepsFromOrders(orders)
+    const tasks: Task[] = getTasksFromSteps(steps)
+    const fixtures: Fixture[] = getFixturesFromTasks(faker, models, tasks)
+
+    /* Creates Photon instance and pushes data. */
+
+    const seeds = seedFixturesToDatabase(options.client, fixtures, {
+      persist: opts.persist,
+    })
+
+    return seeds
   }
-
-  /* FakerBag, SchemaDefinition */
-
-  const faker = new Chance(opts.seed)
-
-  const bag: FakerBag = { faker }
-  const fakerSchema = typeof schemaDef === 'function' ? schemaDef(bag) : {}
-
-  /* Fixture calculations */
-
-  const orders: Order[] = getOrdersFromDMMF(dmmf)
-  const steps: Step[] = getStepsFromOrders(orders)
-  const tasks: Task[] = getTasksFromSteps(steps)
-  const fixtures: Fixture[] = getFixturesFromTasks(fakerSchema, tasks)
-
-  /* Creates Photon instance and pushes data. */
-
-  const seeds = seedFixturesToDatabase(client, fixtures, {
-    persist: opts.persist,
-  })
-
-  return seeds
 
   /**
    * The Core logic
@@ -148,17 +168,20 @@ export function seed<PhotonType>(
    *
    * @param dmmf
    */
-  function getOrdersFromDMMF(dmmf: DMMF.Document): Order[] {
+  function getOrdersFromDMMF(
+    dmmf: DMMF.Document,
+    seedModels: SeedModels,
+  ): Order[] {
     type FixtureDefinition = {
       amount: number
-      factory: Dictionary<
-        FixtureFieldDefinition | (() => FixtureFieldDefinition)
+      factory?: Dictionary<
+        SeedModelFieldDefinition | (() => SeedModelFieldDefinition)
       >
     }
 
     return dmmf.datamodel.models.map(model => {
       /* User defined settings */
-      const fakerModel = getFakerModel(fakerSchema, model.name)
+      const fakerModel = getSeedModel(seedModels, model.name)
 
       /* Find Photon mappings for seeding step */
       const mapping = dmmf.mappings.find(m => m.model === model.name)!
@@ -167,7 +190,7 @@ export function seed<PhotonType>(
       const relations: Order['relations'] = model.fields
         .filter(f => f.kind === 'object')
         .reduce<Order['relations']>((acc, field) => {
-          const fakerField: RelationConstraint = _.get(
+          const seedModelField: RelationConstraint = _.get(
             fakerModel,
             ['factory', field.name],
             {
@@ -176,15 +199,15 @@ export function seed<PhotonType>(
             },
           )
 
-          switch (typeof fakerField) {
+          switch (typeof seedModelField) {
             case 'object': {
               /* Calculate the relation properties */
               const { type, min, max, relation, relationTo } = getRelationType(
                 dmmf.datamodel.models,
-                fakerSchema,
+                seedModels,
                 field,
                 model,
-                fakerField,
+                seedModelField,
               )
 
               return {
@@ -201,7 +224,7 @@ export function seed<PhotonType>(
             }
             default: {
               throw new Error(
-                `Expected a relation constraint got ${typeof fakerField}`,
+                `Expected a relation constraint got ${typeof seedModelField}`,
               )
             }
           }
@@ -216,20 +239,17 @@ export function seed<PhotonType>(
     })
 
     /**
-     * Finds a model definition in faker schema or returns default
-     * faker model.
+     * Finds a model definition in seed models or returns the required
+     * fallback seed model definition.
      */
-    function getFakerModel(
-      schema: FakerSchema,
+    function getSeedModel(
+      seedModels: SeedModels,
       model: string,
     ): FixtureDefinition {
-      const definitionConstructor = _.get(schema, model)
+      const fallback = seedModels['*']
+      const definitionConstructor = _.get(seedModels, model)
 
-      return {
-        amount: opts.instances,
-        factory: {},
-        ...definitionConstructor,
-      }
+      return withDefault(fallback, definitionConstructor)
     }
 
     /**
@@ -262,8 +282,8 @@ export function seed<PhotonType>(
      * We presume that the field is a relation.
      */
     function getRelationType(
-      allModels: DMMF.Model[],
-      schema: FakerSchema,
+      dmmfModels: DMMF.Model[],
+      seedModels: SeedModels,
       field: DMMF.Field,
       fieldModel: DMMF.Model,
       definition: RelationConstraint,
@@ -280,14 +300,14 @@ export function seed<PhotonType>(
        * }
        */
       /* Field definitions */
-      const fieldFakerModel = getFakerModel(schema, fieldModel.name)
+      const fieldSeedModel = getSeedModel(seedModels, fieldModel.name)
 
       /**
        * Relation definitions
        *
        * NOTE: relaitonField is a back reference to the examined model.
        */
-      const relationModel = getDMMFModel(allModels, field.type)
+      const relationModel = getDMMFModel(dmmfModels, field.type)
       const relationField = withDefault<DMMF.Field>(
         {
           kind: 'object',
@@ -302,7 +322,7 @@ export function seed<PhotonType>(
         },
         relationModel.fields.find(f => f.type === fieldModel.name),
       )
-      const relationFakerModel = getFakerModel(schema, field.type)
+      const relationSeedModel = getSeedModel(seedModels, field.type)
 
       /* Relation type definitions */
       if (field.isList && relationField.isList) {
@@ -329,13 +349,13 @@ export function seed<PhotonType>(
             | ${fieldModel.name}.${field.name}: number of minimum instances is higher than maximum.
             `,
           )
-        } else if (max > relationFakerModel.amount) {
+        } else if (max > relationSeedModel.amount) {
           /* Missing relation instances */
-          const missingInstances = max - relationFakerModel.amount
+          const missingInstances = max - relationSeedModel.amount
           throw new Error(
             /* prettier-ignore */
             mls`
-            | ${fieldModel.name}.${field.name} requests more(${max}) instances of | ${relationModel.name}(${relationFakerModel.amount}) than available.
+            | ${fieldModel.name}.${field.name} requests more(${max}) instances of | ${relationModel.name}(${relationSeedModel.amount}) than available.
             | Please add more(${missingInstances}) ${relationModel.name} instances.
             `,
           )
@@ -398,13 +418,13 @@ export function seed<PhotonType>(
             | ${fieldModel.name}.${field.name}: number of minimum instances is higher than maximum.
             `,
           )
-        } else if (max > relationFakerModel.amount) {
+        } else if (max > relationSeedModel.amount) {
           /* Missing relation instances */
-          const missingInstances = max - relationFakerModel.amount
+          const missingInstances = max - relationSeedModel.amount
           throw new Error(
             /* prettier-ignore */
             mls`
-            | ${fieldModel.name}.${field.name} requests more (${max}) instances of ${relationModel.name}(${relationFakerModel.amount}) than available.
+            | ${fieldModel.name}.${field.name} requests more (${max}) instances of ${relationModel.name}(${relationSeedModel.amount}) than available.
             | Please add more (${missingInstances}) ${relationModel.name} instances.
             `,
           )
@@ -435,7 +455,7 @@ export function seed<PhotonType>(
         if (
           field.isRequired &&
           relationField.isRequired &&
-          fieldFakerModel.amount !== relationFakerModel.amount
+          fieldSeedModel.amount !== relationSeedModel.amount
         ) {
           /* Required 1-to-1 relation unit amount mismatch. */
           throw new Error(
@@ -448,13 +468,13 @@ export function seed<PhotonType>(
         } else if (
           !field.isRequired &&
           relationField.isRequired &&
-          fieldFakerModel.amount < relationFakerModel.amount
+          fieldSeedModel.amount < relationSeedModel.amount
         ) {
           /* An optional 1-to-1 relation inadequate unit amount. */
           throw new Error(
             /* prettier-ignore */
             mls`
-            | A 1-to-1 relation ${relationModel.name} needs at least ${relationFakerModel.amount} ${fieldModel.name} units, but only ${fieldFakerModel.amount} were provided.
+            | A 1-to-1 relation ${relationModel.name} needs at least ${relationSeedModel.amount} ${fieldModel.name} units, but only ${fieldSeedModel.amount} were provided.
             | Please make sure there's an adequate amount of resources available.
             `,
           )
@@ -781,7 +801,11 @@ export function seed<PhotonType>(
    *
    * @param steps
    */
-  function getFixturesFromTasks(schema: FakerSchema, tasks: Task[]): Fixture[] {
+  function getFixturesFromTasks(
+    faker: Chance.Chance,
+    seedModels: SeedModels,
+    tasks: Task[],
+  ): Fixture[] {
     /**
      * Pool describes the resources made available by a parent type to its children.
      */
@@ -866,11 +890,11 @@ export function seed<PhotonType>(
           /* Custom field mocks */
 
           if (
-            schema[task.model.name] &&
-            schema[task.model.name]!.factory &&
-            schema[task.model.name]!.factory![field.name]
+            seedModels[task.model.name] &&
+            seedModels[task.model.name]!.factory &&
+            seedModels[task.model.name]!.factory![field.name]
           ) {
-            const mock = schema[task.model.name]!.factory![field.name]
+            const mock = seedModels[task.model.name]!.factory![field.name]
             switch (typeof mock) {
               case 'function': {
                 const value = mock.call(faker)

@@ -5,211 +5,230 @@ import * as path from 'path'
 import { withDefault } from './utils'
 
 export type PoolDefinition = {
-  dmmf: DMMF.Document
   pool: {
-    min?: number
-    max: number
+    max?: number
   }
 }
 
 export type DBInstance = {
+  url: string
   cwd: string
   datamodel: string
 }
 
-export class Pool {
-  private dmmf: DMMF.Document
-  private dbs: {
-    booting: string[]
-    idle: DBInstance[]
-    busy: DBInstance[]
-  }
-  private waiters: Waiter[]
-  private capacity: number
-
-  constructor(definition: PoolDefinition) {
-    this.dmmf = definition.dmmf
-    this.dbs = {
-      booting: [],
-      idle: [],
-      busy: [],
+export default (dmmf: DMMF.Document) =>
+  class Pool {
+    private dbs: {
+      booting: string[]
+      idle: DBInstance[]
+      busy: DBInstance[]
     }
-    this.waiters = []
-    this.capacity = definition.pool.max
+    private waiters: Waiter[]
+    private capacity: number
 
-    /* Start init */
-
-    for (let index = 0; index < withDefault(0, definition.pool.min); index++) {
-      this.createDBInstance()
+    constructor(definition: PoolDefinition) {
+      this.dbs = {
+        booting: [],
+        idle: [],
+        busy: [],
+      }
+      this.waiters = []
+      this.capacity = withDefault(Infinity, definition.pool.max)
     }
-  }
 
-  /**
-   * Creates a new DB instances and lifts a migration.
-   */
-  private async createDBInstance(): Promise<void> {
-    try {
-      /* Constants */
+    /**
+     * Creates a new DB instances and lifts a migration.
+     */
+    private async createDBInstance(): Promise<void> {
+      try {
+        /* Constants */
 
-      const id = Math.random()
-        .toString(36)
-        .slice(2)
-      const tmpDir = path.join(os.tmpdir(), `prisma-pool-${id}`)
-      const dbFile = path.join(tmpDir, './db.db')
-      const datasources: DataSource[] = [
-        {
-          name: 'db',
-          connectorType: 'sqlite',
-          url: `file:${dbFile}`,
-          config: {},
-        },
-      ]
+        const id = Math.random()
+          .toString(36)
+          .slice(2)
+        const tmpDir = path.join(os.tmpdir(), `prisma-pool-${id}`)
+        const dbFile = path.join(tmpDir, './db.db')
+        const datasources: DataSource[] = [
+          {
+            name: 'db',
+            connectorType: 'sqlite',
+            url: `file:${dbFile}`,
+            config: {},
+          },
+        ]
 
-      /* Occupy resource pool. */
-      this.dbs.booting = [...this.dbs.booting, id]
+        /* Occupy resource pool. */
+        this.dbs.booting = [...this.dbs.booting, id]
 
-      /* Migrate Datamodel. */
-      const lift = new LiftEngine({
-        projectDir: tmpDir,
-      })
+        /* Migrate Datamodel. */
+        const lift = new LiftEngine({
+          projectDir: tmpDir,
+        })
 
-      const datamodelDmmf = {
-        enums: [],
-        models: [],
-        ...this.dmmf.datamodel,
-      }
+        const datamodelDmmf = {
+          enums: [],
+          models: [],
+          ...dmmf.datamodel,
+        }
 
-      const { datamodel } = await lift.convertDmmfToDml({
-        dmmf: JSON.stringify(datamodelDmmf),
-        config: { datasources, generators: [] },
-      })
+        const { datamodel } = await lift.convertDmmfToDml({
+          dmmf: JSON.stringify(datamodelDmmf),
+          config: { datasources, generators: [] },
+        })
 
-      const {
-        datamodelSteps,
-        errors: stepErrors,
-      } = await lift.inferMigrationSteps({
-        migrationId: id,
-        datamodel: datamodel,
-        assumeToBeApplied: [],
-        sourceConfig: datamodel,
-      })
-
-      if (stepErrors.length > 0) {
-        throw stepErrors
-      }
-
-      const { errors } = await lift.applyMigration({
-        force: true,
-        migrationId: id,
-        steps: datamodelSteps,
-        sourceConfig: datamodel,
-      })
-
-      if (errors.length > 0) {
-        throw errors
-      }
-
-      const progress = () =>
-        lift.migrationProgess({
+        const {
+          datamodelSteps,
+          errors: stepErrors,
+        } = await lift.inferMigrationSteps({
           migrationId: id,
+          datamodel: datamodel,
+          assumeToBeApplied: [],
           sourceConfig: datamodel,
         })
 
-      while ((await progress()).status !== 'MigrationSuccess') {
-        /* Just wait */
+        if (stepErrors.length > 0) {
+          throw stepErrors
+        }
+
+        const { errors } = await lift.applyMigration({
+          force: true,
+          migrationId: id,
+          steps: datamodelSteps,
+          sourceConfig: datamodel,
+        })
+
+        if (errors.length > 0) {
+          throw errors
+        }
+
+        const progress = () =>
+          lift.migrationProgess({
+            migrationId: id,
+            sourceConfig: datamodel,
+          })
+
+        while ((await progress()).status !== 'MigrationSuccess') {
+          /* Just wait */
+        }
+
+        /* Release resource pool. */
+        this.dbs.booting = this.dbs.booting.filter(dbId => dbId !== id)
+
+        const instance: DBInstance = {
+          url: dbFile,
+          cwd: tmpDir,
+          datamodel: datamodel,
+        }
+
+        /**
+         * If there's a waiter in line allocate an instance, otherwise make it idle.
+         */
+        if (this.waiters.length > 0) {
+          const [waiter, ...remainingWaiters] = this.waiters
+          this.waiters = remainingWaiters
+          this.dbs.busy = [...this.dbs.busy, instance]
+          waiter.allocate(instance)
+        } else {
+          this.dbs.idle = [...this.dbs.idle, instance]
+        }
+      } catch (err) {
+        throw err
       }
+    }
 
-      /* Release resource pool. */
-      this.dbs.booting = this.dbs.booting.filter(dbId => dbId !== id)
-
-      const instance: DBInstance = {
-        cwd: tmpDir,
-        datamodel: datamodel,
+    /**
+     * Run the encapsulated funciton.
+     *
+     * @param fn
+     */
+    async run<T>(fn: (db: DBInstance) => Promise<T>) {
+      const db = await this.getDBInstance()
+      try {
+        const result = await fn(db)
+        await this.releaseDBInstance(db)
+        return result
+      } catch (e) {
+        await this.releaseDBInstance(db)
+        throw e
       }
+    }
 
+    /**
+     * Returns a Photon instance from the pool once made available, and cleans
+     * and populates the instance if necessary.
+     *
+     * The returned Photon instance includes the db identifier used for
+     * the database releasing.
+     *
+     * @param opts
+     */
+    async getDBInstance(): Promise<DBInstance> {
       /**
-       * If there's a waiter in line allocate an instance, otherwise make it idle.
+       * Check whether any of the instances is available and creates a new one
+       * if the pool limit is not yet reached, otherwise waits for the available
+       * instance.
        */
-      if (this.waiters.length > 0) {
-        const [waiter, ...remainingWaiters] = this.waiters
-        this.waiters = remainingWaiters
-        this.dbs.busy = [...this.dbs.busy, instance]
-        waiter.allocate(instance)
+      if (this.dbs.idle.length > 0) {
+        /* If available take a resource and return it right away. */
+        const [db, ...remaining] = this.dbs.idle
+        this.dbs.idle = remaining
+        this.dbs.busy = [...this.dbs.busy, db]
+
+        return db
       } else {
-        this.dbs.idle = [...this.dbs.idle, instance]
+        /* Add to the line. */
+        const waiter = new Waiter()
+        this.waiters = [...this.waiters, waiter]
+
+        /**
+         * If full capacity is not yet reached create new instance.
+         * Otherwise, throw an error.
+         */
+        if (
+          this.dbs.idle.length +
+            this.dbs.busy.length +
+            this.dbs.booting.length <
+          this.capacity
+        ) {
+          this.createDBInstance()
+        } else {
+          throw new Error(`You've reached the upper limit of instances.`)
+        }
+
+        return waiter.wait()
       }
-    } catch (err) {
-      throw err
     }
-  }
 
-  /**
-   * Returns a Photon instance from the pool once made available, and cleans
-   * and populates the instance if necessary.
-   *
-   * The returned Photon instance includes the db identifier used for
-   * the database releasing.
-   *
-   * @param opts
-   */
-  async getDBInstance(): Promise<DBInstance> {
     /**
-     * Check whether any of the instances is available and creates a new one
-     * if the pool limit is not yet reached, otherwise waits for the available
-     * instance.
+     * Makes the instance available.
      */
-    if (this.dbs.idle.length > 0) {
-      /* If available take a resource and return it right away. */
-      const [db, ...remaining] = this.dbs.idle
-      this.dbs.idle = remaining
-      this.dbs.busy = [...this.dbs.busy, db]
+    async releaseDBInstance(db: DBInstance): Promise<void> {
+      /**
+       * Find the busy instance, remove that instance and give
+       * it to the next in line.
+       */
+      const instance = this.dbs.busy.find(bdb => bdb.cwd === db.cwd)!
+      this.dbs.busy = this.dbs.busy.filter(bdb => bdb.cwd !== db.cwd)
 
-      return db
-    } else {
-      /* Add to the line. */
-      const waiter = new Waiter()
-      this.waiters = [...this.waiters, waiter]
+      /* Allocate to the next waiter in line or make idle. */
+      // if (this.waiters.length > 0) {
+      //   const [waiter, ...remainingWaiters] = this.waiters
+      //   this.waiters = remainingWaiters
+      //   waiter.allocate(instance)
+      // } else {
+      //   this.dbs.idle = [...this.dbs.idle, instance]
+      // }
 
-      /* If full capacity is not yet reached create new instance. */
-      if (
-        this.dbs.idle.length + this.dbs.busy.length < this.capacity &&
-        this.dbs.booting.length === 0
-      ) {
-        this.createDBInstance()
-      }
-
-      return waiter.wait()
-    }
-  }
-
-  /**
-   * Makes the instance available.
-   */
-  async releaseDBInstance(db: DBInstance): Promise<void> {
-    /**
-     * Find the busy instance, remove that instance and give
-     * it to the next in line.
-     */
-    const instance = this.dbs.busy.find(bdb => bdb.cwd === db.cwd)!
-    this.dbs.busy.filter(bdb => bdb.cwd !== db.cwd)
-
-    /* Allocate to the next waiter in line or make idle. */
-    if (this.waiters.length > 0) {
-      const [waiter, ...remainingWaiters] = this.waiters
-      this.waiters = remainingWaiters
-      waiter.allocate(instance)
-    } else {
       this.dbs.idle = [...this.dbs.idle, instance]
     }
-  }
 
-  /**
-   * Drains the pool by deleting all instances.
-   */
-  async drain(): Promise<void> {
-    // TODO
+    /**
+     * Drains the pool by deleting all instances.
+     */
+    async drain(): Promise<void> {
+      // TODO
+    }
   }
-}
 
 class Waiter {
   private promise: Promise<DBInstance>
