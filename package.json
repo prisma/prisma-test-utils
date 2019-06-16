@@ -5,7 +5,7 @@
   "repository": "https://github.com/prisma/prisma-test-utils.git",
   "author": "maticzav <matic.zavadlal@gmail.com>",
   "scripts": {
-    "build": "rimraf dist && tsc -b && ncc build src/static/index.ts -o dist/_static/",
+    "build": "rimraf dist && tsc -b",
     "clean": "rimraf ./node_modules/ && rimraf ./*/node_modules/"
   },
   "dependencies": {
@@ -20,7 +20,6 @@
   "devDependencies": {
     "@types/lodash": "^4.14.134",
     "@types/node": "^12.0.8",
-    "@zeit/ncc": "^0.19.1",
     "chalk": "^2.4.2",
     "execa": "^1.0.0",
     "husky": "^2.3.0",
@@ -29,6 +28,9 @@
     "rimraf": "^2.6.3",
     "ts-node": "^8.3.0",
     "typescript": "^3.5.2"
+  },
+  "peerDependencies": {
+    "typescript": "*"
   },
   "license": "MIT"
 }

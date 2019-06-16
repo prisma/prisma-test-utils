@@ -1,5 +1,13 @@
 import * as fs from 'fs'
 import * as path from 'path'
+import {
+  CompilerOptions,
+  createCompilerHost,
+  createProgram,
+  createSourceFile,
+  ModuleKind,
+  ScriptTarget,
+} from 'typescript'
 import { promisify } from 'util'
 
 const mkdir = promisify(fs.mkdir)
@@ -10,6 +18,60 @@ const writeFile = promisify(fs.writeFile)
  */
 export type VirtualFS = {
   [path: string]: string
+}
+
+/**
+ * Searches virtual file system for TS files and compiles them.
+ *
+ * @param vfs
+ */
+export async function compileVFS(vfs: VirtualFS): Promise<VirtualFS> {
+  /* Compiler options */
+  const compilerOptions: CompilerOptions = {
+    module: ModuleKind.CommonJS,
+    target: ScriptTarget.ES2016,
+    lib: ['lib.esnext.d.ts', 'lib.dom.d.ts'],
+    declaration: true,
+    suppressOutputPathCheck: false,
+  }
+
+  const files = Object.keys(vfs).filter(file => file.endsWith('.ts'))
+
+  console.log({ files })
+
+  /* Compiler Configuration */
+
+  const compilerHost = createCompilerHost(compilerOptions)
+  const { getSourceFile } = compilerHost
+
+  compilerHost.getSourceFile = fileName => {
+    /**
+     * Load from the VFS or the system.
+     */
+    if (Object.hasOwnProperty(fileName)) {
+      return createSourceFile(
+        fileName,
+        vfs[fileName],
+        ScriptTarget.ES2015,
+        true,
+      )
+    } else {
+      return getSourceFile.call(compilerHost, fileName)
+    }
+  }
+
+  compilerHost.writeFile = (fileName, data) => {
+    throw new Error('HEY!')
+  }
+
+  try {
+    const program = createProgram(files, compilerOptions, compilerHost)
+    const result = program.emit()
+
+    return {}
+  } catch (err) {
+    throw err
+  }
 }
 
 /**

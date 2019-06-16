@@ -3,8 +3,9 @@ import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import _ from 'lodash'
 import mls from 'multilines'
 import * as path from 'path'
+
 import { withDefault } from './utils'
-import { VirtualFS, writeToFS } from './vfs'
+import { VirtualFS, writeToFS, compileVFS } from './vfs'
 
 /**
  * Generates prisma-test-utils library using Prisma Generators.
@@ -22,7 +23,7 @@ export async function generatePrismaTestUtils(
     ['photonPath'],
     '@generated/photon',
   )
-  const staticPath = path.resolve(__dirname, './_static/index.js')
+  const staticPath = path.resolve(__dirname, './static/index.ts')
 
   /**
    * The generation process is separated into three parts:
@@ -54,15 +55,16 @@ export async function generatePrismaTestUtils(
   /* Static files */
 
   const vfs: VirtualFS = {
-    'pool.js': poolLib,
-    'seed.js': seedLib,
+    'pool.ts': poolLib,
+    'seed.ts': seedLib,
   }
 
   /**
    * Write files to file system.
    */
   try {
-    await writeToFS(outputDir, vfs)
+    const compiledVFS = await compileVFS(vfs)
+    await writeToFS(outputDir, compiledVFS)
   } catch (err) {
     throw err
   }
