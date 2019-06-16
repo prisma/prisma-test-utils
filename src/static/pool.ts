@@ -2,7 +2,7 @@ import { LiftEngine, DataSource } from '@prisma/lift'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import * as os from 'os'
 import * as path from 'path'
-import { withDefault } from './utils'
+import { withDefault } from '../utils'
 
 export type PoolDefinition = {
   pool: {

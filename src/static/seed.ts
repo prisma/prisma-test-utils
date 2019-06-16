@@ -3,7 +3,7 @@ import Chance from 'chance'
 import _ from 'lodash'
 import { Dictionary } from 'lodash'
 import mls from 'multilines'
-import { withDefault } from './utils'
+import { withDefault } from '../utils'
 
 /**
  * Types used to describe the seed models.
