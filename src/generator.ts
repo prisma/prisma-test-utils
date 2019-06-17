@@ -4,8 +4,7 @@ import mls from 'multilines'
 import * as path from 'path'
 import { ModuleKind, ScriptTarget } from 'typescript'
 
-import { withDefault } from './utils'
-import { VirtualFS, writeToFS, compileVFS } from './vfs'
+import { VirtualFS, writeToFS, copyVFS, compileVFS } from './vfs'
 
 /**
  * Generates prisma-test-utils library using Prisma Generators.
@@ -17,6 +16,7 @@ export async function generatePrismaTestUtils(
   options: GeneratorOptions,
 ): Promise<string> {
   /* Config */
+
   const photon = options.otherGenerators.find(og => og.provider === 'photonjs')
 
   if (!photon) {
@@ -24,8 +24,26 @@ export async function generatePrismaTestUtils(
   }
 
   const photonPath = photon.output
-  const outputDir = withDefault('', options.generator.output)
-  const staticPath = path.resolve(__dirname, './static/index')
+  const outputDir = options.generator.output
+
+  /* Static files. */
+
+  const staticFs: VirtualFS = {
+    [path.join(outputDir, './static/index.js')]: path.join(
+      __dirname,
+      '../runtime/index.js',
+    ),
+    [path.join(outputDir, './static/')]: path.join(
+      __dirname,
+      '../runtime/static/',
+    ),
+  }
+
+  try {
+    await copyVFS(staticFs)
+  } catch (err) {
+    throw err
+  }
 
   /**
    * The generation process is separated into three parts:
@@ -41,35 +59,35 @@ export async function generatePrismaTestUtils(
   const seedLib = mls`
   | import Photon from '${photonPath}';
   | import { DMMF } from '@prisma/photon/runtime/dmmf-types';
-  | import { getSeed } from '${staticPath}';
+  | import { getSeed } from './static';
   |
   | const dmmf: DMMF.Document = ${JSON.stringify(dmmf)};
   |
   | export default getSeed<Photon>(dmmf);
-  | export { SeedOptions, SeedModelsDefinition, SeedKit, SeedModels, SeedModel, ID, SeedModelFieldDefintiion, SeedModelFieldRelationConstraint } from '${staticPath}';
+  | export { SeedOptions, SeedModelsDefinition, SeedKit, SeedModels, SeedModel, ID, SeedModelFieldDefintiion, SeedModelFieldRelationConstraint } from './static';
   `
   const poolLib = mls`
   | import { DMMF } from '@prisma/photon/runtime/dmmf-types';
-  | import { getPool } from '${staticPath}';
+  | import { getPool } from './static';
   |
   | const dmmf: DMMF.Document = ${JSON.stringify(dmmf)};
   |
   | export default getPool(dmmf);
-  | export { Pool, PoolOptions, DBInstance } from '${staticPath}';
+  | export { Pool, PoolOptions, DBInstance } from './static';
   `
 
   /* Static files */
 
-  const vfs: VirtualFS = {
+  const dynamicFS: VirtualFS = {
     [path.join(outputDir, './pool.ts')]: poolLib,
     [path.join(outputDir, './seed.ts')]: seedLib,
   }
 
   /**
-   * Write files to file system.
+   * Write dynamic files to file system.
    */
   try {
-    const compiledVFS = await compileVFS(vfs, {
+    const compiledFS = await compileVFS(dynamicFS, {
       module: ModuleKind.CommonJS,
       target: ScriptTarget.ES2016,
       lib: ['lib.esnext.d.ts', 'lib.dom.d.ts'],
@@ -77,7 +95,7 @@ export async function generatePrismaTestUtils(
       sourceMap: true,
       suppressOutputPathCheck: false,
     })
-    await writeToFS(compiledVFS)
+    await writeToFS(compiledFS)
   } catch (err) {
     throw err
   }

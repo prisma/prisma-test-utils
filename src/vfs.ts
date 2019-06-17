@@ -10,6 +10,8 @@ import { promisify } from 'util'
 
 const mkdir = promisify(fs.mkdir)
 const writeFile = promisify(fs.writeFile)
+const copyFile = promisify(fs.copyFile)
+const readDir = promisify(fs.readdir)
 
 /**
  * Portrays the file system as a tree.
@@ -72,6 +74,65 @@ export async function compileVFS(
   program.emit()
 
   return compiledVFS
+}
+
+/**
+ * Copies files form vfs to specified locations.
+ *
+ * @param vfs
+ */
+export async function copyVFS(vfs: VirtualFS): Promise<void> {
+  /* Find folders. */
+  debugger
+  const folders = Object.keys(vfs).filter(file =>
+    fs.lstatSync(vfs[file]).isDirectory(),
+  )
+
+  if (folders.length > 0) {
+    /* Resolve folders. */
+    const resolvedVFS: VirtualFS = await Object.keys(vfs).reduce(
+      (acc, outPath) =>
+        acc.then(async accVfs => {
+          const inPath = vfs[outPath]
+          if (fs.lstatSync(inPath).isDirectory()) {
+            /* Replace dir with resolved path. */
+            const files = await readDir(inPath)
+            debugger
+
+            return files.reduce(
+              (acc, file) => ({
+                ...acc,
+                [path.join(outPath, file)]: path.join(inPath, file),
+              }),
+              accVfs,
+            )
+          } else {
+            /* Insert files. */
+            return {
+              ...accVfs,
+              [outPath]: inPath,
+            }
+          }
+        }),
+      Promise.resolve({}),
+    )
+
+    return copyVFS(resolvedVFS)
+  } else {
+    /* Copy files. */
+    const actions = Object.keys(vfs).map(async outPath => {
+      await mkdir(path.dirname(outPath), {
+        recursive: true,
+      })
+      await copyFile(vfs[outPath], outPath)
+    })
+
+    try {
+      await Promise.all(actions)
+    } catch (err) {
+      throw err
+    }
+  }
 }
 
 /**

@@ -1,17 +1,19 @@
 {
   "name": "prisma-test-utils",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "main": "dist/generator.js",
   "types": "dist/generator.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "runtime"
   ],
   "repository": "https://github.com/prisma/prisma-test-utils.git",
   "author": "maticzav <matic.zavadlal@gmail.com>",
   "scripts": {
     "build": "rimraf dist && tsc -b",
+    "build:runtime": "rimraf runtime && ncc build src/static/index.ts -o runtime",
     "clean": "rimraf ./node_modules/ && rimraf ./*/node_modules/",
-    "prepublishOnly": "npm-run-all build"
+    "prepublishOnly": "npm-run-all build build:runtime"
   },
   "dependencies": {
     "@types/chance": "^1.0.4",
@@ -25,6 +27,7 @@
     "@prisma/photon": "^0.0.111",
     "@types/lodash": "^4.14.134",
     "@types/node": "^12.0.8",
+    "@zeit/ncc": "^0.19.1",
     "chalk": "^2.4.2",
     "execa": "^1.0.0",
     "husky": "^2.3.0",

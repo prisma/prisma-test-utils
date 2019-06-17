@@ -1302,18 +1302,18 @@ export function getSeed<PhotonType>(
         return acc.then(async res => {
           /* Create a single instance */
 
-          // TODO:
-          let seed
           try {
-            seed = await photon[f.mapping.findMany!]['create']({
+            const seed = await photon[f.mapping.findMany!]['create']({
               data: f.data,
             })
-          } catch (err) {}
 
-          return res.concat({
-            data: seed,
-            model: f.mapping.model,
-          })
+            return res.concat({
+              data: seed,
+              model: f.mapping.model,
+            })
+          } catch (err) {
+            throw err
+          }
         })
       }, Promise.resolve([]))
 

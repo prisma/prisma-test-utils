@@ -1,9 +1,9 @@
 import { LiftEngine, DataSource } from '@prisma/lift'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
+import _ from 'lodash'
 import * as os from 'os'
 import * as path from 'path'
 import { Pool, PoolOptions, DBInstance } from './types'
-import { withDefault } from '../utils'
 
 /**
  * Creates a dmmf specific Internal Pool instance.
@@ -12,9 +12,9 @@ import { withDefault } from '../utils'
  */
 export function getPool(
   dmmf: DMMF.Document,
-): { new (options: PoolOptions): Pool } {
+): { new (options?: PoolOptions): Pool } {
   return class extends InternalPool {
-    constructor(options: PoolOptions) {
+    constructor(options?: PoolOptions) {
       super(dmmf, options)
     }
   }
@@ -30,7 +30,7 @@ class InternalPool implements Pool {
   private waiters: Waiter[]
   private capacity: number
 
-  constructor(dmmf: DMMF.Document, options: PoolOptions) {
+  constructor(dmmf: DMMF.Document, options?: PoolOptions) {
     this.dmmf = dmmf
     this.dbs = {
       booting: [],
@@ -38,7 +38,7 @@ class InternalPool implements Pool {
       busy: [],
     }
     this.waiters = []
-    this.capacity = withDefault(Infinity, options.pool.max)
+    this.capacity = _.get(options, ['pool', 'max'], Infinity)
   }
 
   /**
