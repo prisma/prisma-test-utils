@@ -9,8 +9,13 @@ generator photon {
   output = "node_modules/@generated/photon"
 }
 
+generator test-utils {
+  provider = "prisma-test-utils"
+  output = "node_modules/@generated/test-utils"
+}
+
 model Blog {
-  id Int @id
+  id String @id @default(cuid()) 
   name String
   viewCount Int
   posts Post[]
@@ -18,14 +23,14 @@ model Blog {
 }
 
 model Author {
-  id Int @id
+  id String @id @default(cuid()) 
   name String?
   posts Post[]
   blog Blog
 }         
 
 model Post {
-  id Int @id
+  id String @id @default(cuid()) 
   title String
   tags String[]
   blog Blog

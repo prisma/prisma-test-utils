@@ -2,22 +2,25 @@ import { LiftEngine, DataSource } from '@prisma/lift'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import * as os from 'os'
 import * as path from 'path'
-import { withDefault } from './utils'
+import { Pool, PoolOptions, DBInstance } from './types'
+import { withDefault } from '../utils'
 
-export type PoolDefinition = {
-  dmmf: DMMF.Document
-  pool: {
-    min?: number
-    max: number
+/**
+ * Creates a dmmf specific Internal Pool instance.
+ *
+ * @param dmmf
+ */
+export function getPool(
+  dmmf: DMMF.Document,
+): { new (options: PoolOptions): Pool } {
+  return class extends InternalPool {
+    constructor(options: PoolOptions) {
+      super(dmmf, options)
+    }
   }
 }
 
-export type DBInstance = {
-  cwd: string
-  datamodel: string
-}
-
-export class Pool {
+class InternalPool implements Pool {
   private dmmf: DMMF.Document
   private dbs: {
     booting: string[]
@@ -27,21 +30,15 @@ export class Pool {
   private waiters: Waiter[]
   private capacity: number
 
-  constructor(definition: PoolDefinition) {
-    this.dmmf = definition.dmmf
+  constructor(dmmf: DMMF.Document, options: PoolOptions) {
+    this.dmmf = dmmf
     this.dbs = {
       booting: [],
       idle: [],
       busy: [],
     }
     this.waiters = []
-    this.capacity = definition.pool.max
-
-    /* Start init */
-
-    for (let index = 0; index < withDefault(0, definition.pool.min); index++) {
-      this.createDBInstance()
-    }
+    this.capacity = withDefault(Infinity, options.pool.max)
   }
 
   /**
@@ -123,6 +120,7 @@ export class Pool {
       this.dbs.booting = this.dbs.booting.filter(dbId => dbId !== id)
 
       const instance: DBInstance = {
+        url: dbFile,
         cwd: tmpDir,
         datamodel: datamodel,
       }
@@ -140,6 +138,23 @@ export class Pool {
       }
     } catch (err) {
       throw err
+    }
+  }
+
+  /**
+   * Run the encapsulated funciton.
+   *
+   * @param fn
+   */
+  async run<T>(fn: (db: DBInstance) => Promise<T>): Promise<T> {
+    const db = await this.getDBInstance()
+    try {
+      const result = await fn(db)
+      await this.releaseDBInstance(db)
+      return result
+    } catch (e) {
+      await this.releaseDBInstance(db)
+      throw e
     }
   }
 
@@ -170,12 +185,17 @@ export class Pool {
       const waiter = new Waiter()
       this.waiters = [...this.waiters, waiter]
 
-      /* If full capacity is not yet reached create new instance. */
+      /**
+       * If full capacity is not yet reached create new instance.
+       * Otherwise, throw an error.
+       */
       if (
-        this.dbs.idle.length + this.dbs.busy.length < this.capacity &&
-        this.dbs.booting.length === 0
+        this.dbs.idle.length + this.dbs.busy.length + this.dbs.booting.length <
+        this.capacity
       ) {
         this.createDBInstance()
+      } else {
+        throw new Error(`You've reached the upper limit of instances.`)
       }
 
       return waiter.wait()
@@ -191,16 +211,18 @@ export class Pool {
      * it to the next in line.
      */
     const instance = this.dbs.busy.find(bdb => bdb.cwd === db.cwd)!
-    this.dbs.busy.filter(bdb => bdb.cwd !== db.cwd)
+    this.dbs.busy = this.dbs.busy.filter(bdb => bdb.cwd !== db.cwd)
 
     /* Allocate to the next waiter in line or make idle. */
-    if (this.waiters.length > 0) {
-      const [waiter, ...remainingWaiters] = this.waiters
-      this.waiters = remainingWaiters
-      waiter.allocate(instance)
-    } else {
-      this.dbs.idle = [...this.dbs.idle, instance]
-    }
+    // if (this.waiters.length > 0) {
+    //   const [waiter, ...remainingWaiters] = this.waiters
+    //   this.waiters = remainingWaiters
+    //   waiter.allocate(instance)
+    // } else {
+    //   this.dbs.idle = [...this.dbs.idle, instance]
+    // }
+
+    this.dbs.idle = [...this.dbs.idle, instance]
   }
 
   /**
