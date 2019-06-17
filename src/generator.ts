@@ -1,6 +1,5 @@
 import { GeneratorDefinition, GeneratorOptions } from '@prisma/cli'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
-import _ from 'lodash'
 import mls from 'multilines'
 import * as path from 'path'
 import { ModuleKind, ScriptTarget } from 'typescript'
@@ -18,12 +17,14 @@ export async function generatePrismaTestUtils(
   options: GeneratorOptions,
 ): Promise<string> {
   /* Config */
+  const photon = options.otherGenerators.find(og => og.name === 'photonjs')
+
+  if (!photon) {
+    throw new Error(`You need to generate Photon first.`)
+  }
+
+  const photonPath = photon.output
   const outputDir = withDefault('', options.generator.output)
-  const photonPath = _.get(
-    options.generator.config,
-    ['photonPath'],
-    '@generated/photon',
-  )
   const staticPath = path.resolve(__dirname, './static/index')
 
   /**
@@ -87,4 +88,5 @@ export async function generatePrismaTestUtils(
 export const generatorDefinition: GeneratorDefinition = {
   prettyName: 'Prisma Test Utils',
   generate: generatePrismaTestUtils,
+  defaultOutput: 'node_modules/@generated/prisma-test-utils',
 }
