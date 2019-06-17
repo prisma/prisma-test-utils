@@ -28,7 +28,8 @@ export async function generatePrismaTestUtils(
 
   /**
    * The generation process is separated into three parts:
-   *  1. We use @zeit/ncc to build the static parts of the library.
+   *  1. We use TS to build the dynamic parts of the library which refer to the
+   *    static ones.
    *  2. We wire the functions from the static part with the dynamic properties.
    *  3. We write the files to the file system.
    */
@@ -37,30 +38,30 @@ export async function generatePrismaTestUtils(
   const dmmf = require(photonPath).dmmf as DMMF.Document
 
   const seedLib = mls`
-  | import Photon from '${photonPath}'
-  | import { DMMF } from '@prisma/photon/runtime/dmmf-types' 
-  | import { seed as staticSeed, SeedOptions } from '${staticPath}'
+  | import Photon from '${photonPath}';
+  | import { DMMF } from '@prisma/photon/runtime/dmmf-types';
+  | import { getSeed } from '${staticPath}';
   |
   | const dmmf: DMMF.Document = ${JSON.stringify(dmmf)};
   |
-  | export default staticSeed<Photon>(dmmf);
-  | export { SeedOptions };
+  | export default getSeed<Photon>(dmmf);
+  | export { SeedOptions, SeedModelsDefinition, SeedKit, SeedModels, SeedModel, ID, SeedModelFieldDefintiion, SeedModelFieldRelationConstraint } from '${staticPath}';
   `
   const poolLib = mls`
-  | import { DMMF } from '@prisma/photon/runtime/dmmf-types' 
-  | import { pool as staticPool, PoolOptions } from '${staticPath}'
+  | import { DMMF } from '@prisma/photon/runtime/dmmf-types';
+  | import { getPool } from '${staticPath}';
   |
   | const dmmf: DMMF.Document = ${JSON.stringify(dmmf)};
   |
-  | export default staticPool(dmmf);
-  | export { PoolOptions };
+  | export default getPool(dmmf);
+  | export { Pool, PoolOptions, DBInstance } from '${staticPath}';
   `
 
   /* Static files */
 
   const vfs: VirtualFS = {
-    'pool.ts': poolLib,
-    'seed.ts': seedLib,
+    [path.join(outputDir, './pool.ts')]: poolLib,
+    [path.join(outputDir, './seed.ts')]: seedLib,
   }
 
   /**
@@ -75,7 +76,7 @@ export async function generatePrismaTestUtils(
       sourceMap: true,
       suppressOutputPathCheck: false,
     })
-    await writeToFS(outputDir, compiledVFS)
+    await writeToFS(compiledVFS)
   } catch (err) {
     throw err
   }

@@ -7,6 +7,5 @@
     "rootDir": ".",
     "outDir": "dist"
   },
-  "include": ["src/**/*"],
   "exclude": ["dist", "__tests__"]
 }

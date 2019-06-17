@@ -44,21 +44,14 @@ export async function compileVFS(
   /* Compiler Configuration */
 
   const compilerHost = createCompilerHost(options)
-  const { getSourceFile, fileExists, readFile } = compilerHost
+  const { getSourceFile, readFile } = compilerHost
 
   compilerHost.getSourceFile = (fileName, target) => {
-    /**
-     * Load from the VFS or the system.
-     */
-    if (Object.hasOwnProperty(fileName)) {
+    if (vfs.hasOwnProperty(fileName)) {
       return createSourceFile(fileName, vfs[fileName], target, true)
     } else {
       return getSourceFile(fileName, target)
     }
-  }
-
-  compilerHost.fileExists = fileName => {
-    return fileExists(fileName)
   }
 
   compilerHost.readFile = fileName => {
@@ -86,10 +79,10 @@ export async function compileVFS(
  *
  * @param vfs
  */
-export async function writeToFS(root: string, vfs: VirtualFS): Promise<void> {
+export async function writeToFS(vfs: VirtualFS): Promise<void> {
   const actions = Object.keys(vfs).map(async filePath => {
-    await mkdir(path.dirname(path.join(root, filePath)), { recursive: true })
-    await writeFile(path.join(root, filePath), vfs[filePath])
+    await mkdir(path.dirname(filePath), { recursive: true })
+    await writeFile(filePath, vfs[filePath])
   })
 
   try {

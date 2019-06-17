@@ -3,54 +3,22 @@ import Chance from 'chance'
 import _ from 'lodash'
 import { Dictionary } from 'lodash'
 import mls from 'multilines'
+import {
+  ID,
+  SeedKit,
+  SeedModels,
+  SeedOptions,
+  SeedModelFieldDefinition,
+  SeedModelFieldRelationConstraint,
+} from './types'
 import { withDefault } from '../utils'
-
-/**
- * Types used to describe the seed models.
- */
-export type ModelsDefinition = (kit: SeedKit) => SeedModels
-
-export interface SeedKit {
-  faker: Chance.Chance
-}
-
-export type SeedModels = {
-  '*': { amount: number }
-  [type: string]: SeedModel
-}
-
-export type SeedModel = {
-  amount: number
-  factory?: Dictionary<
-    SeedModelFieldDefinition | (() => SeedModelFieldDefinition)
-  >
-}
-
-export type ID = string
-
-export type SeedModelFieldDefinition = ID | string | number | RelationConstraint
-
-export type RelationConstraint = {
-  min?: number
-  max?: number
-}
-
-/**
- * Types used to describe seed options.
- */
-export type SeedOptions<PhotonType> = {
-  client: PhotonType
-  models?: ModelsDefinition
-  seed?: number
-  persist?: boolean
-}
 
 /**
  * Creates a function which can be used to seed mock data to database.
  *
  * @param dmmf
  */
-export function seed<PhotonType>(
+export function getSeed<PhotonType>(
   dmmf: DMMF.Document,
 ): (options: SeedOptions<PhotonType>) => Promise<object[]> {
   return (options: SeedOptions<PhotonType>) => {
@@ -67,7 +35,9 @@ export function seed<PhotonType>(
     const faker = new Chance(opts.seed)
 
     const kit: SeedKit = { faker }
-    const models = options.models(kit)
+    const models: SeedModels = options.models
+      ? options.models(kit)
+      : { '*': { amount: 5 } }
 
     /* Fixture calculations */
 
@@ -190,7 +160,7 @@ export function seed<PhotonType>(
       const relations: Order['relations'] = model.fields
         .filter(f => f.kind === 'object')
         .reduce<Order['relations']>((acc, field) => {
-          const seedModelField: RelationConstraint = _.get(
+          const seedModelField: SeedModelFieldRelationConstraint = _.get(
             fakerModel,
             ['factory', field.name],
             {
@@ -286,7 +256,7 @@ export function seed<PhotonType>(
       seedModels: SeedModels,
       field: DMMF.Field,
       fieldModel: DMMF.Model,
-      definition: RelationConstraint,
+      definition: SeedModelFieldRelationConstraint,
     ): {
       type: RelationType
       min: number
