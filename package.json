@@ -1,7 +1,9 @@
 {
   "name": "prisma-test-utils",
-  "version": "0.2.0",
-  "files": [],
+  "version": "0.2.1",
+  "files": [
+    "dist"
+  ],
   "repository": "https://github.com/prisma/prisma-test-utils.git",
   "author": "maticzav <matic.zavadlal@gmail.com>",
   "scripts": {
