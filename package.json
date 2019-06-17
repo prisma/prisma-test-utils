@@ -5,19 +5,20 @@
   "types": "dist/generator.d.ts",
   "files": [
     "dist",
-    "runtime"
+    "prisma-test-utils_ncc"
   ],
   "repository": "https://github.com/prisma/prisma-test-utils.git",
   "author": "maticzav <matic.zavadlal@gmail.com>",
   "scripts": {
     "build": "rimraf dist && tsc -b",
-    "build:runtime": "rimraf runtime && ncc build src/static/index.ts -o runtime",
+    "build:runtime": "node scripts/build-runtime.js",
     "clean": "rimraf ./node_modules/ && rimraf ./*/node_modules/",
     "prepublishOnly": "npm-run-all build build:runtime"
   },
   "dependencies": {
     "@types/chance": "^1.0.4",
     "chance": "^1.0.18",
+    "fs-extra": "^8.0.1",
     "lodash": "^4.17.11",
     "multilines": "^1.0.2"
   },
@@ -30,6 +31,7 @@
     "@zeit/ncc": "^0.19.1",
     "chalk": "^2.4.2",
     "execa": "^1.0.0",
+    "fs-monkey": "^0.3.3",
     "husky": "^2.3.0",
     "npm-run-all": "^4.1.5",
     "prettier": "^1.17.1",

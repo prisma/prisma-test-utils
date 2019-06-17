@@ -2,6 +2,7 @@ node_modules
 dist
 migrations
 runtime
+prisma-test-utils_ncc
 
 db/*.db
 @generated

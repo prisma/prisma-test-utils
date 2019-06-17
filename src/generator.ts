@@ -29,14 +29,14 @@ export async function generatePrismaTestUtils(
   /* Static files. */
 
   const staticFs: VirtualFS = {
-    [path.join(outputDir, './static/index.js')]: path.join(
+    [path.join(outputDir, './static/index.js')]: eval(`path.join(
       __dirname,
-      '../runtime/index.js',
-    ),
-    [path.join(outputDir, './static/')]: path.join(
+      '../prisma-test-utils_ncc/index.js',
+    )`),
+    [path.join(outputDir, './static/')]: eval(`path.join(
       __dirname,
-      '../runtime/static/',
-    ),
+      '../prisma-test-utils_ncc/static/',
+    )`),
   }
 
   try {

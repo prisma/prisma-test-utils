@@ -83,9 +83,8 @@ export async function compileVFS(
  */
 export async function copyVFS(vfs: VirtualFS): Promise<void> {
   /* Find folders. */
-  debugger
-  const folders = Object.keys(vfs).filter(file =>
-    fs.lstatSync(vfs[file]).isDirectory(),
+  const folders = Object.keys(vfs).filter(
+    file => fs.existsSync(vfs[file]) && fs.lstatSync(vfs[file]).isDirectory(),
   )
 
   if (folders.length > 0) {
@@ -94,10 +93,9 @@ export async function copyVFS(vfs: VirtualFS): Promise<void> {
       (acc, outPath) =>
         acc.then(async accVfs => {
           const inPath = vfs[outPath]
-          if (fs.lstatSync(inPath).isDirectory()) {
+          if (fs.existsSync(inPath) && fs.lstatSync(inPath).isDirectory()) {
             /* Replace dir with resolved path. */
             const files = await readDir(inPath)
-            debugger
 
             return files.reduce(
               (acc, file) => ({

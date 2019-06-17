@@ -11,7 +11,7 @@ import {
   SeedModelFieldDefinition,
   SeedModelFieldRelationConstraint,
 } from './types'
-import { withDefault } from '../utils'
+import { withDefault } from './utils'
 
 /**
  * Creates a function which can be used to seed mock data to database.
