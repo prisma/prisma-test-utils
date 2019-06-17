@@ -17,7 +17,7 @@ export async function generatePrismaTestUtils(
   options: GeneratorOptions,
 ): Promise<string> {
   /* Config */
-  const photon = options.otherGenerators.find(og => og.name === 'photonjs')
+  const photon = options.otherGenerators.find(og => og.provider === 'photonjs')
 
   if (!photon) {
     throw new Error(`You need to generate Photon first.`)

@@ -22,6 +22,13 @@
   dependencies:
     arg "^4.1.0"
 
+"@prisma/cli@^0.0.17":
+  version "0.0.17"
+  resolved "https://registry.yarnpkg.com/@prisma/cli/-/cli-0.0.17.tgz#440a5d43c35aecbd6ca2f71dfff059bcbf162619"
+  integrity sha512-co6YCKyccZF3H4i76Z5RejRA+2xR3Nf+MLdH3xMgm8eATnhanYm+NMiKhhlAdAexQ64HTLcM7RSb4rBNjN2i0A==
+  dependencies:
+    arg "^4.1.0"
+
 "@prisma/engine-core@0.0.52":
   version "0.0.52"
   resolved "https://registry.yarnpkg.com/@prisma/engine-core/-/engine-core-0.0.52.tgz#0e67689098c756e95bc614e06500de70817a31e3"
@@ -46,10 +53,10 @@
     p-retry "^4.1.0"
     progress "^2.0.3"
 
-"@prisma/lift@^0.0.92":
-  version "0.0.92"
-  resolved "https://registry.yarnpkg.com/@prisma/lift/-/lift-0.0.92.tgz#d43ad4e51a488ce29360bbdce7a2aae69ecd7e61"
-  integrity sha512-22DtcqKXtDQi1Bm0sLA2/E+Est/w+w3mWNisV6/cOuaqGQh7uwgmJ5zn77Si21lm8edFrwfLI6gU9t2mOMbS9g==
+"@prisma/lift@^0.0.93":
+  version "0.0.93"
+  resolved "https://registry.yarnpkg.com/@prisma/lift/-/lift-0.0.93.tgz#9b47cc2ad28f1de434927f1e015b1318334fa923"
+  integrity sha512-wz9PeLfXRSlSzftODc9IrQK+Iz22J78ocBoQBohTTXpdRY34A+LYqojtFZTzS5s2BIKEYxI8z2/wFrFj6XiDRg==
   dependencies:
     "@prisma/cli" "^0.0.16"
     "@prisma/fetch-engine" "^0.0.21"
