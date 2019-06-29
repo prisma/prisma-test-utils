@@ -3,7 +3,9 @@ import { Dictionary } from 'lodash'
 /**
  * Types used to describe the seed models.
  */
-export type SeedModelsDefinition = (kit: SeedKit) => SeedModels
+export type SeedModelsDefinition<GeneratedSeedModels extends SeedModels> = (
+  kit: SeedKit,
+) => GeneratedSeedModels
 
 export interface SeedKit {
   faker: Chance.Chance
@@ -34,9 +36,9 @@ export type SeedModelFieldRelationConstraint = {
   max?: number
 }
 
-export type SeedOptions<PhotonType> = {
+export type SeedOptions<PhotonType, GeneratedSeedModel extends SeedModels> = {
   client: PhotonType
-  models?: SeedModelsDefinition
+  models: SeedModelsDefinition<GeneratedSeedModel>
   seed?: number
   persist?: boolean
 }

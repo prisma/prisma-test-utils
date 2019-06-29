@@ -5,6 +5,7 @@ import * as path from 'path'
 import { ModuleKind, ScriptTarget } from 'typescript'
 
 import { VirtualFS, writeToFS, copyVFS, compileVFS } from './vfs'
+import { generateGeneratedSeedModelsType } from './typings'
 
 /**
  * Generates prisma-test-utils library using Prisma Generators.
@@ -61,11 +62,24 @@ export async function generatePrismaTestUtils(
   | import { DMMF } from '@prisma/photon/runtime/dmmf-types';
   | import { getSeed } from './static';
   |
+  | ${generateGeneratedSeedModelsType(dmmf)}
+  |
   | const dmmf: DMMF.Document = ${JSON.stringify(dmmf)};
   |
-  | export default getSeed<Photon>(dmmf);
-  | export { SeedOptions, SeedModelsDefinition, SeedKit, SeedModels, SeedModel, ID, SeedModelFieldDefintiion, SeedModelFieldRelationConstraint } from './static';
+  | export default getSeed<Photon, GeneratedSeedModels>(dmmf);
+  | export { GeneratedSeedModels }
+  | export {
+  |   SeedOptions,
+  |   SeedModelsDefinition,
+  |   SeedKit,
+  |   SeedModels,
+  |   SeedModel,
+  |   ID,
+  |   SeedModelFieldDefintiion,
+  |   SeedModelFieldRelationConstraint,
+  | } from './static'
   `
+
   const poolLib = mls`
   | import { DMMF } from '@prisma/photon/runtime/dmmf-types';
   | import { getPool } from './static';

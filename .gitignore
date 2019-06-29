@@ -1,6 +1,7 @@
 node_modules
 dist
 migrations
+coverage
 runtime
 prisma-test-utils_ncc
 

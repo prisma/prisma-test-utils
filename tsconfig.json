@@ -15,5 +15,6 @@
     "suppressExcessPropertyErrors": false,
     "noFallthroughCasesInSwitch": true
   },
-  "exclude": ["node_modules", "dist", "example"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "example", "runtime"]
 }

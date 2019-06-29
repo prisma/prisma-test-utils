@@ -18,10 +18,12 @@ import { withDefault } from './utils'
  *
  * @param dmmf
  */
-export function getSeed<PhotonType>(
+export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
   dmmf: DMMF.Document,
-): (options: SeedOptions<PhotonType>) => Promise<object[]> {
-  return (options: SeedOptions<PhotonType>) => {
+): (
+  options: SeedOptions<PhotonType, GeneratedSeedModels>,
+) => Promise<object[]> {
+  return (options: SeedOptions<PhotonType, GeneratedSeedModels>) => {
     /**
      * The wrapped function which handles the execution of
      * the seeding algorithm.
@@ -1301,7 +1303,6 @@ export function getSeed<PhotonType>(
       >(async (acc, f) => {
         return acc.then(async res => {
           /* Create a single instance */
-
           try {
             const seed = await photon[f.mapping.findMany!]['create']({
               data: f.data,
