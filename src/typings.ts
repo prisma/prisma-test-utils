@@ -65,17 +65,14 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
          * fields.
          */
         switch (getRelationType(model, field)) {
-          case '1-to-1': {
-            return null
-          }
           case '1-to-many': {
             return `${field.name}?: { min?: number, max?: number }`
           }
-          case 'many-to-1': {
-            return null
+          case 'many-to-many': {
+            return `${field.name}?: { min?: number, max?: number }`
           }
           default: {
-            return `${field.name}?: { min?: number, max?: number }`
+            return null
           }
         }
       }
@@ -98,9 +95,6 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
     type: string,
   ): 'number' | 'string' | 'boolean' {
     switch (type) {
-      case 'ID': {
-        return 'string'
-      }
       case 'String': {
         return 'string'
       }
@@ -110,8 +104,12 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
       case 'Float': {
         return 'number'
       }
-      case 'Date': {
-        return 'string'
+      case 'Boolean': {
+        return 'boolean'
+      }
+      /* istanbul ignore next */
+      default: {
+        throw new Error(`Something very unexpected happened (${type})!`)
       }
     }
   }

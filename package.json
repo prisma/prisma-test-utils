@@ -13,7 +13,8 @@
     "build": "rimraf dist && tsc -b",
     "build:runtime": "node scripts/build-runtime.js",
     "clean": "rimraf ./node_modules/ && rimraf ./*/node_modules/",
-    "prepublishOnly": "npm-run-all build build:runtime"
+    "prepublishOnly": "npm-run-all build build:runtime",
+    "test": "jest"
   },
   "dependencies": {
     "@types/chance": "^1.0.4",
@@ -23,10 +24,10 @@
     "multilines": "^1.0.2"
   },
   "devDependencies": {
-    "@jest/types": "^24.8.0",
     "@prisma/cli": "^0.0.17",
     "@prisma/lift": "^0.0.93",
     "@prisma/photon": "^0.0.111",
+    "@types/jest": "^24.0.15",
     "@types/lodash": "^4.14.134",
     "@types/node": "^12.0.8",
     "@zeit/ncc": "^0.19.1",

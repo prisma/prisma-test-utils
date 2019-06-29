@@ -13,6 +13,7 @@ module.exports = {
     '!**/node_modules/**',
     '!**/vendor/**',
     '!**/generated/**',
+    '!**/tests/**',
   ],
   verbose: true,
   coverageDirectory: './coverage',

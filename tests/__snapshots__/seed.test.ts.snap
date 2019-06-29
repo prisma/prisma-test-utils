@@ -1,0 +1,43 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`seed function: generates correct typings 1`] = `
+"interface GeneratedSeedModels {
+  \\"*\\": { amount: number }
+  User: { 
+  amount: number, 
+  factory?: {
+    id?: () => string
+name?: () => string
+email?: () => string
+isActive?: () => boolean
+friends?: { min?: number, max?: number } 
+  }
+}
+Pet: { 
+  amount: number, 
+  factory?: {
+    id?: () => string
+name?: () => string
+animal: () => Dog | Cat | Dinosaur
+toys?: { min?: number, max?: number } 
+  }
+}
+Toy: { 
+  amount: number, 
+  factory?: {
+    id?: () => string
+name?: () => string
+price?: () => number 
+  }
+}
+House: { 
+  amount: number, 
+  factory?: {
+    id?: () => string
+address?: () => string
+numberOfRooms?: () => number
+residents?: { min?: number, max?: number } 
+  }
+}
+}"
+`;
