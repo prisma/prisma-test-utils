@@ -127,7 +127,7 @@ export async function copyVFS(vfs: VirtualFS): Promise<void> {
 
     try {
       await Promise.all(actions)
-    } catch (err) {
+    } catch (err) /* istanbul ignore */ {
       throw err
     }
   }
@@ -146,7 +146,7 @@ export async function writeToFS(vfs: VirtualFS): Promise<void> {
 
   try {
     await Promise.all(actions)
-  } catch (err) {
+  } catch (err) /* istanbul ignore */ {
     throw err
   }
 }
