@@ -17,7 +17,7 @@ describe('seed function:', () => {
     dmmf = await getDmmf()
   })
 
-  test('seeds the data correctly', async () => {})
+  test.todo('seeds the data correctly', async () => {})
 
   test('generates correct typings', async () => {
     expect(generateGeneratedSeedModelsType(dmmf)).toMatchSnapshot()
