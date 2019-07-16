@@ -1,9 +1,8 @@
+import { LiftEngine, DataSource } from '@prisma/lift'
+import { getDmmf, generatorDefinition } from '@prisma/photon'
+import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import * as os from 'os'
 import * as path from 'path'
-import { DMMF } from '@prisma/photon/runtime/dmmf-types'
-import { getDmmf } from './utils'
-
-/* src */
 
 import { generateGeneratedSeedModelsType } from '../src/typings'
 
@@ -17,7 +16,9 @@ describe('seed function:', () => {
     dmmf = await getDmmf()
   })
 
-  test.todo('seeds the data correctly', async () => {})
+  test('seeds the data correctly', async () => {
+    const
+  })
 
   test('generates correct typings', async () => {
     expect(generateGeneratedSeedModelsType(dmmf)).toMatchSnapshot()

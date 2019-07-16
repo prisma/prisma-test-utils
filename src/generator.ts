@@ -5,7 +5,7 @@ import * as path from 'path'
 import { ModuleKind, ScriptTarget } from 'typescript'
 
 import { VirtualFS, writeToFS, copyVFS, compileVFS } from './vfs'
-import { generateGeneratedSeedModelsType } from './typings'
+import { generateGeneratedSeedModelsType } from './typings/seed'
 
 /**
  * Generates prisma-test-utils library using Prisma Generators.

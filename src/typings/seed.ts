@@ -1,7 +1,7 @@
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import ml from 'multilines'
 import { EOL } from 'os'
-import { withDefault, filterMap } from './static/utils'
+import { withDefault, filterMap } from '../static/utils'
 
 /**
  * Generates input types for the `seed` function.
