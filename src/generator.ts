@@ -6,6 +6,7 @@ import { ModuleKind, ScriptTarget } from 'typescript'
 
 import { VirtualFS, writeToFS, copyVFS, compileVFS } from './vfs'
 import { generateGeneratedSeedModelsType } from './typings/seed'
+import { generatePoolType } from './typings/pool'
 
 /**
  * Generates prisma-test-utils library using Prisma Generators.
@@ -79,14 +80,13 @@ export async function generatePrismaTestUtils(
   |   SeedModelFieldRelationConstraint,
   | } from './static'
   `
-
   const poolLib = mls`
   | import { DMMF } from '@prisma/photon/runtime/dmmf-types';
-  | import { getPool } from './static';
+  | import { getMySQLPool, getPostgreSQLPool, getSQLitePool } from './static';
   |
   | const dmmf: DMMF.Document = ${JSON.stringify(dmmf)};
   |
-  | export default getPool(dmmf);
+  | export default ${generatePoolType(dmmf)}(dmmf);
   | export { Pool, PoolOptions, DBInstance } from './static';
   `
 

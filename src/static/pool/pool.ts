@@ -1,31 +1,113 @@
-import { Pool, PoolOptions, DBInstance } from '../types'
+import { Pool, DBInstance } from '../types'
+
+export type PoolOptions = {
+  max: number
+}
 
 export abstract class InternalPool implements Pool {
   protected dbs: {
     booting: string[]
-    idle: DBInstance[]
     busy: DBInstance[]
   }
   protected waiters: Waiter[]
   protected capacity: number
-  /* TODO: */
 
-  constructor(options?: PoolOptions) {
+  constructor(options: PoolOptions) {
     this.dbs = {
       booting: [],
-      idle: [],
       busy: [],
     }
     this.waiters = []
+    this.capacity = options.max
   }
 
   /**
-   *
+   * A required method used to create new databases in the pool.
    */
-  public abstract async createDBInstance(): Promise<void>
+  protected abstract async createDBInstance(id?: string): Promise<DBInstance>
 
   /**
-   * Run the encapsulated funciton.
+   * A required methdo used to delete databases in the pool.
+   *
+   * @param instance
+   */
+  protected abstract async deleteDBInstance(
+    instance?: DBInstance,
+  ): Promise<void>
+
+  /**
+   * Creates a new DBInstance and occupies the space in the pool.
+   */
+  public async getDBInstance(): Promise<DBInstance> {
+    /**
+     * If full capacity is not yet reached create new instance.
+     * Otherwise, return a waiter which will wait until there's
+     * an available space.
+     */
+    if (this.dbs.busy.length + this.dbs.booting.length < this.capacity) {
+      /* Generates unique DB identifier. */
+      const id = Math.random()
+        .toString(36)
+        .slice(2)
+
+      /* Creates a new DBInstance. */
+      this.dbs.booting = this.dbs.booting.concat(id)
+      const dbInstance = await this.createDBInstance(id)
+      this.dbs.booting = this.dbs.booting.filter(dbId => dbId !== id)
+
+      /**
+       * If there's a waiter in the line it first gets the instnace.
+       * A new waiter is created for the current request.
+       *
+       * If there are no waiters in the line, we return the DB instance.
+       */
+      const [waiter, ...remainingWaiters] = this.waiters
+      if (waiter) {
+        /**
+         * Gives an instances to existing waiter and
+         * returns a new waiter.
+         */
+        waiter.allocate(dbInstance)
+
+        const newWaiter = new Waiter()
+        this.waiters = [...remainingWaiters, newWaiter]
+
+        return waiter.wait()
+      } else {
+        return dbInstance
+      }
+    } else {
+      /* Add to the line. */
+      const waiter = new Waiter()
+      this.waiters = [...this.waiters, waiter]
+
+      return waiter.wait()
+    }
+  }
+
+  /**
+   * Releases a db isntance in the pool and triggers the creation
+   * of new instance if there are waiters.
+   *
+   * @param db
+   */
+  public async releaseDBInstance(db: DBInstance): Promise<void> {
+    const instance = this.dbs.busy.find(bdb => bdb.cwd === db.cwd)!
+    try {
+      /* Finds the busy instance and releases it. */
+      await this.deleteDBInstance(instance)
+      this.dbs.busy = this.dbs.busy.filter(bdb => bdb.cwd !== db.cwd)
+
+      /* Triggers the creation of new instance if there's a waiter for it. */
+      if (this.waiters.length > 0) this.getDBInstance()
+    } catch (err) {
+      throw err
+    }
+  }
+  /**
+   * A function wrapper which makes sure that the db instance is
+   * correctly allocated prior to execution of the function, and correctly
+   * released after the execution has finished.
    *
    * @param fn
    */
@@ -42,77 +124,15 @@ export abstract class InternalPool implements Pool {
   }
 
   /**
-   * Returns a Photon instance from the pool once made available, and cleans
-   * and populates the instance if necessary.
-   *
-   * The returned Photon instance includes the db identifier used for
-   * the database releasing.
-   *
-   * @param opts
-   */
-  public async getDBInstance(): Promise<DBInstance> {
-    /**
-     * Check whether any of the instances is available and creates a new one
-     * if the pool limit is not yet reached, otherwise waits for the available
-     * instance.
-     */
-    if (this.dbs.idle.length > 0) {
-      /* If available take a resource and return it right away. */
-      const [db, ...remaining] = this.dbs.idle
-      this.dbs.idle = remaining
-      this.dbs.busy = [...this.dbs.busy, db]
-
-      return db
-    } else {
-      /* Add to the line. */
-      const waiter = new Waiter()
-      this.waiters = [...this.waiters, waiter]
-
-      /**
-       * If full capacity is not yet reached create new instance.
-       * Otherwise, throw an error.
-       */
-      if (
-        this.dbs.idle.length + this.dbs.busy.length + this.dbs.booting.length <
-        this.capacity
-      ) {
-        this.createDBInstance()
-      } else {
-        throw new Error(`You've reached the upper limit of instances.`)
-      }
-
-      return waiter.wait()
-    }
-  }
-
-  /**
-   * Makes the instance available.
-   */
-  public async releaseDBInstance(db: DBInstance): Promise<void> {
-    /**
-     * Find the busy instance, remove that instance and give
-     * it to the next in line.
-     */
-    const instance = this.dbs.busy.find(bdb => bdb.cwd === db.cwd)!
-    this.dbs.busy = this.dbs.busy.filter(bdb => bdb.cwd !== db.cwd)
-
-    /* Allocate to the next waiter in line or make idle. */
-    // if (this.waiters.length > 0) {
-    //   const [waiter, ...remainingWaiters] = this.waiters
-    //   this.waiters = remainingWaiters
-    //   waiter.allocate(instance)
-    // } else {
-    //   this.dbs.idle = [...this.dbs.idle, instance]
-    // }
-
-    this.dbs.idle = [...this.dbs.idle, instance]
-  }
-
-  /**
-   * Drains the pool by deleting all instances.
+   * Releases all remaining instances in the pool.
    */
   public async drain(): Promise<void> {
-    // TODO
+    const actions = this.dbs.busy.map(this.releaseDBInstance)
+    try {
+      await Promise.all(actions)
+    } catch (err) {
+      throw err
+    }
   }
 }
 

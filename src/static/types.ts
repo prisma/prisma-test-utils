@@ -47,12 +47,6 @@ export type SeedOptions<PhotonType, GeneratedSeedModel extends SeedModels> = {
  * Types used to describe the Pool.
  */
 
-export type PoolOptions = {
-  pool: {
-    max?: number
-  }
-}
-
 export type DBInstance = {
   url: string
   cwd: string
@@ -60,8 +54,8 @@ export type DBInstance = {
 }
 
 export abstract class Pool {
-  abstract async run<T>(fn: (db: DBInstance) => Promise<T>): Promise<T>
   abstract async getDBInstance(): Promise<DBInstance>
   abstract async releaseDBInstance(db: DBInstance): Promise<void>
+  abstract async run<T>(fn: (db: DBInstance) => Promise<T>): Promise<T>
   abstract async drain(): Promise<void>
 }

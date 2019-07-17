@@ -17,12 +17,12 @@ Please checkout the `/examples` directory or the standalone [`prisma-faker-examp
 
 In testing workflows, generating seed data usually includes a lot of boilerplate. We either rely on hardcoded fixtures that need to be migrated with changing code.
 
-`@prisma/faker` solves this by generating seed data based on your Prisma schema, as your application evolves, the generated data also evolves deterministically.
+`@prisma/seed` solves this by generating seed data based on your Prisma schema, as your application evolves, the generated data also evolves deterministically.
 
 **Import**
 
 ```js
-import { seed, FakerBag } from '@prisma/faker'
+import { seed, FakerBag } from '@prisma/seed'
 ```
 
 **Usage**
@@ -104,4 +104,61 @@ test('users are queried correctly', async () => {
   client.disconnect()
   pool.releaseDBInstance(db)
 })
+```
+
+**API**
+
+```ts
+/* PostgreSQL */
+
+interface PostgreSQLConnection {
+  host: string
+  port: number
+  user: string
+  password: string
+  database: string
+  schema: string
+}
+
+interface PostgreSQLPoolOptions {
+  connection: (id?: string) => PostgreSQLConnection
+  prisma: {
+    cwd: (id?: string) => string
+  }
+  pool?: {
+    max?: number
+  }
+}
+
+/* MySQL */
+
+interface MySQLConnection {
+  host: string
+  port: string
+  user: string
+  password: string
+  database: string
+}
+
+interface MySQLPoolOptions {
+  connection: (id?: string) => MySQLConnection
+  prisma: {
+    cwd: (id?: string) => string
+  }
+  pool?: {
+    max?: number
+  }
+}
+
+/* SQLite */
+
+interface SQLitePoolOptions {
+  databasePath: (id?: string) => string
+  prisma: {
+    cwd: (id?: string) => string
+  }
+  pool?: {
+    max?: number
+  }
+}
 ```

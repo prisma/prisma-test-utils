@@ -1,12 +1,16 @@
 import { LiftEngine, DataSource } from '@prisma/lift'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
+import * as fs from 'fs'
 import _ from 'lodash'
 import * as os from 'os'
 import * as path from 'path'
+import { promisify } from 'util'
 
 import { InternalPool } from '../pool'
-import { getTmpDBFile } from '../utils'
-import { Pool, PoolOptions, DBInstance } from '../../types'
+import { Pool, DBInstance } from '../../types'
+import { migrateLift } from '../lift'
+
+const fsUnlink = promisify(fs.unlink)
 
 /**
  * Creates a dmmf specific Internal Pool instance.
@@ -24,42 +28,36 @@ export function getSQLitePool(
 }
 
 export interface SQLitePoolOptions {
-  getDBFile?: () => string
-  capacity?: number
+  databasePath: (id?: string) => string
+  prisma: {
+    cwd: (id?: string) => string
+  }
+  pool?: {
+    max?: number
+  }
 }
 
 class SQLitePool extends InternalPool {
   private dmmf: DMMF.Document
-  private getDBFile: () => string
+  private getDatabasePath: (id?: string) => string
+  private getCwdPath: (id?: string) => string
 
-  constructor(dmmf: DMMF.Document, options?: SQLitePoolOptions) {
-    super({
-      pool: {
-        max: _.get(options, ['capacity'], Infinity),
-      },
-    })
+  constructor(dmmf: DMMF.Document, options: SQLitePoolOptions) {
+    super({ max: _.get(options, ['pool', 'max'], Infinity) })
 
     this.dmmf = dmmf
-
-    if (options && options.getDBFile) {
-      this.getDBFile = options.getDBFile
-    } else {
-      this.getDBFile = getTmpDBFile
-    }
+    this.getDatabasePath = options.databasePath
+    this.getCwdPath = options.prisma.cwd
   }
 
   /**
    * Creates a new DB instances and lifts a migration.
    */
-  async createDBInstance(): Promise<void> {
+  async createDBInstance(id: string): Promise<DBInstance> {
     try {
       /* Constants */
-
-      const id = Math.random()
-        .toString(36)
-        .slice(2)
-      const dbFile = this.getDBFile()
-      const tmpDir = path.dirname(dbFile)
+      const dbFile = this.getDatabasePath(id)
+      const cwdPath = this.getCwdPath(id)
       const datasources: DataSource[] = [
         {
           name: 'db',
@@ -69,82 +67,58 @@ class SQLitePool extends InternalPool {
         },
       ]
 
-      /* Occupy resource pool. */
-      this.dbs.booting = [...this.dbs.booting, id]
+      /* Migrate using Lift. */
 
-      /* Migrate Datamodel. */
-      const lift = new LiftEngine({
-        projectDir: tmpDir,
+      const { datamodel } = await migrateLift({
+        id,
+        projectDir: cwdPath,
+        datasources,
       })
-
-      const datamodelDmmf = {
-        enums: [],
-        models: [],
-        ...this.dmmf.datamodel,
-      }
-
-      const { datamodel } = await lift.convertDmmfToDml({
-        dmmf: JSON.stringify(datamodelDmmf),
-        config: { datasources, generators: [] },
-      })
-
-      const {
-        datamodelSteps,
-        errors: stepErrors,
-      } = await lift.inferMigrationSteps({
-        migrationId: id,
-        datamodel: datamodel,
-        assumeToBeApplied: [],
-        sourceConfig: datamodel,
-      })
-
-      if (stepErrors.length > 0) {
-        throw stepErrors
-      }
-
-      const { errors } = await lift.applyMigration({
-        force: true,
-        migrationId: id,
-        steps: datamodelSteps,
-        sourceConfig: datamodel,
-      })
-
-      if (errors.length > 0) {
-        throw errors
-      }
-
-      const progress = () =>
-        lift.migrationProgess({
-          migrationId: id,
-          sourceConfig: datamodel,
-        })
-
-      while ((await progress()).status !== 'MigrationSuccess') {
-        /* Just wait */
-      }
-
-      /* Release resource pool. */
-      this.dbs.booting = this.dbs.booting.filter(dbId => dbId !== id)
 
       const instance: DBInstance = {
         url: dbFile,
-        cwd: tmpDir,
+        cwd: cwdPath,
         datamodel: datamodel,
       }
 
-      /**
-       * If there's a waiter in line allocate an instance, otherwise make it idle.
-       */
-      if (this.waiters.length > 0) {
-        const [waiter, ...remainingWaiters] = this.waiters
-        this.waiters = remainingWaiters
-        this.dbs.busy = [...this.dbs.busy, instance]
-        waiter.allocate(instance)
-      } else {
-        this.dbs.idle = [...this.dbs.idle, instance]
-      }
+      return instance
     } catch (err) {
       throw err
     }
   }
+
+  /**
+   * Deletes the db files.
+   *
+   * @param instance
+   */
+  protected async deleteDBInstance(instance: DBInstance): Promise<void> {
+    try {
+      await fsUnlink(instance.url)
+    } catch (err) {
+      throw err
+    }
+  }
+}
+
+/**
+ * Allocates a new space in the tmp dir for the db instance.
+ *
+ * @param id
+ */
+export function getTmpSQLiteDB(id: string): string {
+  const tmpDir = os.tmpdir()
+  const dbFile = path.join(tmpDir, `./prisma-sqlite-${id}-db.db`)
+  return dbFile
+}
+
+/**
+ * Allocates a new tmp dir path for Prisma migrations.
+ *
+ * @param id
+ */
+export function getTmpCwd(id: string): string {
+  const tmpDir = os.tmpdir()
+  const cwdDir = path.join(tmpDir, `./prisma-migrations-${id}-db/`)
+  return cwdDir
 }
