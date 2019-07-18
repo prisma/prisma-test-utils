@@ -73,6 +73,7 @@ class SQLitePool extends InternalPool {
         id,
         projectDir: cwdPath,
         datasources,
+        dmmf: this.dmmf,
       })
 
       const instance: DBInstance = {

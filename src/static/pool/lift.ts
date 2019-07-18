@@ -1,9 +1,11 @@
 import { DataSource, LiftEngine } from '@prisma/lift'
+import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 
 export interface LiftMigrationOptions {
   id: string
   projectDir: string
   datasources: DataSource[]
+  dmmf: DMMF.Document
 }
 
 /**
@@ -15,13 +17,14 @@ export async function migrateLift({
   id,
   projectDir,
   datasources,
+  dmmf,
 }: LiftMigrationOptions): Promise<{ id: string; datamodel: string }> {
   const lift = new LiftEngine({ projectDir: projectDir })
 
   const datamodelDmmf = {
     enums: [],
     models: [],
-    ...this.dmmf.datamodel,
+    ...dmmf.datamodel,
   }
 
   const { datamodel } = await lift.convertDmmfToDml({

@@ -17,28 +17,28 @@
     "test": "jest"
   },
   "dependencies": {
-    "@types/chance": "^1.0.4",
+    "@types/chance": "^1.0.5",
     "chance": "^1.0.18",
-    "fs-extra": "^8.0.1",
-    "lodash": "^4.17.11",
+    "fs-extra": "^8.1.0",
+    "lodash": "^4.17.14",
     "multilines": "^1.0.2",
     "mysql": "^2.17.1",
     "pg": "^7.11.0"
   },
   "devDependencies": {
-    "@prisma/cli": "^0.0.17",
-    "@prisma/lift": "^0.0.93",
-    "@prisma/photon": "^0.0.111",
+    "@prisma/cli": "^0.0.35",
+    "@prisma/lift": "^0.0.155",
+    "@prisma/photon": "^0.0.177",
     "@types/jest": "^24.0.15",
-    "@types/lodash": "^4.14.134",
+    "@types/lodash": "^4.14.136",
     "@types/mysql": "^2.15.6",
-    "@types/node": "^12.0.8",
+    "@types/node": "^12.6.8",
     "@types/pg": "^7.4.14",
-    "@zeit/ncc": "^0.19.1",
+    "@zeit/ncc": "^0.20.4",
     "chalk": "^2.4.2",
-    "execa": "^1.0.0",
+    "execa": "^2.0.3",
     "fs-monkey": "^0.3.3",
-    "husky": "^2.3.0",
+    "husky": "^3.0.0",
     "jest": "^24.8.0",
     "npm-run-all": "^4.1.5",
     "prettier": "^1.17.1",
@@ -46,7 +46,7 @@
     "rimraf": "^2.6.3",
     "ts-jest": "^24.0.2",
     "ts-node": "^8.3.0",
-    "typescript": "^3.5.2"
+    "typescript": "^3.5.3"
   },
   "peerDependencies": {
     "@prisma/cli": "*",

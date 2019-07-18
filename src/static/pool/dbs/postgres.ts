@@ -7,6 +7,8 @@ import { InternalPool } from '../pool'
 import { Pool, DBInstance } from '../../types'
 import { migrateLift } from '../lift'
 
+// TODO: URL parsing!
+
 /**
  * Creates a dmmf specific Internal Pool instance.
  *
@@ -34,7 +36,7 @@ export interface PostgreSQLConnection {
 export interface PostgreSQLPoolOptions {
   connection: (id?: string) => PostgreSQLConnection
   prisma: {
-    cwd: (id?: string) => string
+    projectDir: (id?: string) => string
   }
   pool?: {
     max?: number
@@ -43,70 +45,64 @@ export interface PostgreSQLPoolOptions {
 
 class PostgreSQLPool extends InternalPool {
   private dmmf: DMMF.Document
-  private getClient: (
-    id?: string,
-  ) => Promise<{
-    client: pg.Client
-    connection: PostgreSQLConnection
-  }>
-  private getCwdPath: (id?: string) => string
+  private getConnection: (id?: string) => PostgreSQLConnection
+  private getPirjectDir: (id?: string) => string
 
   constructor(dmmf: DMMF.Document, options: PostgreSQLPoolOptions) {
     super({ max: 0 })
 
     this.dmmf = dmmf
-    this.getClient = getPostgreSQLClient(options.connection)
-    this.getCwdPath = options.prisma.cwd
+    this.getConnection = options.connection
+    this.getPirjectDir = options.prisma.projectDir
   }
 
   /**
    * Creates a DB isntance.
    */
   async createDBInstance(id: string): Promise<DBInstance> {
-    const { client, connection } = await this.getClient()
-    const dbUrl = readPostgreSQLUrl(connection)
-    const cwdPath = this.getCwdPath()
+    const connection = await this.getConnection(id)
+    const url = readPostgreSQLUrl(connection)
+    const projectDir = this.getPirjectDir(id)
 
     const datasources: DataSource[] = [
       {
         name: 'db',
         connectorType: 'sqlite',
-        url: `postgres:${dbUrl}`,
+        url: url,
         config: {},
       },
     ]
 
-    try {
-      /* Creates database. */
-      client.query(
-        `CREATE DATABASE ${connection.database} OWNER = ${connection.user} ENCODING = 'UTF-8' TEMPLATE template1`,
-      )
+    /* Migrate using Lift. */
 
-      /* Migrate using Lift. */
+    const { datamodel } = await migrateLift({
+      id,
+      datasources,
+      projectDir: projectDir,
+      dmmf: this.dmmf,
+    })
 
-      const { datamodel } = await migrateLift({
-        id,
-        datasources,
-        projectDir: cwdPath,
-      })
-
-      const instance: DBInstance = {
-        url: readPostgreSQLUrl(connection),
-        cwd: cwdPath,
-        datamodel: datamodel,
-      }
-
-      return instance
-    } catch (err) {
-      throw err
+    const instance: DBInstance = {
+      url: readPostgreSQLUrl(connection),
+      cwd: projectDir,
+      datamodel: datamodel,
     }
+
+    return instance
   }
 
   /**
    * Delets DB instance.
    */
-  async deleteDBInstance(isntance: DBInstance): Promise<void> {
-    // TODO:
+  async deleteDBInstance(instance: DBInstance): Promise<void> {
+    const connection = parsePostgreSQLUrl(instance.url)
+    const client = await getPostgreSQLClient(connection)
+
+    try {
+      await client.query(`DROP DATABASE IF EXISTS ${connection.database}`)
+    } catch (err) {
+      throw err
+    }
   }
 }
 
@@ -127,33 +123,34 @@ function readPostgreSQLUrl(connection: PostgreSQLConnection): string {
  * @param url
  */
 function parsePostgreSQLUrl(url: string): PostgreSQLConnection {
-  return { host: '', port: 0, user: '', password: '', database: '', schema: '' }
+  const [user, password, host, portString, database] = url.match(
+    'postgres://(w+):(w+)@(w+):(d+)/(w+)',
+  )
+  const port = parseInt(portString, 10)
+  return { user, password, host, port, database, schema: '' }
 }
 
 /**
  * Returns a Postgres Client from the pool configuration and makes
  * sure that the connection is established.
  *
- * @param options
+ * @param connection
  */
-function getPostgreSQLClient(
-  getConnection: () => PostgreSQLConnection,
-): () => Promise<{ client: pg.Client; connection: PostgreSQLConnection }> {
-  return async () => {
-    const connection = getConnection()
-    const client = new pg.Client({
-      host: connection.host,
-      port: connection.port,
-      user: connection.user,
-      password: connection.password,
-    })
+async function getPostgreSQLClient(
+  connection: PostgreSQLConnection,
+): Promise<pg.Client> {
+  const client = new pg.Client({
+    host: connection.host,
+    port: connection.port,
+    user: connection.user,
+    password: connection.password,
+  })
 
-    /* Establishes a connection before returning the instance. */
-    try {
-      await client.connect()
-      return { client, connection }
-    } catch (err) {
-      throw err
-    }
+  /* Establishes a connection before returning the instance. */
+  try {
+    await client.connect()
+    return client
+  } catch (err) {
+    throw err
   }
 }
