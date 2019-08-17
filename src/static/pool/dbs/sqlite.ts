@@ -1,4 +1,4 @@
-import { LiftEngine, DataSource } from '@prisma/lift'
+import { DataSource } from '@prisma/lift'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import * as fs from 'fs'
 import _ from 'lodash'
@@ -22,13 +22,13 @@ export function getSQLitePool(
 ): { new (options?: SQLitePoolOptions): Pool } {
   return class extends SQLitePool {
     constructor(options?: SQLitePoolOptions) {
-      super(dmmf, options)
+      super(dmmf, { databasePath: getTmpSQLiteDB, ...options })
     }
   }
 }
 
 export interface SQLitePoolOptions {
-  databasePath: (id?: string) => string
+  databasePath?: (id?: string) => string
   prisma: {
     cwd: (id?: string) => string
   }

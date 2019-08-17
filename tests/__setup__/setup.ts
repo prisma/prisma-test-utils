@@ -3,6 +3,7 @@ import {
   getCompiledGenerators,
   generatorDefinition as photonDefinition,
 } from '@prisma/photon'
+import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 
@@ -33,7 +34,7 @@ export default async () => {
 
   /* Generating... */
 
-  console.log(`Generating files...`)
+  console.log(`* Generating files...`)
   const generationStart = Date.now()
 
   await Promise.all(
@@ -56,7 +57,35 @@ export default async () => {
   )
 
   const generationEnd = Date.now()
-  console.log(`Done generating in: ${generationEnd - generationStart}.`)
+  console.log(`* Done generating tools in: ${generationEnd - generationStart}.`)
+
+  /* Fix prisma-test-utils static require for coverage. */
+
+  console.log('* FIXING require for STATIC')
+
+  const libStaticPath = path.join(__dirname, '../../src/static')
+  const relativeStaticRequire = `require("./static")`
+  const libStaticRequire = `require("${libStaticPath}")`
+
+  const seedPath = './@generated/prisma-test-utils/seed.js'
+  const poolPath = './@generated/prisma-test-utils/pool.js'
+
+  for (const db of Object.values(dbPaths)) {
+    const dbSeedPath = path.join(db, seedPath)
+    const dbPoolPath = path.join(db, poolPath)
+
+    const seedJS = fs
+      .readFileSync(dbSeedPath, 'utf-8')
+      .replace(relativeStaticRequire, libStaticRequire)
+    const poolJS = fs
+      .readFileSync(dbPoolPath, 'utf-8')
+      .replace(relativeStaticRequire, libStaticRequire)
+
+    fs.writeFileSync(dbSeedPath, seedJS)
+    fs.writeFileSync(dbPoolPath, poolJS)
+  }
+
+  console.log('* FIXED STATIC')
 
   console.log('DONE WITH SETUP!')
 }

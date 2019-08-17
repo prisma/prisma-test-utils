@@ -10,6 +10,7 @@ import {
   SeedOptions,
   SeedModelFieldDefinition,
   SeedModelFieldRelationConstraint,
+  SeedFunction,
 } from './types'
 import { withDefault } from './utils'
 
@@ -20,9 +21,7 @@ import { withDefault } from './utils'
  */
 export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
   dmmf: DMMF.Document,
-): (
-  options: SeedOptions<PhotonType, GeneratedSeedModels>,
-) => Promise<object[]> {
+): SeedFunction<PhotonType, GeneratedSeedModels> {
   return (options: SeedOptions<PhotonType, GeneratedSeedModels>) => {
     /**
      * The wrapped function which handles the execution of
@@ -927,6 +926,11 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
               const date = faker.date()
 
               return [pool, tasks, { ...acc, [field.name]: date }]
+            }
+            case 'Boolean': {
+              const boolean = faker.bool()
+
+              return [pool, tasks, { ...acc, [field.name]: boolean }]
             }
             default: {
               /* Relations */

@@ -61,13 +61,16 @@ export async function generatePrismaTestUtils(
   const seedLib = mls`
   | import Photon from '${photonPath}';
   | import { DMMF } from '@prisma/photon/runtime/dmmf-types';
-  | import { getSeed } from './static';
+  | import { getSeed, SeedModels, SeedFunction } from './static';
   |
-  | ${generateGeneratedSeedModelsType(dmmf)}
+  | interface GeneratedSeedModels extends SeedModels {
+  |   ${generateGeneratedSeedModelsType(dmmf)}
+  | }
   |
   | const dmmf: DMMF.Document = ${JSON.stringify(dmmf)};
   |
-  | export default getSeed<Photon, GeneratedSeedModels>(dmmf);
+  | export const seed: SeedFunction<Photon, GeneratedSeedModels>  = getSeed<Photon, GeneratedSeedModels>(dmmf);
+  | export default seed
   | export { GeneratedSeedModels }
   | export {
   |   SeedOptions,
@@ -76,7 +79,7 @@ export async function generatePrismaTestUtils(
   |   SeedModels,
   |   SeedModel,
   |   ID,
-  |   SeedModelFieldDefintiion,
+  |   SeedModelFieldDefinition,
   |   SeedModelFieldRelationConstraint,
   | } from './static'
   `
@@ -87,7 +90,8 @@ export async function generatePrismaTestUtils(
   | const dmmf: DMMF.Document = ${JSON.stringify(dmmf)};
   |
   | export default ${generatePoolType(options)}(dmmf);
-  | export { Pool, PoolOptions, DBInstance } from './static';
+  | export { MySQLPoolOptions, PostgreSQLPoolOptions, SQLitePoolOptions } from './static'
+  | export { Pool, DBInstance } from './static';
   `
 
   /* Static files */

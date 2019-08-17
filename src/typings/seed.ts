@@ -13,10 +13,8 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
   const enums = dmmf.datamodel.enums
 
   const generatedGenerateSeedModelsType = ml`
-  | interface GeneratedSeedModels {
-  |   "*": { amount: number }
-  |   ${models.map(generateSeedModelType).join(EOL)}
-  | }
+  | "*": { amount: number }
+  | ${models.map(generateSeedModelType).join(EOL)}
   `
 
   return generatedGenerateSeedModelsType
@@ -29,11 +27,18 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
    */
   function generateSeedModelType(model: DMMF.Model): string {
     const fields = model.fields
+
+    /**
+     * Enum fields have to be manually resolved. Because of that,
+     *  factory is required on types that have enum fields.
+     */
+    const hasEnumFields = fields.some(f => f.kind === 'enum')
+
     /* prettier-ignore */
     const generatedSeedModelType = ml`
     | ${model.name}: { 
     |   amount: number, 
-    |   factory?: {
+    |   factory${hasEnumFields ? "" : "?"}: {
     |     ${filterMap(fields, f => generateSeedModelFieldType(model, f)).join(EOL)} 
     |   }
     | }
@@ -57,7 +62,9 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
          * of the enum values.
          */
         const { values } = enums.find(e => e.name === field.type)!
-        return `${field.name}: () => ${values.join(` | `)}`
+        return `${field.name}: () => ${values
+          .map(val => `"${val}"`)
+          .join(` | `)}`
       }
       case 'object': {
         /**

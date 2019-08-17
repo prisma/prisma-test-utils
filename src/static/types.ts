@@ -3,6 +3,10 @@ import { Dictionary } from 'lodash'
 /**
  * Types used to describe the seed models.
  */
+export type SeedFunction<PhotonType, GeneratedSeedModels extends SeedModels> = (
+  options: SeedOptions<PhotonType, GeneratedSeedModels>,
+) => Promise<object[]>
+
 export type SeedModelsDefinition<GeneratedSeedModels extends SeedModels> = (
   kit: SeedKit,
 ) => GeneratedSeedModels
@@ -29,6 +33,7 @@ export type SeedModelFieldDefinition =
   | ID
   | string
   | number
+  | boolean
   | SeedModelFieldRelationConstraint
 
 export type SeedModelFieldRelationConstraint = {

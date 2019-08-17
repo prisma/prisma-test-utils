@@ -14,6 +14,7 @@
     "build:runtime": "node scripts/build-runtime.js",
     "clean": "rimraf ./node_modules/ && rimraf ./*/node_modules/",
     "prepublishOnly": "npm-run-all build build:runtime",
+    "pretest": "npm-run-all build:runtime",
     "test": "jest"
   },
   "dependencies": {
