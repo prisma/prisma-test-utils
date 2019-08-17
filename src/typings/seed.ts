@@ -37,7 +37,7 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
     /* prettier-ignore */
     const generatedSeedModelType = ml`
     | ${model.name}: { 
-    |   amount: number, 
+    |   amount?: number, 
     |   factory${hasEnumFields ? "" : "?"}: {
     |     ${filterMap(fields, f => generateSeedModelFieldType(model, f)).join(EOL)} 
     |   }

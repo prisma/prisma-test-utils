@@ -21,7 +21,7 @@ export type SeedModels = {
 }
 
 export type SeedModel = {
-  amount: number
+  amount?: number
   factory?: Dictionary<
     SeedModelFieldDefinition | (() => SeedModelFieldDefinition)
   >

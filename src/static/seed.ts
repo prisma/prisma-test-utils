@@ -220,7 +220,10 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
       const fallback = seedModels['*']
       const definitionConstructor = _.get(seedModels, model)
 
-      return withDefault(fallback, definitionConstructor)
+      return withDefault(fallback, {
+        amount: seedModels['*'].amount,
+        ...definitionConstructor,
+      })
     }
 
     /**

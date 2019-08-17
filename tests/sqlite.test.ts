@@ -46,5 +46,50 @@ describe('sql:', () => {
     expect(data).toMatchSnapshot()
   })
 
-  test('creates pool correctly', async () => {})
+  test('correctly seeds the data', async () =>
+    pool.run(async db => {
+      const client = new Photon({
+        datasources: {
+          sqlite: db.url,
+        },
+      })
+
+      await seed({
+        client,
+        models: kit => ({
+          '*': {
+            amount: 5,
+          },
+          House: {
+            amount: 3,
+          },
+          Pet: {
+            amount: 3,
+            factory: {
+              animal: () => 'Dog',
+            },
+          },
+          Toy: {
+            amount: 3,
+          },
+          User: {
+            amount: 2,
+          },
+        }),
+        persist: true,
+      })
+
+      /* Tests. */
+
+      const data = await Promise.all([
+        client.houses(),
+        client.pets(),
+        client.toys(),
+        client.users(),
+      ])
+
+      expect(data).toMatchSnapshot()
+    }))
+
+  test('pool works as expected', async () => {})
 })
