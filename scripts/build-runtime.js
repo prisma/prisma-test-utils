@@ -47,16 +47,25 @@ let targetDir = path.join(__dirname, '../prisma-test-utils_ncc')
 const sourceFile = path.join(__dirname, '../src/static/index.ts')
 
 require('@zeit/ncc')(sourceFile, options)
-  .then(async ({ files }) => {
+  .then(async ({ code, map, assets }) => {
     // Assets is an object of asset file names to { source, permissions, symlinks }
     // expected relative to the output code (if any)
-    await saveToDisc(files, targetDir)
+    await saveToDisc(code, map, assets, targetDir)
   })
   .catch(console.error)
 
-async function saveToDisc(assets, outputDir) {
+async function saveToDisc(source, map, assets, outputDir) {
+  await del([
+    outputDir + '/**',
+    '!' + outputDir,
+    `!${path.join(outputDir, 'prisma')}`,
+    `!${path.join(outputDir, 'schema-inferrer-bin')}`,
+  ])
   await makeDir(outputDir)
-
+  assets['index.js'] = { source: fixCode(source) }
+  if (map) {
+    assets['index.js.map'] = map
+  }
   // TODO add concurrency when we would have too many files
   const madeDirs = {}
   await Promise.all(
@@ -67,13 +76,27 @@ async function saveToDisc(assets, outputDir) {
         await makeDir(targetDir)
         madeDirs[targetDir] = true
       }
-      console.log(
-        `writing`,
-        targetPath,
-        Math.round(file.source.length / 1024) + 'kB',
-      )
+      // if (filePath === 'index.d.ts') {
+      // let content = file.source.toString()
+      // content = content.replace('@prisma/engine-core', './dist/Engine')
+      //   await writeFile(targetPath, indexDTS, 'utf-8')
+      // } else {
+      console.log(`writing`, targetPath)
       await writeFile(targetPath, file.source)
+      // }
     }),
   )
   const after = Date.now()
+}
+
+function fixCode(code) {
+  return code
+    .split('\n')
+    .map(line => {
+      if (line.startsWith('NodeEngine.defaultPrismaPath = path.join(')) {
+        return `NodeEngine.defaultPrismaPath = path.join(__dirname + '/prisma');`
+      }
+      return line
+    })
+    .join('\n')
 }

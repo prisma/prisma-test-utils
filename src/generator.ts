@@ -37,7 +37,7 @@ export async function generatePrismaTestUtils(
     )`),
     [path.join(outputDir, './static/')]: eval(`path.join(
       __dirname,
-      '../prisma-test-utils_ncc/static/',
+      '../prisma-test-utils_ncc',
     )`),
   }
 

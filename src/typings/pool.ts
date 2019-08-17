@@ -8,8 +8,24 @@ import { GeneratorOptions } from '@prisma/cli'
 export function generatePoolType(
   options: GeneratorOptions,
 ): 'getPostgreSQLPool' | 'getMySQLPool' | 'getSQLitePool' {
-  const datasource = options.dataSources
+  const [datasource] = options.dataSources
 
-  console.log(datasource)
-  return 'getMySQLPool'
+  if (!datasource) {
+    throw new Error(`No defined datasource!`)
+  }
+
+  switch (datasource.connectorType) {
+    case 'sqlite': {
+      return 'getSQLitePool'
+    }
+    case 'mysql': {
+      return 'getMySQLPool'
+    }
+    case 'postgresql': {
+      return 'getPostgreSQLPool'
+    }
+    default: {
+      throw new Error(`Unknown datasource: ${datasource.connectorType}`)
+    }
+  }
 }
