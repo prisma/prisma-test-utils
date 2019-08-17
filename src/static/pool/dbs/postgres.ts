@@ -1,11 +1,11 @@
-import { LiftEngine, DataSource } from '@prisma/lift'
+import { DataSource } from '@prisma/lift'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import _ from 'lodash'
 import pg from 'pg'
 
+import { migrateLift } from '../lift'
 import { InternalPool } from '../pool'
 import { Pool, DBInstance } from '../../types'
-import { migrateLift } from '../lift'
 
 // TODO: URL parsing!
 

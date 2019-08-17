@@ -1,4 +1,4 @@
-import { DMMF } from '@prisma/photon/runtime/dmmf-types'
+import { GeneratorOptions } from '@prisma/cli'
 
 /**
  * Returns a dedicated function name matching the specified datasource.
@@ -6,13 +6,10 @@ import { DMMF } from '@prisma/photon/runtime/dmmf-types'
  * @param dmmf
  */
 export function generatePoolType(
-  dmmf: DMMF.Document,
+  options: GeneratorOptions,
 ): 'getPostgreSQLPool' | 'getMySQLPool' | 'getSQLitePool' {
-  const datasource = dmmf
+  const datasource = options.dataSources
 
-  switch (key) {
-    case value: {
-      return 'getMySQLPool'
-    }
-  }
+  console.log(datasource)
+  return 'getMySQLPool'
 }

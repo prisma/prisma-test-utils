@@ -19,7 +19,7 @@ export async function migrateLift({
   datasources,
   dmmf,
 }: LiftMigrationOptions): Promise<{ id: string; datamodel: string }> {
-  const lift = new LiftEngine({ projectDir: projectDir })
+  const lift = new LiftEngine({ projectDir: projectDir, schemaPath: '' })
 
   const datamodelDmmf = {
     enums: [],

@@ -1,3 +1,5 @@
+const path = require('path')
+
 module.exports = {
   roots: ['<rootDir>/tests', '<rootDir>/src'],
   testEnvironment: 'node',
@@ -18,4 +20,6 @@ module.exports = {
   verbose: true,
   coverageDirectory: './coverage',
   coverageReporters: ['json', 'lcov', 'text', 'clover', 'html'],
+  globalSetup: path.join(__dirname, './tests/__setup__/setup.ts'),
+  globalTeardown: path.join(__dirname, './tests/__setup__/teardown.ts'),
 }

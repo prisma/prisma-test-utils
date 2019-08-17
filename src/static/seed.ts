@@ -169,7 +169,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
               min: 1,
               max: 1,
             },
-          )
+          ) as object
 
           switch (typeof seedModelField) {
             case 'object': {

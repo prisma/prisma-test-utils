@@ -6,9 +6,9 @@ import * as os from 'os'
 import * as path from 'path'
 import { promisify } from 'util'
 
+import { migrateLift } from '../lift'
 import { InternalPool } from '../pool'
 import { Pool, DBInstance } from '../../types'
-import { migrateLift } from '../lift'
 
 const fsUnlink = promisify(fs.unlink)
 
