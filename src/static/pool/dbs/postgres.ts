@@ -16,10 +16,11 @@ import { Pool, DBInstance } from '../../types'
  */
 export function getPostgreSQLPool(
   dmmf: DMMF.Document,
+  cwd: string,
 ): { new (options: PostgreSQLPoolOptions): Pool } {
   return class extends PostgreSQLPool {
     constructor(options: PostgreSQLPoolOptions) {
-      super(dmmf, options)
+      super(dmmf, options, cwd)
     }
   }
 }
@@ -35,9 +36,6 @@ export interface PostgreSQLConnection {
 
 export interface PostgreSQLPoolOptions {
   connection: (id?: string) => PostgreSQLConnection
-  prisma: {
-    projectDir: (id?: string) => string
-  }
   pool?: {
     max?: number
   }
@@ -45,15 +43,19 @@ export interface PostgreSQLPoolOptions {
 
 class PostgreSQLPool extends InternalPool {
   private dmmf: DMMF.Document
+  private projectDir: string
   private getConnection: (id?: string) => PostgreSQLConnection
-  private getPirjectDir: (id?: string) => string
 
-  constructor(dmmf: DMMF.Document, options: PostgreSQLPoolOptions) {
+  constructor(
+    dmmf: DMMF.Document,
+    options: PostgreSQLPoolOptions,
+    cwd: string,
+  ) {
     super({ max: 0 })
 
     this.dmmf = dmmf
+    this.projectDir = cwd
     this.getConnection = options.connection
-    this.getPirjectDir = options.prisma.projectDir
   }
 
   /**
@@ -62,7 +64,6 @@ class PostgreSQLPool extends InternalPool {
   async createDBInstance(id: string): Promise<DBInstance> {
     const connection = await this.getConnection(id)
     const url = readPostgreSQLUrl(connection)
-    const projectDir = this.getPirjectDir(id)
 
     const datasources: DataSource[] = [
       {
@@ -78,13 +79,13 @@ class PostgreSQLPool extends InternalPool {
     const { datamodel } = await migrateLift({
       id,
       datasources,
-      projectDir: projectDir,
+      projectDir: this.projectDir,
       dmmf: this.dmmf,
     })
 
     const instance: DBInstance = {
       url: readPostgreSQLUrl(connection),
-      cwd: projectDir,
+      cwd: this.projectDir,
       datamodel: datamodel,
     }
 

@@ -3,6 +3,8 @@ import Chance from 'chance'
 import _ from 'lodash'
 import { Dictionary } from 'lodash'
 import mls from 'multilines'
+
+import { Scalar } from './scalars'
 import {
   ID,
   SeedKit,
@@ -889,13 +891,11 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
 
           if (field.isId) {
             switch (field.type) {
-              case 'ID': {
+              case Scalar.string: {
                 return [pool, tasks, { ...acc, [field.name]: id }]
               }
-              case 'String': {
-                return [pool, tasks, { ...acc, [field.name]: id }]
-              }
-              case 'Int': {
+              /* istanbul ignore next */
+              case Scalar.int: {
                 throw new Error('Int @ids are not yet supported!')
               }
             }
@@ -904,15 +904,12 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
           /* Scalar and relation field mocks */
 
           switch (field.type) {
-            case 'ID': {
-              return [pool, tasks, { ...acc, [field.name]: id }]
-            }
-            case 'String': {
+            case Scalar.string: {
               const string = faker.word()
 
               return [pool, tasks, { ...acc, [field.name]: string }]
             }
-            case 'Int': {
+            case Scalar.int: {
               const number = faker.integer({
                 min: -2147483647,
                 max: 2147483647,
@@ -920,17 +917,17 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
 
               return [pool, tasks, { ...acc, [field.name]: number }]
             }
-            case 'Float': {
+            case Scalar.float: {
               const float = faker.floating()
 
               return [pool, tasks, { ...acc, [field.name]: float }]
             }
-            case 'Date': {
-              const date = faker.date()
+            case Scalar.date: {
+              const date = faker.date().toISOString()
 
               return [pool, tasks, { ...acc, [field.name]: date }]
             }
-            case 'Boolean': {
+            case Scalar.bool: {
               const boolean = faker.bool()
 
               return [pool, tasks, { ...acc, [field.name]: boolean }]
@@ -1032,6 +1029,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
                           ]
                         }
 
+                        /* istanbul ignore next */
                         default: {
                           throw new Error(
                             `Something truly unexpected happened.`,
@@ -1242,7 +1240,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
       _tasks: Task[],
       _pool: Pool,
       model: string,
-      n: number = 1,
+      n: number,
     ): [Task[], Pool, FixtureData[]] {
       /* Find the requested tasks. */
       const [instanceTasks, remainingTasks] = _tasks.reduce<[Task[], Task[]]>(
@@ -1257,6 +1255,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
       )
 
       /* Validation check, though it should never trigger */
+      /* istanbul ignore if */
       if (instanceTasks.length !== n) {
         throw new Error('Something very unexpected occured.')
       }

@@ -1,0 +1,22 @@
+datasource postgres {
+  url      = "postgresql://user:password@localhost:5432"
+  provider = "postgres"
+}
+
+generator photonjs {
+  provider = "photonjs"
+  output   = "./@generated/photon"
+}
+
+generator testutils {
+  provider = "prisma-test-utils"
+  output   = "./@generated/prisma-test-utils"
+}
+
+model User {
+  id       String  @id @default(cuid())
+  name     String
+  email    String
+  isActive Boolean
+  friends  User[]
+}

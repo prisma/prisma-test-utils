@@ -2,24 +2,24 @@
 
 exports[`virtual file system: compiles TypeScript files correctly 1`] = `
 Object {
-  "/var/folders/46/ghtsn_bd0m3f7g2kcscx_jqc0000gn/T/vfs-compile-test-0.14287605890623367/bar.d.ts": "export declare function sum(a: number, b: number): number;
+  "/var/folders/46/ghtsn_bd0m3f7g2kcscx_jqc0000gn/T/vfs-compile-test-0.4950886798242746/bar.d.ts": "export declare function sum(a: number, b: number): number;
 ",
-  "/var/folders/46/ghtsn_bd0m3f7g2kcscx_jqc0000gn/T/vfs-compile-test-0.14287605890623367/bar.js": "\\"use strict\\";
+  "/var/folders/46/ghtsn_bd0m3f7g2kcscx_jqc0000gn/T/vfs-compile-test-0.4950886798242746/bar.js": "\\"use strict\\";
 Object.defineProperty(exports, \\"__esModule\\", { value: true });
 function sum(a, b) {
     return a + b;
 }
 exports.sum = sum;
 //# sourceMappingURL=bar.js.map",
-  "/var/folders/46/ghtsn_bd0m3f7g2kcscx_jqc0000gn/T/vfs-compile-test-0.14287605890623367/bar.js.map": "{\\"version\\":3,\\"file\\":\\"bar.js\\",\\"sourceRoot\\":\\"\\",\\"sources\\":[\\"bar.ts\\"],\\"names\\":[],\\"mappings\\":\\";;AAAA,SAAgB,GAAG,CAAC,CAAS,EAAE,CAAS;IACtC,OAAO,CAAC,GAAG,CAAC,CAAA;AACd,CAAC;AAFD,kBAEC\\"}",
-  "/var/folders/46/ghtsn_bd0m3f7g2kcscx_jqc0000gn/T/vfs-compile-test-0.14287605890623367/foo.d.ts": "export {};
+  "/var/folders/46/ghtsn_bd0m3f7g2kcscx_jqc0000gn/T/vfs-compile-test-0.4950886798242746/bar.js.map": "{\\"version\\":3,\\"file\\":\\"bar.js\\",\\"sourceRoot\\":\\"\\",\\"sources\\":[\\"bar.ts\\"],\\"names\\":[],\\"mappings\\":\\";;AAAA,SAAgB,GAAG,CAAC,CAAS,EAAE,CAAS;IACtC,OAAO,CAAC,GAAG,CAAC,CAAA;AACd,CAAC;AAFD,kBAEC\\"}",
+  "/var/folders/46/ghtsn_bd0m3f7g2kcscx_jqc0000gn/T/vfs-compile-test-0.4950886798242746/foo.d.ts": "export {};
 ",
-  "/var/folders/46/ghtsn_bd0m3f7g2kcscx_jqc0000gn/T/vfs-compile-test-0.14287605890623367/foo.js": "\\"use strict\\";
+  "/var/folders/46/ghtsn_bd0m3f7g2kcscx_jqc0000gn/T/vfs-compile-test-0.4950886798242746/foo.js": "\\"use strict\\";
 Object.defineProperty(exports, \\"__esModule\\", { value: true });
 const bar_ts_1 = require(\\"./bar.ts\\");
 console.log(bar_ts_1.sum(1, 2));
 //# sourceMappingURL=foo.js.map",
-  "/var/folders/46/ghtsn_bd0m3f7g2kcscx_jqc0000gn/T/vfs-compile-test-0.14287605890623367/foo.js.map": "{\\"version\\":3,\\"file\\":\\"foo.js\\",\\"sourceRoot\\":\\"\\",\\"sources\\":[\\"foo.ts\\"],\\"names\\":[],\\"mappings\\":\\";;AAAA,qCAA8B;AAC9B,OAAO,CAAC,GAAG,CAAC,YAAG,CAAC,CAAC,EAAC,CAAC,CAAC,CAAC,CAAA\\"}",
+  "/var/folders/46/ghtsn_bd0m3f7g2kcscx_jqc0000gn/T/vfs-compile-test-0.4950886798242746/foo.js.map": "{\\"version\\":3,\\"file\\":\\"foo.js\\",\\"sourceRoot\\":\\"\\",\\"sources\\":[\\"foo.ts\\"],\\"names\\":[],\\"mappings\\":\\";;AAAA,qCAA8B;AAC9B,OAAO,CAAC,GAAG,CAAC,YAAG,CAAC,CAAC,EAAC,CAAC,CAAC,CAAC,CAAA\\"}",
   "qux.js": "console.log(\\"Hey\\")",
 }
 `;

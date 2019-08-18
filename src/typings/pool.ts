@@ -10,6 +10,7 @@ export function generatePoolType(
 ): 'getPostgreSQLPool' | 'getMySQLPool' | 'getSQLitePool' {
   const [datasource] = options.dataSources
 
+  /* istanbul ignore if */
   if (!datasource) {
     throw new Error(`No defined datasource!`)
   }
@@ -24,6 +25,7 @@ export function generatePoolType(
     case 'postgresql': {
       return 'getPostgreSQLPool'
     }
+    /* istanbul ignore next */
     default: {
       throw new Error(`Unknown datasource: ${datasource.connectorType}`)
     }

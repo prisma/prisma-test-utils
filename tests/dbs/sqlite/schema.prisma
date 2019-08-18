@@ -1,6 +1,6 @@
-datasource postgres {
-  url      = "postgresql://user:password@localhost:5432"
-  provider = "postgres"
+datasource sqlite {
+  url      = "file:./data.db"
+  provider = "sqlite"
 }
 
 generator photonjs {
@@ -30,10 +30,11 @@ enum Animal {
 }
 
 model Pet {
-  id     String @id @default(cuid())
-  name   String
-  animal Animal
-  toys   Toy[]
+  id       String   @id @default(cuid())
+  name     String
+  animal   Animal
+  toys     Toy[]
+  birthday DateTime
 }
 
 model Toy {

@@ -89,7 +89,7 @@ export async function generatePrismaTestUtils(
   |
   | const dmmf: DMMF.Document = ${JSON.stringify(dmmf)};
   |
-  | export default ${generatePoolType(options)}(dmmf);
+  | export default ${generatePoolType(options)}(dmmf, ${options.cwd});
   | export { MySQLPoolOptions, PostgreSQLPoolOptions, SQLitePoolOptions } from './static'
   | export { Pool, DBInstance } from './static';
   `

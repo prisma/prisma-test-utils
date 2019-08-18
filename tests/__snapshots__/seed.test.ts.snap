@@ -1,43 +1,76 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`seed function: generates correct typings 1`] = `
-"interface GeneratedSeedModels {
-  \\"*\\": { amount: number }
-  User: { 
-  amount: number, 
-  factory?: {
-    id?: () => string
-name?: () => string
-email?: () => string
-isActive?: () => boolean
-friends?: { min?: number, max?: number } 
-  }
-}
-Pet: { 
-  amount: number, 
-  factory?: {
-    id?: () => string
-name?: () => string
-animal: () => Dog | Cat | Dinosaur
-toys?: { min?: number, max?: number } 
-  }
-}
-Toy: { 
-  amount: number, 
-  factory?: {
-    id?: () => string
-name?: () => string
-price?: () => number 
-  }
-}
-House: { 
-  amount: number, 
-  factory?: {
-    id?: () => string
-address?: () => string
-numberOfRooms?: () => number
-residents?: { min?: number, max?: number } 
-  }
-}
-}"
+exports[`seed: correctly generates seed data 1`] = `
+Array [
+  Object {
+    "animal": "Dog",
+    "birthday": "2023-02-09T22:21:13.456Z",
+    "id": "70c6744ccba25f4c8a060dac0",
+    "name": "ro",
+  },
+  Object {
+    "animal": "Dog",
+    "birthday": "2076-07-05T22:58:50.775Z",
+    "id": "4d13042a45c25a0081ead5d25",
+    "name": "gokim",
+  },
+  Object {
+    "animal": "Dog",
+    "birthday": "2092-09-24T16:36:04.926Z",
+    "id": "199469fbd3a0581684f043ece",
+    "name": "jaaf",
+  },
+  Object {
+    "id": "b98842fbfe5f5645921b68763",
+    "name": "biga",
+    "price": 712944317261.4144,
+  },
+  Object {
+    "id": "f4369cd437dd5b4ea9475b827",
+    "name": "ijicho",
+    "price": -131310922235.904,
+  },
+  Object {
+    "id": "f8eac331d6be5d0ca361b0e0d",
+    "name": "jopibje",
+    "price": 735466428248.8832,
+  },
+  Object {
+    "address": "har",
+    "id": "5c32203d5b7f5d67b0518b78c",
+    "numberOfRooms": 51939266,
+  },
+  Object {
+    "address": "ipaje",
+    "id": "f5bc061198c556bd86edc8033",
+    "numberOfRooms": 860530322,
+  },
+  Object {
+    "address": "ka",
+    "id": "989179589c79544aa50ace326",
+    "numberOfRooms": 1058672531,
+  },
+  Object {
+    "email": "ohijoow",
+    "id": "6865e43bf5ee5400b951f3545",
+    "isActive": true,
+    "name": "zogu",
+    "pet": Object {
+      "connect": Object {
+        "id": "70c6744ccba25f4c8a060dac0",
+      },
+    },
+  },
+  Object {
+    "email": "ak",
+    "id": "08bee1d8f2cf51989bbd50fce",
+    "isActive": false,
+    "name": "wem",
+    "pet": Object {
+      "connect": Object {
+        "id": "4d13042a45c25a0081ead5d25",
+      },
+    },
+  },
+]
 `;

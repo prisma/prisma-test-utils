@@ -1,7 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`typings: correctly errors on missing datasources 1`] = `"No defined datasource!"`;
-
 exports[`typings: generates correct mysql pool type 1`] = `"getMySQLPool"`;
 
 exports[`typings: generates correct postgresql pool type 1`] = `"getPostgreSQLPool"`;
@@ -10,39 +8,39 @@ exports[`typings: generates correct sqlite pool type 1`] = `"getSQLitePool"`;
 
 exports[`typings: generates seed types correctly 1`] = `
 "\\"*\\": { amount: number }
-User: { 
+User?: { 
   amount?: number, 
   factory?: {
-    id?: () => string
-name?: () => string
-email?: () => string
-isActive?: () => boolean
+    id?: string | (() => string)
+name?: string | (() => string)
+email?: string | (() => string)
+isActive?: boolean | (() => boolean)
 friends?: { min?: number, max?: number } 
   }
 }
 Pet: { 
   amount?: number, 
   factory: {
-    id?: () => string
-name?: () => string
-animal: () => \\"Dog\\" | \\"Cat\\" | \\"Dinosaur\\"
+    id?: string | (() => string)
+name?: string | (() => string)
+animal: (\\"Dog\\" | \\"Cat\\" | \\"Dinosaur\\") | (() => \\"Dog\\" | \\"Cat\\" | \\"Dinosaur\\")
 toys?: { min?: number, max?: number } 
   }
 }
-Toy: { 
+Toy?: { 
   amount?: number, 
   factory?: {
-    id?: () => string
-name?: () => string
-price?: () => number 
+    id?: string | (() => string)
+name?: string | (() => string)
+price?: number | (() => number) 
   }
 }
-House: { 
+House?: { 
   amount?: number, 
   factory?: {
-    id?: () => string
-address?: () => string
-numberOfRooms?: () => number
+    id?: string | (() => string)
+address?: string | (() => string)
+numberOfRooms?: number | (() => number)
 residents?: { min?: number, max?: number } 
   }
 }"

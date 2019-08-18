@@ -1,6 +1,8 @@
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import ml from 'multilines'
 import { EOL } from 'os'
+
+import { Scalar, isSupportedScalar, isScalar } from '../static/scalars'
 import { withDefault, filterMap } from '../static/utils'
 
 /**
@@ -20,6 +22,7 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
   return generatedGenerateSeedModelsType
 
   /* Helper functions */
+
   /**
    * Generates type definitions of a particular model.
    *
@@ -33,12 +36,13 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
      *  factory is required on types that have enum fields.
      */
     const hasEnumFields = fields.some(f => f.kind === 'enum')
+    const hasSupportedScalars = fields.filter(isScalar).every(isSupportedScalar)
 
     /* prettier-ignore */
     const generatedSeedModelType = ml`
-    | ${model.name}: { 
+    | ${model.name}${q(!hasEnumFields && hasSupportedScalars)}: { 
     |   amount?: number, 
-    |   factory${hasEnumFields ? "" : "?"}: {
+    |   factory${q(!hasEnumFields && hasSupportedScalars)}: {
     |     ${filterMap(fields, f => generateSeedModelFieldType(model, f)).join(EOL)} 
     |   }
     | }
@@ -62,9 +66,8 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
          * of the enum values.
          */
         const { values } = enums.find(e => e.name === field.type)!
-        return `${field.name}: () => ${values
-          .map(val => `"${val}"`)
-          .join(` | `)}`
+        const union = values.map(val => `"${val}"`).join(` | `)
+        return `${field.name}: (${union}) | (() => ${union})`
       }
       case 'object': {
         /**
@@ -88,7 +91,9 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
          * The field should provide a function which results in a type
          * of the scalar.
          */
-        return `${field.name}?: () => ${getTSTypeFromDMMFScalar(field.type)}`
+        const scalar = getTSTypeFromDMMFScalar(field.type)
+        const supported = isSupportedScalar(field)
+        return `${field.name}${q(supported)}: ${scalar} | (() => ${scalar})`
       }
     }
   }
@@ -100,23 +105,27 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
    */
   function getTSTypeFromDMMFScalar(
     type: string,
-  ): 'number' | 'string' | 'boolean' {
+  ): 'number' | 'string' | 'boolean' | 'any' {
     switch (type) {
-      case 'String': {
+      case Scalar.string: {
         return 'string'
       }
-      case 'Int': {
+      case Scalar.int: {
         return 'number'
       }
-      case 'Float': {
+      case Scalar.float: {
         return 'number'
       }
-      case 'Boolean': {
+      case Scalar.bool: {
         return 'boolean'
+      }
+      case Scalar.date: {
+        return 'string'
       }
       /* istanbul ignore next */
       default: {
-        throw new Error(`Something very unexpected happened (${type})!`)
+        /* Returns any for unsupported/custom scalars. */
+        return 'any'
       }
     }
   }
@@ -203,6 +212,23 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
        */
 
       return '1-to-1'
+    }
+  }
+
+  /**
+   * Creates an optional TS field modifier.
+   * "q" as question mark.
+   *
+   * @param isOptional
+   */
+  function q(isOptional: boolean): '?' | '' {
+    switch (isOptional) {
+      case true: {
+        return '?'
+      }
+      case false: {
+        return ''
+      }
     }
   }
 }

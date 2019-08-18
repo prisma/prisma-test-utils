@@ -19,19 +19,17 @@ const fsUnlink = promisify(fs.unlink)
  */
 export function getSQLitePool(
   dmmf: DMMF.Document,
+  cwd: string,
 ): { new (options?: SQLitePoolOptions): Pool } {
   return class extends SQLitePool {
     constructor(options?: SQLitePoolOptions) {
-      super(dmmf, { databasePath: getTmpSQLiteDB, ...options })
+      super(dmmf, { databasePath: getTmpSQLiteDB, ...options }, cwd)
     }
   }
 }
 
 export interface SQLitePoolOptions {
   databasePath?: (id?: string) => string
-  prisma: {
-    cwd: (id?: string) => string
-  }
   pool?: {
     max?: number
   }
@@ -39,15 +37,15 @@ export interface SQLitePoolOptions {
 
 class SQLitePool extends InternalPool {
   private dmmf: DMMF.Document
+  private projectDir: string
   private getDatabasePath: (id?: string) => string
-  private getCwdPath: (id?: string) => string
 
-  constructor(dmmf: DMMF.Document, options: SQLitePoolOptions) {
+  constructor(dmmf: DMMF.Document, options: SQLitePoolOptions, cwd: string) {
     super({ max: _.get(options, ['pool', 'max'], Infinity) })
 
     this.dmmf = dmmf
+    this.projectDir = cwd
     this.getDatabasePath = options.databasePath
-    this.getCwdPath = options.prisma.cwd
   }
 
   /**
@@ -57,7 +55,6 @@ class SQLitePool extends InternalPool {
     try {
       /* Constants */
       const dbFile = this.getDatabasePath(id)
-      const cwdPath = this.getCwdPath(id)
       const datasources: DataSource[] = [
         {
           name: 'db',
@@ -71,14 +68,14 @@ class SQLitePool extends InternalPool {
 
       const { datamodel } = await migrateLift({
         id,
-        projectDir: cwdPath,
+        projectDir: this.projectDir,
         datasources,
         dmmf: this.dmmf,
       })
 
       const instance: DBInstance = {
         url: dbFile,
-        cwd: cwdPath,
+        cwd: this.projectDir,
         datamodel: datamodel,
       }
 
@@ -111,15 +108,4 @@ export function getTmpSQLiteDB(id: string): string {
   const tmpDir = os.tmpdir()
   const dbFile = path.join(tmpDir, `./prisma-sqlite-${id}-db.db`)
   return dbFile
-}
-
-/**
- * Allocates a new tmp dir path for Prisma migrations.
- *
- * @param id
- */
-export function getTmpCwd(id: string): string {
-  const tmpDir = os.tmpdir()
-  const cwdDir = path.join(tmpDir, `./prisma-migrations-${id}-db/`)
-  return cwdDir
 }

@@ -14,10 +14,11 @@ import { Pool, DBInstance } from '../../types'
  */
 export function getMySQLPool(
   dmmf: DMMF.Document,
+  cwd: string,
 ): { new (options: MySQLPoolOptions): Pool } {
   return class extends MySQLPool {
     constructor(options: MySQLPoolOptions) {
-      super(dmmf, options)
+      super(dmmf, options, cwd)
     }
   }
 }
@@ -32,9 +33,6 @@ export interface MySQLConnection {
 
 export interface MySQLPoolOptions {
   connection: (id?: string) => MySQLConnection
-  prisma: {
-    projectDir: (id?: string) => string
-  }
   pool?: {
     max?: number
   }
@@ -42,21 +40,20 @@ export interface MySQLPoolOptions {
 
 class MySQLPool extends InternalPool {
   private dmmf: DMMF.Document
+  private projectDir: string
   private getConnection: (id?: string) => MySQLConnection
-  private getProjectDir: (id?: string) => string
 
-  constructor(dmmf: DMMF.Document, options: MySQLPoolOptions) {
+  constructor(dmmf: DMMF.Document, options: MySQLPoolOptions, cwd: string) {
     super({ max: 0 })
 
     this.dmmf = dmmf
+    this.projectDir = cwd
     this.getConnection = options.connection
-    this.getProjectDir = options.prisma.projectDir
   }
 
   async createDBInstance(id: string): Promise<DBInstance> {
     const connection = this.getConnection(id)
     const uri = readMySQLURI(connection)
-    const projectDir = this.getProjectDir(id)
 
     const datasources: DataSource[] = [
       {
@@ -71,14 +68,14 @@ class MySQLPool extends InternalPool {
 
     const { datamodel } = await migrateLift({
       id,
-      projectDir: projectDir,
+      projectDir: this.projectDir,
       datasources,
       dmmf: this.dmmf,
     })
 
     const instance: DBInstance = {
       url: uri,
-      cwd: projectDir,
+      cwd: this.projectDir,
       datamodel: datamodel,
     }
 
