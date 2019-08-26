@@ -1,6 +1,7 @@
 import * as os from 'os'
 import * as path from 'path'
 import { LiftEngine } from '@prisma/lift'
+import { dmmfToDml } from '@prisma/photon'
 
 import SQLitePhoton, {
   dmmf as sqliteDMMF,
@@ -16,7 +17,10 @@ describe('seed:', () => {
     const tmpDir = os.tmpdir()
     const dbFile = path.join(tmpDir, `./prisma-seed-test-${id}-db.db`)
 
-    const lift = new LiftEngine({ projectDir: dbFile, schemaPath: '' })
+    const lift = new LiftEngine({
+      projectDir: tmpDir,
+      schemaPath: '',
+    })
 
     const datamodelDmmf = {
       enums: [],
@@ -24,10 +28,17 @@ describe('seed:', () => {
       ...sqliteDMMF.datamodel,
     }
 
-    const { datamodel } = await lift.convertDmmfToDml({
-      dmmf: JSON.stringify(datamodelDmmf),
+    const datamodel = await dmmfToDml({
+      dmmf: datamodelDmmf,
       config: {
-        datasources: [{ name: 'test', connectorType: 'sqlite', config: {} }],
+        datasources: [
+          {
+            name: 'test',
+            connectorType: 'sqlite',
+            config: {},
+            url: { value: dbFile, fromEnvVar: null },
+          },
+        ],
         generators: [],
       },
     })

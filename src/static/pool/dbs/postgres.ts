@@ -1,4 +1,4 @@
-import { DataSource } from '@prisma/lift'
+import { DataSource } from '@prisma/photon'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import _ from 'lodash'
 import pg from 'pg'
@@ -69,7 +69,10 @@ class PostgreSQLPool extends InternalPool {
       {
         name: 'db',
         connectorType: 'sqlite',
-        url: url,
+        url: {
+          value: url,
+          fromEnvVar: null,
+        },
         config: {},
       },
     ]

@@ -1,4 +1,4 @@
-import { DataSource } from '@prisma/lift'
+import { DataSource } from '@prisma/photon'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import * as fs from 'fs'
 import _ from 'lodash'
@@ -59,7 +59,10 @@ class SQLitePool extends InternalPool {
         {
           name: 'db',
           connectorType: 'sqlite',
-          url: `file:${dbFile}`,
+          url: {
+            value: `file:${dbFile}`,
+            fromEnvVar: null,
+          },
           config: {},
         },
       ]

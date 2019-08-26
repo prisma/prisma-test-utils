@@ -1,5 +1,6 @@
-import { DataSource, LiftEngine } from '@prisma/lift'
+import { LiftEngine } from '@prisma/lift'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
+import { dmmfToDml, DataSource } from '@prisma/photon'
 
 import * as path from 'path'
 
@@ -31,8 +32,8 @@ export async function migrateLift({
     ...dmmf.datamodel,
   }
 
-  const { datamodel } = await lift.convertDmmfToDml({
-    dmmf: JSON.stringify(datamodelDmmf),
+  const datamodel = await dmmfToDml({
+    dmmf: datamodelDmmf,
     config: { datasources, generators: [] },
   })
 

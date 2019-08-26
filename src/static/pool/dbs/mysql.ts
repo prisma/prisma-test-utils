@@ -1,5 +1,5 @@
-import { DataSource } from '@prisma/lift'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
+import { DataSource } from '@prisma/photon'
 import _ from 'lodash'
 import mysql from 'mysql'
 
@@ -59,7 +59,10 @@ class MySQLPool extends InternalPool {
       {
         name: 'db',
         connectorType: 'mysql',
-        url: uri,
+        url: {
+          value: uri,
+          fromEnvVar: null,
+        },
         config: {},
       },
     ]
