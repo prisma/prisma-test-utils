@@ -19,8 +19,7 @@ model User {
   email    String
   isActive Boolean
   pet      Pet
-  house    House?
-  friends  User[]
+  house    House?  @relation(name: "UserHouse")
 }
 
 enum Animal {
@@ -47,5 +46,5 @@ model House {
   id            String @id @default(cuid())
   address       String
   numberOfRooms Int
-  residents     User[]
+  residents     User[] @relation(name: "UserHouse")
 }

@@ -1,14 +1,10 @@
-import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { promisify } from 'util'
 
 import { migrateLift } from '../src/static/pool/lift'
 
 import seed from './dbs/sqlite/@generated/prisma-test-utils/seed'
 import Photon, { dmmf } from './dbs/sqlite/@generated/photon'
-
-const fsWriteFile = promisify(fs.writeFile)
 
 describe('seed:', () => {
   let client: Photon
@@ -19,27 +15,23 @@ describe('seed:', () => {
     const tmpDir = os.tmpdir()
     const dbFile = path.join(tmpDir, `./prisma-seed-test-${id}-db.db`)
 
-    console.log(`Created DB file ${dbFile}`)
-    await fsWriteFile(dbFile, '')
+    console.log(`DB file: ${dbFile}`)
 
     console.log(`Migrating schema using Lift`)
-    try {
-      await migrateLift({
-        id: Math.random().toString(),
-        projectDir: path.join(__dirname, './dbs/sqlite'),
-        datasources: [
-          {
-            name: 'test',
-            connectorType: 'sqlite',
-            config: {},
-            url: { value: dbFile, fromEnvVar: null },
-          },
-        ],
-        dmmf,
-      })
-    } catch (err) {
-      console.log(err)
-    }
+
+    await migrateLift({
+      id: id,
+      projectDir: path.join(__dirname, './dbs/sqlite'),
+      datasources: [
+        {
+          name: 'test',
+          connectorType: 'sqlite',
+          config: {},
+          url: { value: dbFile, fromEnvVar: null },
+        },
+      ],
+      dmmf,
+    })
 
     /* Create new Photon instance. */
     client = new Photon({

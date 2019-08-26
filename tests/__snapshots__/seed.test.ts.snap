@@ -62,15 +62,138 @@ Array [
     },
   },
   Object {
-    "email": "ak",
-    "id": "08bee1d8f2cf51989bbd50fce",
+    "email": "epcibtof",
+    "id": "4008bee18ef25f31994bd450f",
     "isActive": false,
-    "name": "wem",
+    "name": "forreak",
     "pet": Object {
       "connect": Object {
         "id": "4d13042a45c25a0081ead5d25",
       },
     },
   },
+]
+`;
+
+exports[`seed: correctly seeds the data 1`] = `
+Array [
+  Array [
+    Object {
+      "address": "nuawo",
+      "id": "151a4059efa553388c4b50a84",
+      "numberOfRooms": -489185470,
+    },
+    Object {
+      "address": "od",
+      "id": "2b8ad3135c6c5036a1e16beac",
+      "numberOfRooms": -247595282,
+    },
+    Object {
+      "address": "doal",
+      "id": "3b6c59e536535461afc7afbba",
+      "numberOfRooms": -660117917,
+    },
+    Object {
+      "address": "ese",
+      "id": "d5b617a9fa145245bc30848ae",
+      "numberOfRooms": -1220539413,
+    },
+    Object {
+      "address": "hupcib",
+      "id": "ef2cf319694b5d45be3ef686c",
+      "numberOfRooms": 6512440,
+    },
+  ],
+  Array [
+    Object {
+      "animal": "Dog",
+      "birthday": "2092-09-24T16:36:04.926Z",
+      "id": "199469fbd3a0581684f043ece",
+      "name": "jaaf",
+    },
+    Object {
+      "animal": "Dog",
+      "birthday": "2054-10-27T06:00:09.510Z",
+      "id": "4137dd0be6c9547ea27d1993f",
+      "name": "ti",
+    },
+    Object {
+      "animal": "Dog",
+      "birthday": "2076-07-05T22:58:50.775Z",
+      "id": "4d13042a45c25a0081ead5d25",
+      "name": "gokim",
+    },
+    Object {
+      "animal": "Dog",
+      "birthday": "2023-02-09T22:21:13.456Z",
+      "id": "70c6744ccba25f4c8a060dac0",
+      "name": "ro",
+    },
+    Object {
+      "animal": "Dog",
+      "birthday": "2067-08-10T11:30:41.907Z",
+      "id": "b98842fbfe5f5645921b68763",
+      "name": "biga",
+    },
+  ],
+  Array [
+    Object {
+      "id": "1299517f54525dd6ba75c0020",
+      "name": "misuzceh",
+      "price": -206989524834.7136,
+    },
+    Object {
+      "id": "2d6befd0fd3351fbbde66ece0",
+      "name": "ku",
+      "price": 242025863158.1696,
+    },
+    Object {
+      "id": "398c5f6b93965d5c933e0b093",
+      "name": "ewumovecu",
+      "price": -609555526451.2,
+    },
+    Object {
+      "id": "544afb05aece52629c6a2fc6f",
+      "name": "pejeg",
+      "price": 161896925338.0096,
+    },
+    Object {
+      "id": "c32203d4b7fd567f8513b78cf",
+      "name": "boagedaw",
+      "price": 343962845131.5712,
+    },
+  ],
+  Array [
+    Object {
+      "email": "ut",
+      "id": "16b27136d9fb52eaba6bb8566",
+      "isActive": true,
+      "name": "em",
+    },
+    Object {
+      "email": "susde",
+      "id": "59ddebdbaab45fb5b5afee2b6",
+      "isActive": true,
+      "name": "uhimo",
+    },
+    Object {
+      "email": "rozu",
+      "id": "8938d1577db15332be9baa098",
+      "isActive": false,
+      "name": "pocde",
+    },
+    Object {
+      "email": "lese",
+      "id": "af9a3909e36053c582054196a",
+      "isActive": true,
+      "name": "tefa",
+    },
+    Object {
+      "email": "lutow",
+      "id": "b920a03a693f5b0c948bb16db",
+      "isActive": false,
+      "name": "un",
+    },
+  ],
 ]
 `;
