@@ -1310,7 +1310,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
         return acc.then(async res => {
           /* Create a single instance */
           try {
-            const seed = await photon[f.mapping.findMany!]['create']({
+            const seed = await photon[f.mapping.plural].create({
               data: f.data,
             })
 

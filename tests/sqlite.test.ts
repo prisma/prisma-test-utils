@@ -8,11 +8,7 @@ describe('sql:', () => {
   let pool: Pool
 
   beforeAll(() => {
-    pool = new SQLitePool({
-      prisma: {
-        cwd: process.cwd,
-      },
-    })
+    pool = new SQLitePool({})
   })
 
   test('pool works as expected', async () => {})

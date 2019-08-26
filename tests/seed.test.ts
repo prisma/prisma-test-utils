@@ -1,36 +1,32 @@
+import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { LiftEngine } from '@prisma/lift'
-import { dmmfToDml } from '@prisma/photon'
+import { promisify } from 'util'
 
-import SQLitePhoton, {
-  dmmf as sqliteDMMF,
-} from './dbs/sqlite/@generated/photon'
+import { migrateLift } from '../src/static/pool/lift'
 
 import seed from './dbs/sqlite/@generated/prisma-test-utils/seed'
+import Photon, { dmmf } from './dbs/sqlite/@generated/photon'
+
+const fsWriteFile = promisify(fs.writeFile)
 
 describe('seed:', () => {
-  let client: SQLitePhoton
+  let client: Photon
 
   beforeAll(async () => {
+    console.log('Starts beforeAll')
     const id = Math.random().toString()
     const tmpDir = os.tmpdir()
     const dbFile = path.join(tmpDir, `./prisma-seed-test-${id}-db.db`)
 
-    const lift = new LiftEngine({
-      projectDir: tmpDir,
-      schemaPath: '',
-    })
+    console.log(`Created DB file ${dbFile}`)
+    await fsWriteFile(dbFile, '')
 
-    const datamodelDmmf = {
-      enums: [],
-      models: [],
-      ...sqliteDMMF.datamodel,
-    }
-
-    const datamodel = await dmmfToDml({
-      dmmf: datamodelDmmf,
-      config: {
+    console.log(`Migrating schema using Lift`)
+    try {
+      await migrateLift({
+        id: Math.random().toString(),
+        projectDir: path.join(__dirname, './dbs/sqlite'),
         datasources: [
           {
             name: 'test',
@@ -39,52 +35,21 @@ describe('seed:', () => {
             url: { value: dbFile, fromEnvVar: null },
           },
         ],
-        generators: [],
-      },
-    })
-
-    const {
-      datamodelSteps,
-      errors: stepErrors,
-    } = await lift.inferMigrationSteps({
-      migrationId: id,
-      datamodel: datamodel,
-      assumeToBeApplied: [],
-      sourceConfig: datamodel,
-    })
-
-    if (stepErrors.length > 0) {
-      throw stepErrors
-    }
-
-    const { errors } = await lift.applyMigration({
-      force: true,
-      migrationId: id,
-      steps: datamodelSteps,
-      sourceConfig: datamodel,
-    })
-
-    if (errors.length > 0) {
-      throw errors
-    }
-
-    const progress = () =>
-      lift.migrationProgess({
-        migrationId: id,
-        sourceConfig: datamodel,
+        dmmf,
       })
-
-    while ((await progress()).status !== 'MigrationSuccess') {
-      /* Just wait */
+    } catch (err) {
+      console.log(err)
     }
 
     /* Create new Photon instance. */
-    client = new SQLitePhoton({
+    client = new Photon({
       datasources: {
-        sqlite: '',
+        sqlite: dbFile,
       },
     })
-  })
+
+    console.log(`Finished beforeAll.`)
+  }, 60 * 1000)
 
   test('correctly generates seed data', async () => {
     const data = await seed({

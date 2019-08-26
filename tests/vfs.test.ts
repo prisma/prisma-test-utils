@@ -36,7 +36,7 @@ describe('virtual file system:', () => {
       suppressOutputPathCheck: false,
     })
 
-    expect(compiledVFS).toMatchSnapshot()
+    expect(Object.values(compiledVFS)).toMatchSnapshot()
   })
 
   test('copies virtual file system correctly', async () => {
