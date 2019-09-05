@@ -1,6 +1,6 @@
-datasource postgres {
-  url      = "postgresql://user:password@localhost:5432"
-  provider = "postgres"
+datasource mysql {
+  url      = "mysql://prisma:prisma@localhost:5432"
+  provider = "mysql"
 }
 
 generator photonjs {
@@ -18,33 +18,11 @@ model User {
   name     String
   email    String
   isActive Boolean
-  pet      Pet
-  house    House?
-  friends  User[]
+  pet      Animal
 }
 
 enum Animal {
   Dog
   Cat
   Dinosaur
-}
-
-model Pet {
-  id     String @id @default(cuid())
-  name   String
-  animal Animal
-  toys   Toy[]
-}
-
-model Toy {
-  id    String @id @default(cuid())
-  name  String
-  price Float
-}
-
-model House {
-  id            String @id @default(cuid())
-  address       String
-  numberOfRooms Int
-  residents     User[]
 }

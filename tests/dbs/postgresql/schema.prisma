@@ -1,5 +1,5 @@
 datasource postgres {
-  url      = "postgresql://user:password@localhost:5432"
+  url      = "postgresql://prisma:prisma@localhost:5432/prisma"
   provider = "postgres"
 }
 
@@ -18,5 +18,4 @@ model User {
   name     String
   email    String
   isActive Boolean
-  friends  User[]
 }

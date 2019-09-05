@@ -44,7 +44,7 @@ class MySQLPool extends InternalPool {
   private getConnection: (id?: string) => MySQLConnection
 
   constructor(dmmf: DMMF.Document, options: MySQLPoolOptions, cwd: string) {
-    super({ max: 0 })
+    super({ max: _.get(options, ['pool', 'max'], Infinity) })
 
     this.dmmf = dmmf
     this.projectDir = cwd

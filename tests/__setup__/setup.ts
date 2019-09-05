@@ -12,7 +12,7 @@ import { generatorDefinition as prismaTestUtilsDefinition } from '../../src/gene
 import { getDatamodel } from '../utils/getDatamodel'
 
 const dbPaths = {
-  // mysql: path.join(__dirname, `../dbs/mysql`),
+  mysql: path.join(__dirname, `../dbs/mysql`),
   postgresql: path.join(__dirname, `../dbs/postgresql`),
   sqlite: path.join(__dirname, `../dbs/sqlite`),
 }

@@ -51,7 +51,7 @@ class PostgreSQLPool extends InternalPool {
     options: PostgreSQLPoolOptions,
     cwd: string,
   ) {
-    super({ max: 0 })
+    super({ max: _.get(options, ['pool', 'max'], Infinity) })
 
     this.dmmf = dmmf
     this.projectDir = cwd
@@ -68,7 +68,7 @@ class PostgreSQLPool extends InternalPool {
     const datasources: DataSource[] = [
       {
         name: 'db',
-        connectorType: 'sqlite',
+        connectorType: 'postgresql',
         url: {
           value: url,
           fromEnvVar: null,

@@ -37,7 +37,6 @@ export async function migrateLift({
     config: { datasources, generators: [] },
   })
 
-  console.log(datamodel)
   /* Get migration. */
   const { datamodelSteps, errors: stepErrors } = await lift.inferMigrationSteps(
     {
@@ -47,8 +46,6 @@ export async function migrateLift({
       sourceConfig: datamodel,
     },
   )
-
-  console.log(datamodelSteps)
 
   if (stepErrors.length > 0) {
     throw stepErrors

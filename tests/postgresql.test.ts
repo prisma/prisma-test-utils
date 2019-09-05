@@ -1,3 +1,54 @@
+import Photon from './dbs/postgresql/@generated/photon'
+import PostgreSQLPool, {
+  Pool,
+} from './dbs/postgresql/@generated/prisma-test-utils/pool'
+
 describe('postgresql:', () => {
-  test.todo('')
+  let pool: Pool
+
+  beforeAll(() => {
+    pool = new PostgreSQLPool({
+      connection: id => ({
+        database: `prisma`,
+        host: 'localhost',
+        port: 5432,
+        user: 'prisma',
+        password: 'prisma',
+        schema: `prisma-test-utils-${id}`,
+      }),
+    })
+  })
+
+  test(
+    'pool acquires new empty database instance',
+    async () => {
+      const [db_1, db_2] = await Promise.all([
+        pool.getDBInstance(),
+        pool.getDBInstance(),
+      ])
+
+      const client_1 = new Photon({ datasources: { postgres: db_1.url } })
+      const client_2 = new Photon({ datasources: { postgres: db_2.url } })
+
+      await client_1.users.create({
+        data: {
+          email: 'test@foo.com',
+          isActive: true,
+          name: 'foo',
+        },
+      })
+
+      const res_1 = await client_1.users()
+      const res_2 = await client_2.users()
+
+      expect({ res_1, res_2 }).toMatchSnapshot()
+    },
+    60 * 1000,
+  )
+
+  test('pool releases db instance', async () => {})
+
+  test('pool acquires and releases an instance', async () => {})
+
+  test('pool drains the dbs', async () => {})
 })
