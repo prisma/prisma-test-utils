@@ -2,12 +2,11 @@ import { DataSource } from '@prisma/photon'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import _ from 'lodash'
 import pg from 'pg'
+import url from 'url'
 
 import { migrateLift } from '../lift'
 import { InternalPool } from '../pool'
 import { Pool, DBInstance } from '../../types'
-
-// TODO: URL parsing!
 
 /**
  * Creates a dmmf specific Internal Pool instance.
@@ -103,7 +102,7 @@ class PostgreSQLPool extends InternalPool {
     const client = await getPostgreSQLClient(connection)
 
     try {
-      await client.query(`DROP DATABASE IF EXISTS ${connection.database}`)
+      await client.query(`DROP SCHEMA IF EXISTS ${connection.schema}`)
     } catch (err) {
       throw err
     }
@@ -119,19 +118,37 @@ class PostgreSQLPool extends InternalPool {
  * @param options
  */
 function readPostgreSQLUrl(connection: PostgreSQLConnection): string {
-  return `postgres://${connection.user}:${connection.password}@${connection.host}:${connection.port}`
+  return `postgres://${connection.user}:${connection.password}@${connection.host}:${connection.port}/${connection.database}?schema=${connection.schema}`
 }
 
 /**
  * Parses a PostgreSQL url.
  * @param url
  */
-function parsePostgreSQLUrl(url: string): PostgreSQLConnection {
-  const [user, password, host, portString, database] = url.match(
-    'postgres://(w+):(w+)@(w+):(d+)/(w+)',
+function parsePostgreSQLUrl(urlStr: string): PostgreSQLConnection {
+  const { query, auth, port: rawPort, hostname: host, pathname } = url.parse(
+    urlStr,
+    true,
   )
-  const port = parseInt(portString, 10)
-  return { user, password, host, port, database, schema: '' }
+  const port = parseInt(rawPort, 10)
+  const [, user, password] = auth.match(/(\w+):(\w+)/)
+  const [, database] = pathname.match(/\/(\w+)/)
+
+  /* istanbul ignore if */
+  if (typeof query.schema !== 'string') {
+    throw new Error(`Unsupported schema type: ${typeof query.schema}`)
+  }
+
+  const schema = query.schema
+
+  return {
+    user,
+    password,
+    host,
+    port,
+    database,
+    schema,
+  }
 }
 
 /**
