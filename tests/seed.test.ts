@@ -27,7 +27,7 @@ describe('seed:', () => {
           name: 'test',
           connectorType: 'sqlite',
           config: {},
-          url: { value: dbFile, fromEnvVar: null },
+          url: { value: `file:${dbFile}`, fromEnvVar: null },
         },
       ],
       dmmf,
@@ -36,7 +36,7 @@ describe('seed:', () => {
     /* Create new Photon instance. */
     client = new Photon({
       datasources: {
-        sqlite: dbFile,
+        sqlite: `file:${dbFile}`,
       },
     })
 

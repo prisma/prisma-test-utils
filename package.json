@@ -27,15 +27,15 @@
     "pg": "^7.12.1"
   },
   "devDependencies": {
-    "@prisma/cli": "^0.0.68",
-    "@prisma/lift": "^0.2.37",
-    "@prisma/photon": "^0.2.39",
+    "@prisma/cli": "^0.0.69",
+    "@prisma/lift": "^0.2.48",
+    "@prisma/photon": "^0.2.53",
     "@types/jest": "^24.0.18",
     "@types/lodash": "^4.14.138",
     "@types/mysql": "^2.15.7",
-    "@types/node": "^12.7.4",
+    "@types/node": "^12.7.5",
     "@types/pg": "^7.11.1",
-    "@zeit/ncc": "^0.20.4",
+    "@zeit/ncc": "^0.20.5",
     "chalk": "^2.4.2",
     "execa": "^2.0.3",
     "fs-monkey": "^0.3.3",
@@ -48,7 +48,7 @@
     "rimraf": "^3.0.0",
     "ts-jest": "^24.0.2",
     "ts-node": "^8.3.0",
-    "typescript": "^3.6.2"
+    "typescript": "^3.6.3"
   },
   "peerDependencies": {
     "@prisma/cli": "*",
