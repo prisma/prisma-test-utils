@@ -24,16 +24,14 @@ export abstract class InternalPool implements Pool {
   /**
    * A required method used to create new databases in the pool.
    */
-  protected abstract async createDBInstance(id?: string): Promise<DBInstance>
+  protected abstract async createDBInstance(id: string): Promise<DBInstance>
 
   /**
    * A required methdo used to delete databases in the pool.
    *
    * @param instance
    */
-  protected abstract async deleteDBInstance(
-    instance?: DBInstance,
-  ): Promise<void>
+  protected abstract async deleteDBInstance(instance: DBInstance): Promise<void>
 
   /**
    * Creates a new DBInstance and occupies the space in the pool.
@@ -102,7 +100,7 @@ export abstract class InternalPool implements Pool {
 
       /* Triggers the creation of new instance if there's a waiter for it. */
       if (this.waiters.length > 0) this.getDBInstance()
-    } catch (err) {
+    } catch (err) /* istanbul ignore next */ {
       throw err
     }
   }
@@ -132,7 +130,7 @@ export abstract class InternalPool implements Pool {
     const actions = this.dbs.busy.map(i => this.releaseDBInstance(i))
     try {
       await Promise.all(actions)
-    } catch (err) {
+    } catch (err) /* istanbul ignore next */ {
       throw err
     }
   }
@@ -142,7 +140,7 @@ export abstract class InternalPool implements Pool {
 
 class Waiter {
   private promise: Promise<DBInstance>
-  private resolve: (dbi: DBInstance) => void = () => {}
+  private resolve: (dbi: DBInstance) => void
 
   constructor() {
     this.promise = new Promise((resolve, reject) => {

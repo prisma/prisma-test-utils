@@ -47,7 +47,7 @@ export interface MySQLPoolOptions {
 class MySQLPool extends InternalPool {
   private dmmf: DMMF.Document
   private projectDir: string
-  private getConnection: (id?: string) => MySQLConnection
+  private getConnection: (id: string) => MySQLConnection
   private getTmpPrismaSchemaPath: (id: string) => string
 
   constructor(dmmf: DMMF.Document, options: MySQLPoolOptions, cwd: string) {

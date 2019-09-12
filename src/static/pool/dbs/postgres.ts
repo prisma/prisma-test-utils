@@ -183,7 +183,7 @@ async function getPostgreSQLClient(
   try {
     await client.connect()
     return client
-  } catch (err) {
+  } catch (err) /* istanbul ignore next */ {
     throw err
   }
 }

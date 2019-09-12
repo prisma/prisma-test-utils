@@ -1,10 +1,10 @@
 import os from 'os'
 import path from 'path'
 
-import Photon from './dbs/sqlite/@generated/photon'
+import Photon from '../dbs/sqlite/@generated/photon'
 import SQLitePool, {
   Pool,
-} from './dbs/sqlite/@generated/prisma-test-utils/pool'
+} from '../dbs/sqlite/@generated/prisma-test-utils/pool'
 
 describe('sqlite:', () => {
   let pool: Pool

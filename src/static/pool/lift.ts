@@ -53,6 +53,7 @@ export async function migrateLift({
     },
   )
 
+  /* istanbul ignore next */
   if (stepErrors.length > 0) {
     throw stepErrors
   }
@@ -64,6 +65,7 @@ export async function migrateLift({
     sourceConfig: datamodel,
   })
 
+  /* istanbul ignore next */
   if (errors.length > 0) {
     throw errors
   }

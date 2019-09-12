@@ -1,5 +1,5 @@
-import Photon from './dbs/mysql/@generated/photon'
-import MySQLPool, { Pool } from './dbs/mysql/@generated/prisma-test-utils/pool'
+import Photon from '../dbs/mysql/@generated/photon'
+import MySQLPool, { Pool } from '../dbs/mysql/@generated/prisma-test-utils/pool'
 
 describe('mysql:', () => {
   let pool: Pool

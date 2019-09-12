@@ -10,7 +10,6 @@ describe('seed:', () => {
   let client: Photon
 
   beforeAll(async () => {
-    console.log('Starts beforeAll')
     const id = Math.random().toString()
     const tmpDir = os.tmpdir()
     const dbFile = path.join(tmpDir, `./prisma-seed-test-${id}-db.db`)
@@ -18,10 +17,6 @@ describe('seed:', () => {
       tmpDir,
       `./prisma-schema-test-${id}-db.prisma`,
     )
-
-    console.log(`DB file: ${dbFile}`)
-
-    console.log(`Migrating schema using Lift`)
 
     await migrateLift({
       id: id,
@@ -44,8 +39,6 @@ describe('seed:', () => {
         sqlite: `file:${dbFile}`,
       },
     })
-
-    console.log(`Finished beforeAll.`)
   }, 60 * 1000)
 
   test('correctly generates seed data', async () => {

@@ -37,8 +37,8 @@ export function getSQLitePool(
 }
 
 export interface SQLitePoolOptions {
-  databasePath?: (id?: string) => string
-  tmpPrismaSchemaPath?: (id?: string) => string
+  databasePath?: (id: string) => string
+  tmpPrismaSchemaPath?: (id: string) => string
   pool?: {
     max?: number
   }
