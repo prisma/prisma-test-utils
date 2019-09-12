@@ -41,7 +41,8 @@ describe('postgresql:', () => {
       const res_1 = await client_1.users()
       const res_2 = await client_2.users()
 
-      expect({ res_1, res_2 }).toMatchSnapshot()
+      expect(res_1.length).toBe(1)
+      expect(res_2.length).toBe(0)
     },
     60 * 1000,
   )

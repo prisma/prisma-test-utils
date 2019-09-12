@@ -1318,7 +1318,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
               data: seed,
               model: f.mapping.model,
             })
-          } catch (err) {
+          } catch (err) /* istanbul ignore next */ {
             throw err
           }
         })

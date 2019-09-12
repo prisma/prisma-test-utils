@@ -4,7 +4,7 @@ import _ from 'lodash'
 import pg from 'pg'
 import url from 'url'
 
-import { migrateLift } from '../lift'
+import { migrateLift, getTmpPrismaSchemaPath } from '../lift'
 import { InternalPool } from '../pool'
 import { Pool, DBInstance } from '../../types'
 
@@ -19,7 +19,11 @@ export function getPostgreSQLPool(
 ): { new (options: PostgreSQLPoolOptions): Pool } {
   return class extends PostgreSQLPool {
     constructor(options: PostgreSQLPoolOptions) {
-      super(dmmf, options, cwd)
+      super(
+        dmmf,
+        { tmpPrismaSchemaPath: getTmpPrismaSchemaPath, ...options },
+        cwd,
+      )
     }
   }
 }
@@ -28,22 +32,24 @@ export interface PostgreSQLConnection {
   host: string
   port: number
   user: string
-  password: string
+  password?: string
   database: string
   schema: string
 }
 
 export interface PostgreSQLPoolOptions {
-  connection: (id?: string) => PostgreSQLConnection
+  connection: (id: string) => PostgreSQLConnection
   pool?: {
     max?: number
   }
+  tmpPrismaSchemaPath?: (id: string) => string
 }
 
 class PostgreSQLPool extends InternalPool {
   private dmmf: DMMF.Document
   private projectDir: string
-  private getConnection: (id?: string) => PostgreSQLConnection
+  private getConnection: (id: string) => PostgreSQLConnection
+  private getTmpPrismaSchemaPath: (id: string) => string
 
   constructor(
     dmmf: DMMF.Document,
@@ -55,6 +61,7 @@ class PostgreSQLPool extends InternalPool {
     this.dmmf = dmmf
     this.projectDir = cwd
     this.getConnection = options.connection
+    this.getTmpPrismaSchemaPath = options.tmpPrismaSchemaPath!
   }
 
   /**
@@ -62,6 +69,7 @@ class PostgreSQLPool extends InternalPool {
    */
   async createDBInstance(id: string): Promise<DBInstance> {
     const connection = this.getConnection(id)
+    const tmpPrismaSchemaPath = this.getTmpPrismaSchemaPath(id)
     const url = readPostgreSQLUrl(connection)
 
     const datasources: DataSource[] = [
@@ -82,6 +90,7 @@ class PostgreSQLPool extends InternalPool {
       id,
       datasources,
       projectDir: this.projectDir,
+      tmpPrismaSchemaPath,
       dmmf: this.dmmf,
     })
 

@@ -14,6 +14,10 @@ describe('seed:', () => {
     const id = Math.random().toString()
     const tmpDir = os.tmpdir()
     const dbFile = path.join(tmpDir, `./prisma-seed-test-${id}-db.db`)
+    const schemaPrismaFile = path.join(
+      tmpDir,
+      `./prisma-schema-test-${id}-db.prisma`,
+    )
 
     console.log(`DB file: ${dbFile}`)
 
@@ -30,6 +34,7 @@ describe('seed:', () => {
           url: { value: `file:${dbFile}`, fromEnvVar: null },
         },
       ],
+      tmpPrismaSchemaPath: schemaPrismaFile,
       dmmf,
     })
 

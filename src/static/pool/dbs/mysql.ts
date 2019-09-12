@@ -4,7 +4,7 @@ import _ from 'lodash'
 import mysql from 'mysql'
 import url from 'url'
 
-import { migrateLift } from '../lift'
+import { migrateLift, getTmpPrismaSchemaPath } from '../lift'
 import { InternalPool } from '../pool'
 import { Pool, DBInstance } from '../../types'
 
@@ -19,7 +19,11 @@ export function getMySQLPool(
 ): { new (options: MySQLPoolOptions): Pool } {
   return class extends MySQLPool {
     constructor(options: MySQLPoolOptions) {
-      super(dmmf, options, cwd)
+      super(
+        dmmf,
+        { tmpPrismaSchemaPath: getTmpPrismaSchemaPath, ...options },
+        cwd,
+      )
     }
   }
 }
@@ -28,21 +32,23 @@ export interface MySQLConnection {
   host: string
   port: string
   user: string
-  password: string
+  password?: string
   database: string
 }
 
 export interface MySQLPoolOptions {
-  connection: (id?: string) => MySQLConnection
+  connection: (id: string) => MySQLConnection
   pool?: {
     max?: number
   }
+  tmpPrismaSchemaPath?: (id: string) => string
 }
 
 class MySQLPool extends InternalPool {
   private dmmf: DMMF.Document
   private projectDir: string
   private getConnection: (id?: string) => MySQLConnection
+  private getTmpPrismaSchemaPath: (id: string) => string
 
   constructor(dmmf: DMMF.Document, options: MySQLPoolOptions, cwd: string) {
     super({ max: _.get(options, ['pool', 'max'], Infinity) })
@@ -50,10 +56,12 @@ class MySQLPool extends InternalPool {
     this.dmmf = dmmf
     this.projectDir = cwd
     this.getConnection = options.connection
+    this.getTmpPrismaSchemaPath = options.tmpPrismaSchemaPath!
   }
 
   async createDBInstance(id: string): Promise<DBInstance> {
     const connection = this.getConnection(id)
+    const tmpPrismaSchemaPath = this.getTmpPrismaSchemaPath(id)
     const uri = readMySQLURI(connection)
 
     const datasources: DataSource[] = [
@@ -74,6 +82,7 @@ class MySQLPool extends InternalPool {
       id,
       projectDir: this.projectDir,
       datasources,
+      tmpPrismaSchemaPath,
       dmmf: this.dmmf,
     })
 

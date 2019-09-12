@@ -2,11 +2,14 @@ import { LiftEngine } from '@prisma/lift'
 import { DMMF } from '@prisma/photon/runtime/dmmf-types'
 import { dmmfToDml, DataSource } from '@prisma/photon'
 
+import * as fs from 'fs'
+import * as os from 'os'
 import * as path from 'path'
 
 export interface LiftMigrationOptions {
   id: string
   projectDir: string
+  tmpPrismaSchemaPath: string
   datasources: DataSource[]
   dmmf: DMMF.Document
 }
@@ -20,12 +23,10 @@ export async function migrateLift({
   id,
   projectDir,
   datasources,
+  tmpPrismaSchemaPath,
   dmmf,
 }: LiftMigrationOptions): Promise<{ id: string; datamodel: string }> {
-  const schemaPath = path.resolve(projectDir, 'schema.prisma')
-  const lift = new LiftEngine({ projectDir, schemaPath })
-
-  /* Create datamodel.*/
+  /* Create datamodel. */
   const datamodelDmmf = {
     enums: [],
     models: [],
@@ -36,6 +37,11 @@ export async function migrateLift({
     dmmf: datamodelDmmf,
     config: { datasources, generators: [] },
   })
+
+  fs.writeFileSync(tmpPrismaSchemaPath, datamodel)
+
+  /* Init Lift. */
+  const lift = new LiftEngine({ projectDir, schemaPath: tmpPrismaSchemaPath })
 
   /* Get migration. */
   const { datamodelSteps, errors: stepErrors } = await lift.inferMigrationSteps(
@@ -75,4 +81,15 @@ export async function migrateLift({
   lift.stop()
 
   return { id, datamodel }
+}
+
+/**
+ * Allocates a new space in the tmp dir for the db instance.
+ *
+ * @param id
+ */
+export function getTmpPrismaSchemaPath(id: string): string {
+  const tmpDir = os.tmpdir()
+  const dbFile = path.join(tmpDir, `./${id}-schema.prisma`)
+  return dbFile
 }

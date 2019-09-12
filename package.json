@@ -27,9 +27,9 @@
     "pg": "^7.12.1"
   },
   "devDependencies": {
-    "@prisma/cli": "^0.0.69",
-    "@prisma/lift": "^0.2.48",
-    "@prisma/photon": "^0.2.53",
+    "@prisma/cli": "^0.0.70",
+    "@prisma/lift": "^0.2.50",
+    "@prisma/photon": "^0.2.56",
     "@types/jest": "^24.0.18",
     "@types/lodash": "^4.14.138",
     "@types/mysql": "^2.15.7",
