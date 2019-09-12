@@ -124,9 +124,14 @@ export abstract class InternalPool implements Pool {
   }
 
   /**
-   * Releases all remaining instances in the pool.
+   * Rejects remaining waiters, and releases all
+   * remaining instances in the pool.
    */
   public async drain(): Promise<void> {
+    /* Reject waiters. */
+    this.waiters.forEach(w => w.fail())
+    this.waiters = []
+    /* Release busy instances. */
     const actions = this.dbs.busy.map(i => this.releaseDBInstance(i))
     try {
       await Promise.all(actions)
@@ -141,10 +146,12 @@ export abstract class InternalPool implements Pool {
 class Waiter {
   private promise: Promise<DBInstance>
   private resolve: (dbi: DBInstance) => void
+  private reject: () => void
 
   constructor() {
     this.promise = new Promise((resolve, reject) => {
       this.resolve = resolve
+      this.reject = reject
     })
   }
 
@@ -154,5 +161,9 @@ class Waiter {
 
   allocate(instance: DBInstance): void {
     this.resolve(instance)
+  }
+
+  fail(): void {
+    this.reject()
   }
 }

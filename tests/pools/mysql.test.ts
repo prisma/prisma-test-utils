@@ -1,47 +1,87 @@
-import Photon from '../dbs/mysql/@generated/photon'
-import MySQLPool, { Pool } from '../dbs/mysql/@generated/prisma-test-utils/pool'
+import mysql from 'mysql'
+
+import MySQLPool, {
+  DBInstance,
+} from '../dbs/mysql/@generated/prisma-test-utils/pool'
 
 describe('mysql:', () => {
-  let pool: Pool
+  let created_dbs: string[] = []
+  let instance: DBInstance
 
-  beforeAll(() => {
-    pool = new MySQLPool({
-      connection: id => ({
-        database: `${id}-prisma-test-utils`,
+  const pool = new MySQLPool({
+    connection: id => {
+      const database = `mysql-tests-${id}`
+      created_dbs.push(database)
+
+      return {
+        database: database,
         host: '127.0.0.1',
-        port: '3307',
+        port: 3307,
         user: 'root',
         password: process.env.MYSQL_ROOT_PASSWORD,
-      }),
-    })
+      }
+    },
   })
 
-  test(
-    'pool acquires new empty database instance',
-    async () => {
-      const [db_1, db_2] = await Promise.all([
-        pool.getDBInstance(),
-        pool.getDBInstance(),
-      ])
+  test('creates db instance', async () => {
+    const client = await getMySQLClient()
+    const init_dbs = await getDatabases(client)
 
-      const client_1 = new Photon({ datasources: { mysql: db_1.url } })
-      const client_2 = new Photon({ datasources: { mysql: db_2.url } })
+    instance = await pool.getDBInstance()
 
-      await client_1.users.create({
-        data: {
-          email: 'test@foo.com',
-          isActive: true,
-          name: 'foo',
-          pet: 'Dog',
-        },
-      })
+    const end_dbs = await getDatabases(client)
 
-      const res_1 = await client_1.users()
-      const res_2 = await client_2.users()
+    expect(end_dbs).toEqual(init_dbs.concat(created_dbs).sort())
+    expect(created_dbs.length).toBe(1)
+    expect(instance.url.indexOf(created_dbs[0]) > -1).toBeTruthy()
+  })
 
-      expect(res_1.length).toBe(1)
-      expect(res_2.length).toBe(0)
-    },
-    60 * 1000,
-  )
+  test('releases db instance', async () => {
+    const client = await getMySQLClient()
+    const init_dbs = await getDatabases(client)
+
+    await pool.releaseDBInstance(instance)
+
+    const end_dbs = await getDatabases(client)
+
+    expect(init_dbs.some(schema => schema === created_dbs[0])).toBeTruthy()
+    expect(end_dbs.every(schema => schema !== created_dbs[0])).toBeTruthy()
+  })
 })
+
+/* Helper functions. */
+
+async function getDatabases(client: mysql.Connection): Promise<string[]> {
+  const res = await query<{ schema_name: string }[]>(
+    client,
+    'SELECT schema_name FROM information_schema.schemata',
+  )
+
+  console.log(res)
+  return res.map(r => r.schema_name).sort()
+}
+
+async function query<T>(client: mysql.Connection, query: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    client.query(query, (err, res) => {
+      if (err) reject(err)
+      else resolve(res)
+    })
+  })
+}
+
+async function getMySQLClient(): Promise<mysql.Connection> {
+  const client = mysql.createConnection({
+    host: '127.0.0.1',
+    port: 3307,
+    user: 'root',
+    password: process.env.MYSQL_ROOT_PASSWORD,
+  })
+
+  return new Promise((resolve, reject) => {
+    client.connect(err => {
+      if (err) reject(err)
+      else resolve(client)
+    })
+  })
+}

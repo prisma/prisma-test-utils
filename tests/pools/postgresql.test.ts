@@ -32,7 +32,7 @@ describe('postgresql:', () => {
 
     const end_schemas = await getSchemas(client)
 
-    expect(init_schemas).toEqual(end_schemas.concat(created_schemas).sort())
+    expect(end_schemas).toEqual(init_schemas.concat(created_schemas).sort())
     expect(created_schemas.length).toBe(1)
     expect(instance.url.indexOf(created_schemas[0]) > -1).toBeTruthy()
   })
