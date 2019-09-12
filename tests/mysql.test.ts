@@ -9,9 +9,9 @@ describe('mysql:', () => {
       connection: id => ({
         database: `${id}-prisma-test-utils`,
         host: '127.0.0.1',
-        port: '3306',
+        port: '3307',
         user: 'root',
-        password: 'root',
+        password: process.env.MYSQL_ROOT_PASSWORD,
       }),
     })
   })

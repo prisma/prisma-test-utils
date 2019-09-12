@@ -9,11 +9,11 @@ describe('postgresql:', () => {
   beforeAll(() => {
     pool = new PostgreSQLPool({
       connection: id => ({
-        database: `prisma`,
-        host: 'localhost',
-        port: 5432,
-        user: 'prisma',
-        password: 'prisma',
+        database: process.env.POSTGRES_DB,
+        host: '127.0.0.1',
+        port: 5433,
+        user: process.env.POSTGRES_USER,
+        password: process.env.POSTGRES_PASSWORD,
         schema: `prisma-test-utils-${id}`,
       }),
     })

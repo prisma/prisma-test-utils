@@ -61,7 +61,7 @@ class PostgreSQLPool extends InternalPool {
    * Creates a DB isntance.
    */
   async createDBInstance(id: string): Promise<DBInstance> {
-    const connection = await this.getConnection(id)
+    const connection = this.getConnection(id)
     const url = readPostgreSQLUrl(connection)
 
     const datasources: DataSource[] = [
@@ -86,7 +86,7 @@ class PostgreSQLPool extends InternalPool {
     })
 
     const instance: DBInstance = {
-      url: readPostgreSQLUrl(connection),
+      url: url,
       cwd: this.projectDir,
       datamodel: datamodel,
     }

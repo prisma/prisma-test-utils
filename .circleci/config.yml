@@ -29,7 +29,14 @@ jobs:
           name: Wait for MySQL to start
           # preinstalled in circleci/* docker image
           command: dockerize -wait tcp://127.0.0.1:3306 -timeout 120s
-      - run: yarn test
+      - run:
+          name: test
+          command: yarn test
+          environment:
+            POSTGRES_USER: prisma
+            POSTGRES_PASSWORD: prisma
+            POSTGRES_DB: prisma
+            MYSQL_ROOT_PASSWORD: prisma
 
 workflows:
   version: 2

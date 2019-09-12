@@ -15,7 +15,7 @@
     "clean": "rimraf ./node_modules/ && rimraf ./*/node_modules/",
     "prepublishOnly": "npm-run-all build build:runtime",
     "pretest": "npm-run-all build:runtime",
-    "test": "jest"
+    "test": "dotenv -e .env.test.conf -- jest"
   },
   "dependencies": {
     "@types/chance": "^1.0.6",
@@ -37,6 +37,7 @@
     "@types/pg": "^7.11.1",
     "@zeit/ncc": "^0.20.5",
     "chalk": "^2.4.2",
+    "dotenv-cli": "^2.0.1",
     "execa": "^2.0.3",
     "fs-monkey": "^0.3.3",
     "husky": "^3.0.5",

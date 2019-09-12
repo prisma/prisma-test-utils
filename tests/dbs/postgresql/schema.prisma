@@ -1,5 +1,5 @@
 datasource postgres {
-  url      = "postgresql://prisma:prisma@localhost:5432/prisma"
+  url      = "postgresql://prisma:prisma@localhost:5433/prisma"
   provider = "postgres"
 }
 
