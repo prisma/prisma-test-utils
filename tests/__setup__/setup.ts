@@ -29,63 +29,67 @@ const generators: Dictionary<GeneratorDefinitionWithPackage> = {
 }
 
 export default async () => {
-  console.log(os.EOL)
-  console.log(`SETUP`)
+  if (process.env.PRISMA_GENERATE !== 'false') {
+    console.log(os.EOL)
+    console.log(`PRISMA GENERATE`)
 
-  /* Generating... */
+    /* Generating... */
 
-  console.log(`* Generating files...`)
-  const generationStart = Date.now()
+    console.log(`* Generating files...`)
+    const generationStart = Date.now()
 
-  await Promise.all(
-    Object.values(dbPaths).map(async cwd => {
-      const datamodel = await getDatamodel(cwd)
-      const compiledGenerators = await getCompiledGenerators(
-        cwd,
-        datamodel,
-        generators,
-      )
+    await Promise.all(
+      Object.values(dbPaths).map(async cwd => {
+        const datamodel = await getDatamodel(cwd)
+        const compiledGenerators = await getCompiledGenerators(
+          cwd,
+          datamodel,
+          generators,
+        )
 
-      console.log(`Working in: ${cwd}`)
+        console.log(`Working in: ${cwd}`)
 
-      for (const generator of compiledGenerators) {
-        console.log(`Generating ${generator.prettyName}`)
-        await generator.generate()
-        console.log(`Done! (${generator.output})`)
-      }
-    }),
-  )
+        for (const generator of compiledGenerators) {
+          console.log(`Generating ${generator.prettyName}`)
+          await generator.generate()
+          console.log(`Done! (${generator.output})`)
+        }
+      }),
+    )
 
-  const generationEnd = Date.now()
-  console.log(`* Done generating tools in: ${generationEnd - generationStart}.`)
+    const generationEnd = Date.now()
+    console.log(
+      `* Done generating tools in: ${generationEnd - generationStart}.`,
+    )
 
-  /* Fix prisma-test-utils static require for coverage. */
+    /* Fix prisma-test-utils static require for coverage. */
 
-  console.log('* FIXING require for STATIC')
+    console.log('* FIXING require for STATIC')
 
-  const libStaticPath = path.join(__dirname, '../../src/static')
-  const relativeStaticRequire = `require("./static")`
-  const libStaticRequire = `require("${libStaticPath}")`
+    const libStaticPath = path.join(__dirname, '../../src/static')
+    const relativeStaticRequire = `require("./static")`
+    const libStaticRequire = `require("${libStaticPath}")`
 
-  const seedPath = './@generated/prisma-test-utils/seed.js'
-  const poolPath = './@generated/prisma-test-utils/pool.js'
+    const seedPath = './@generated/prisma-test-utils/seed.js'
+    const poolPath = './@generated/prisma-test-utils/pool.js'
 
-  for (const db of Object.values(dbPaths)) {
-    const dbSeedPath = path.join(db, seedPath)
-    const dbPoolPath = path.join(db, poolPath)
+    for (const db of Object.values(dbPaths)) {
+      const dbSeedPath = path.join(db, seedPath)
+      const dbPoolPath = path.join(db, poolPath)
 
-    const seedJS = fs
-      .readFileSync(dbSeedPath, 'utf-8')
-      .replace(relativeStaticRequire, libStaticRequire)
-    const poolJS = fs
-      .readFileSync(dbPoolPath, 'utf-8')
-      .replace(relativeStaticRequire, libStaticRequire)
+      const seedJS = fs
+        .readFileSync(dbSeedPath, 'utf-8')
+        .replace(relativeStaticRequire, libStaticRequire)
+      const poolJS = fs
+        .readFileSync(dbPoolPath, 'utf-8')
+        .replace(relativeStaticRequire, libStaticRequire)
 
-    fs.writeFileSync(dbSeedPath, seedJS)
-    fs.writeFileSync(dbPoolPath, poolJS)
+      fs.writeFileSync(dbSeedPath, seedJS)
+      fs.writeFileSync(dbPoolPath, poolJS)
+    }
+
+    console.log('* FIXED STATIC')
+
+    console.log('DONE WITH PRISMA GENERATE!')
   }
-
-  console.log('* FIXED STATIC')
-
-  console.log('DONE WITH SETUP!')
 }

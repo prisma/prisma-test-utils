@@ -31,8 +31,12 @@ jobs:
           command: dockerize -wait tcp://127.0.0.1:3306 -timeout 120s
       - run:
           name: test
-          command: yarn test
+          command: |
+            yarn build
+            yarn build:runtime
+            yarn test
           environment:
+            PRISMA_GENERATE: true
             POSTGRES_USER: prisma
             POSTGRES_PASSWORD: prisma
             POSTGRES_DB: prisma

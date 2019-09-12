@@ -111,8 +111,10 @@ class PostgreSQLPool extends InternalPool {
     const client = await getPostgreSQLClient(connection)
 
     try {
-      await client.query(`DROP SCHEMA IF EXISTS ${connection.schema}`)
-    } catch (err) {
+      await client.query(
+        `DROP SCHEMA IF EXISTS "${connection.schema}" CASCADE;`,
+      )
+    } catch (err) /* istanbul ignore next */ {
       throw err
     }
   }
@@ -143,7 +145,7 @@ function parsePostgreSQLUrl(urlStr: string): PostgreSQLConnection {
   const [, user, password] = auth.match(/(\w+):(\w+)/)
   const [, database] = pathname.match(/\/(\w+)/)
 
-  /* istanbul ignore if */
+  /* istanbul ignore next */
   if (typeof query.schema !== 'string') {
     throw new Error(`Unsupported schema type: ${typeof query.schema}`)
   }
@@ -174,6 +176,7 @@ async function getPostgreSQLClient(
     port: connection.port,
     user: connection.user,
     password: connection.password,
+    database: connection.database,
   })
 
   /* Establishes a connection before returning the instance. */

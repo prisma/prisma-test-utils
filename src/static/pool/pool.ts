@@ -55,6 +55,8 @@ export abstract class InternalPool implements Pool {
       const dbInstance = await this.createDBInstance(id)
       this.dbs.booting = this.dbs.booting.filter(dbId => dbId !== id)
 
+      this.dbs.busy = this.dbs.busy.concat(dbInstance)
+
       /**
        * If there's a waiter in the line it first gets the instnace.
        * A new waiter is created for the current request.
@@ -92,11 +94,11 @@ export abstract class InternalPool implements Pool {
    * @param db
    */
   public async releaseDBInstance(db: DBInstance): Promise<void> {
-    const instance = this.dbs.busy.find(bdb => bdb.cwd === db.cwd)!
+    const instance = this.dbs.busy.find(bdb => bdb.url === db.url)!
     try {
       /* Finds the busy instance and releases it. */
       await this.deleteDBInstance(instance)
-      this.dbs.busy = this.dbs.busy.filter(bdb => bdb.cwd !== db.cwd)
+      this.dbs.busy = this.dbs.busy.filter(bdb => bdb.url !== db.url)
 
       /* Triggers the creation of new instance if there's a waiter for it. */
       if (this.waiters.length > 0) this.getDBInstance()
@@ -127,7 +129,7 @@ export abstract class InternalPool implements Pool {
    * Releases all remaining instances in the pool.
    */
   public async drain(): Promise<void> {
-    const actions = this.dbs.busy.map(this.releaseDBInstance)
+    const actions = this.dbs.busy.map(i => this.releaseDBInstance(i))
     try {
       await Promise.all(actions)
     } catch (err) {
