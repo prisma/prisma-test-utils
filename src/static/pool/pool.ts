@@ -55,31 +55,11 @@ export abstract class InternalPool implements Pool {
 
       this.dbs.busy = this.dbs.busy.concat(dbInstance)
 
-      /**
-       * If there's a waiter in the line it first gets the instnace.
-       * A new waiter is created for the current request.
-       *
-       * If there are no waiters in the line, we return the DB instance.
-       */
-      const [waiter, ...remainingWaiters] = this.waiters
-      if (waiter) {
-        /**
-         * Gives an instances to existing waiter and
-         * returns a new waiter.
-         */
-        waiter.allocate(dbInstance)
-
-        const newWaiter = new Waiter()
-        this.waiters = [...remainingWaiters, newWaiter]
-
-        return waiter.wait()
-      } else {
-        return dbInstance
-      }
+      return dbInstance
     } else {
       /* Add to the line. */
       const waiter = new Waiter()
-      this.waiters = [...this.waiters, waiter]
+      this.waiters = this.waiters.concat(waiter)
 
       return waiter.wait()
     }
@@ -91,15 +71,22 @@ export abstract class InternalPool implements Pool {
    *
    * @param db
    */
-  public async releaseDBInstance(db: DBInstance): Promise<void> {
-    const instance = this.dbs.busy.find(bdb => bdb.url === db.url)!
+  public async releaseDBInstance(instance: DBInstance): Promise<void> {
     try {
       /* Finds the busy instance and releases it. */
       await this.deleteDBInstance(instance)
-      this.dbs.busy = this.dbs.busy.filter(bdb => bdb.url !== db.url)
+      this.dbs.busy = this.dbs.busy.filter(db => db.url !== instance.url)
 
-      /* Triggers the creation of new instance if there's a waiter for it. */
-      if (this.waiters.length > 0) this.getDBInstance()
+      /**
+       * Allocates a new db instance for a waiter.
+       */
+      const [waiter, ...remainingWaiters] = this.waiters
+      if (waiter) {
+        const instance = await this.getDBInstance()
+        waiter.allocate(instance)
+
+        this.waiters = remainingWaiters
+      }
     } catch (err) /* istanbul ignore next */ {
       throw err
     }
@@ -129,7 +116,7 @@ export abstract class InternalPool implements Pool {
    */
   public async drain(): Promise<void> {
     /* Reject waiters. */
-    this.waiters.forEach(w => w.fail())
+    this.waiters.forEach(w => w.fail('Drained before allocated.'))
     this.waiters = []
     /* Release busy instances. */
     const actions = this.dbs.busy.map(i => this.releaseDBInstance(i))
@@ -146,7 +133,7 @@ export abstract class InternalPool implements Pool {
 class Waiter {
   private promise: Promise<DBInstance>
   private resolve: (dbi: DBInstance) => void
-  private reject: () => void
+  private reject: (reason?: any) => void
 
   constructor() {
     this.promise = new Promise((resolve, reject) => {
@@ -163,7 +150,7 @@ class Waiter {
     this.resolve(instance)
   }
 
-  fail(): void {
-    this.reject()
+  fail(reason?: any): void {
+    this.reject(reason)
   }
 }

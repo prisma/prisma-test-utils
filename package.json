@@ -14,7 +14,7 @@
     "build:runtime": "node scripts/build-runtime.js",
     "clean": "rimraf ./node_modules/ && rimraf ./*/node_modules/",
     "prepublishOnly": "npm-run-all build build:runtime",
-    "test": "dotenv -e .env.test.conf -- jest --runInBand"
+    "test": "dotenv -e .env.test.conf -- jest"
   },
   "dependencies": {
     "@types/chance": "^1.0.6",

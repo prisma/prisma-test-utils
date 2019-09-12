@@ -27,6 +27,7 @@ model User {
   name     String
   email    String
   isActive Boolean
+  age      DateTime 
   pet      Pet
   house    House?
   friends  User[]

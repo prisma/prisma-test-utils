@@ -96,7 +96,7 @@ class SQLitePool extends InternalPool {
       }
 
       return instance
-    } catch (err) {
+    } catch (err) /* istanbul ignore next */ {
       throw err
     }
   }
@@ -109,7 +109,7 @@ class SQLitePool extends InternalPool {
   protected async deleteDBInstance(instance: DBInstance): Promise<void> {
     try {
       await fsUnlink(instance.url)
-    } catch (err) {
+    } catch (err) /* istanbul ignore next */ {
       throw err
     }
   }

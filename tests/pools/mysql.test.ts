@@ -57,7 +57,6 @@ async function getDatabases(client: mysql.Connection): Promise<string[]> {
     'SELECT schema_name FROM information_schema.schemata',
   )
 
-  console.log(res)
   return res.map(r => r.schema_name).sort()
 }
 

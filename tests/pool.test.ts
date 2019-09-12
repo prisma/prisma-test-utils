@@ -3,8 +3,8 @@ import { DBInstance } from '../src/static/types'
 
 describe('pool:', () => {
   test('manages dbs in the pool limit', async () => {
-    const instances_created: string[] = []
-    const instances_deleted: string[] = []
+    let instances_created: string[] = []
+    let instances_deleted: string[] = []
 
     class TestPool extends InternalPool {
       async createDBInstance(id: string) {
@@ -22,28 +22,31 @@ describe('pool:', () => {
 
     let released = false
 
-    const instance = pool.getDBInstance().then(async instance => {
-      /* There should only exist one instances at that time. */
-      expect(released).toBeFalsy()
-      expect(instances_created.length).toBe(1)
+    const testFn = async (instance: DBInstance) => {
+      if (released) {
+        /* One instance should already be deleted. */
+        expect(instances_created.length).toBe(2)
+        expect(instances_deleted.length).toBe(1)
+        expect(instances_deleted.some(i => i === instance.url)).toBeFalsy()
+      } else {
+        /* There should only exist one instances at that time. */
+        expect(instances_created.length).toBe(1)
 
-      released = true
-      await pool.releaseDBInstance(instance)
-    })
-    const waiter = pool.getDBInstance().then(instance => {
-      expect(released).toBeTruthy()
-    })
+        released = true
+        await pool.releaseDBInstance(instance)
+      }
+    }
+
+    const instance = pool.getDBInstance().then(testFn)
+    const waiter = pool.getDBInstance().then(testFn)
 
     await Promise.all([instance, waiter])
-
-    expect(instances_deleted.length).toBe(1)
-    /* There should be two instances created altogether. */
-    expect(instances_created.length).toBe(2)
   })
 
   test('run allocates and releases instance', async () => {
     let instances_created: string[] = []
     let instances_deleted: string[] = []
+
     class TestPool extends InternalPool {
       async createDBInstance(id: string) {
         instances_created.push(id)
@@ -71,6 +74,7 @@ describe('pool:', () => {
   test('run allocates and releases instance on error', async () => {
     let instances_created: string[] = []
     let instances_deleted: string[] = []
+
     class TestPool extends InternalPool {
       async createDBInstance(id: string) {
         instances_created.push(id)
@@ -85,28 +89,28 @@ describe('pool:', () => {
       max: Infinity,
     })
 
-    expect(async () => {
-      await pool.run(async instance => {
+    await expect(
+      pool.run(async instance => {
         expect([instance.url]).toEqual(instances_created)
-        throw new Error('PASS')
-      })
-    }).toThrow('PASS')
-    /* Tests */
-
+        throw new Error('pass')
+      }),
+    ).rejects.toThrow('pass')
     expect(instances_created.length).toBe(1)
     expect(instances_created).toEqual(instances_deleted)
   })
 
   test('drains the unlimited pool', async () => {
     /* Test pool instance. */
-    let instances: string[] = []
+    const instances_created: string[] = []
+    const instances_deleted: string[] = []
+
     class TestPool extends InternalPool {
       async createDBInstance(id: string) {
-        instances.push(id)
+        instances_created.push(id)
         return { url: id, cwd: '', datamodel: '' }
       }
       async deleteDBInstance(instance: DBInstance): Promise<void> {
-        instances = instances.filter(i => i !== instance.url)
+        instances_deleted.push(instance.url)
       }
     }
 
@@ -118,15 +122,38 @@ describe('pool:', () => {
       Array.from({ length: numberOfInstances }, () => pool.getDBInstance()),
     )
 
-    const mid_instances = instances
+    /* Drain pool. */
+    await pool.drain()
+
+    /* Tests. */
+    expect(instances_created).toEqual(instances_deleted)
+  })
+
+  test('drains the limited pool', async () => {
+    /* Test pool instance. */
+    const instances_created: string[] = []
+    const instances_deleted: string[] = []
+
+    class TestPool extends InternalPool {
+      async createDBInstance(id: string) {
+        instances_created.push(id)
+        return { url: id, cwd: '', datamodel: '' }
+      }
+      async deleteDBInstance(instance: DBInstance): Promise<void> {
+        instances_deleted.push(instance.url)
+      }
+    }
+
+    const pool = new TestPool({ max: 10 })
+
+    await Promise.all(Array.from({ length: 10 }, () => pool.getDBInstance()))
+
+    const waiter = pool.getDBInstance()
 
     /* Drain pool. */
     await pool.drain()
 
-    const end_instances = instances
-
-    /* Tests. */
-    expect(end_instances.length).toBe(0)
-    expect(mid_instances.length).toBe(numberOfInstances)
+    await expect(waiter).rejects.toMatch('Drained before allocated.')
+    expect(instances_created).toEqual(instances_deleted)
   })
 })

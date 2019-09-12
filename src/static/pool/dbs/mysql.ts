@@ -99,8 +99,8 @@ class MySQLPool extends InternalPool {
     const connection = parseMySQLURI(instance.url)
     try {
       const client = await getMySQLClient(connection)
-      await query(client, `DROP DATABASE IF EXISTS "${connection.database}";`)
-    } catch (err) {
+      await query(client, `DROP DATABASE IF EXISTS \`${connection.database}\`;`)
+    } catch (err) /* istanbul ignore next */ {
       throw err
     }
   }
@@ -126,6 +126,7 @@ async function getMySQLClient(
 
   return new Promise((resolve, reject) => {
     client.connect(err => {
+      /* istanbul ignore if */
       if (err) reject(err)
       else resolve(client)
     })
@@ -141,6 +142,7 @@ async function getMySQLClient(
 async function query<T>(client: mysql.Connection, query: string): Promise<T> {
   return new Promise((resolve, reject) => {
     client.query(query, (err, res) => {
+      /* istanbul ignore if */
       if (err) reject(err)
       else resolve(res)
     })
@@ -164,7 +166,7 @@ function readMySQLURI(connection: MySQLConnection): string {
 function parseMySQLURI(uri: string): MySQLConnection {
   const { auth, hostname: host, port: rawPort, pathname } = url.parse(uri, true)
   const [, user, password] = auth.match(/(\w+):(\w+)/)
-  const [, database] = pathname.match(/\/(\w+)/)
+  const [, database] = pathname.match(/\/(.+)/)
   const port = parseInt(rawPort, 10)
 
   return {

@@ -21,6 +21,7 @@ export async function generatePrismaTestUtils(
 
   const photon = options.otherGenerators.find(og => og.provider === 'photonjs')
 
+  /* istanbul ignore next */
   if (!photon) {
     throw new Error(`You need to generate Photon first.`)
   }
@@ -43,7 +44,7 @@ export async function generatePrismaTestUtils(
 
   try {
     await copyVFS(staticFs)
-  } catch (err) {
+  } catch (err) /* istanbul ignore next */ {
     throw err
   }
 
@@ -57,6 +58,8 @@ export async function generatePrismaTestUtils(
 
   /* Dynamic files */
   const dmmf = require(photonPath).dmmf as DMMF.Document
+
+  console.log({ dmmf })
 
   const seedLib = mls`
   | import Photon from '${photonPath}';
@@ -114,7 +117,7 @@ export async function generatePrismaTestUtils(
       suppressOutputPathCheck: false,
     })
     await writeToFS(compiledFS)
-  } catch (err) {
+  } catch (err) /* istanbul ignore next */ {
     throw err
   }
 

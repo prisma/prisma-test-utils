@@ -56,14 +56,6 @@ export async function compileVFS(
     }
   }
 
-  compilerHost.readFile = fileName => {
-    if (vfs.hasOwnProperty(fileName)) {
-      return vfs[fileName]
-    } else {
-      return readFile(fileName)
-    }
-  }
-
   compilerHost.writeFile = (fileName, data) => {
     compiledVFS[fileName] = data
   }
@@ -127,7 +119,7 @@ export async function copyVFS(vfs: VirtualFS): Promise<void> {
 
     try {
       await Promise.all(actions)
-    } catch (err) /* istanbul ignore */ {
+    } catch (err) /* istanbul ignore next */ {
       throw err
     }
   }
@@ -146,7 +138,7 @@ export async function writeToFS(vfs: VirtualFS): Promise<void> {
 
   try {
     await Promise.all(actions)
-  } catch (err) /* istanbul ignore */ {
+  } catch (err) /* istanbul ignore next */ {
     throw err
   }
 }

@@ -1,58 +1,42 @@
+import fs from 'fs'
 import os from 'os'
 import path from 'path'
 
-import Photon from '../dbs/sqlite/@generated/photon'
 import SQLitePool, {
-  Pool,
+  DBInstance,
 } from '../dbs/sqlite/@generated/prisma-test-utils/pool'
+import { getTmpSQLiteDB } from '../../src/static/pool/dbs/sqlite'
 
 describe('sqlite:', () => {
-  let pool: Pool
+  let created_dbs: string[] = []
+  let instance: DBInstance
 
-  beforeAll(() => {
-    pool = new SQLitePool({
-      databasePath: id => path.join(os.tmpdir(), `./prisma-sqlite-${id}-db.db`),
-    })
+  const pool = new SQLitePool({
+    databasePath: id => {
+      const database = path.join(os.tmpdir(), `./sqlite-test-${id}.db`)
+      created_dbs.push(database)
+      return database
+    },
   })
 
-  test(
-    'pool acquires new empty database instance',
-    async () => {
-      const [db_1, db_2] = await Promise.all([
-        pool.getDBInstance(),
-        pool.getDBInstance(),
-      ])
+  test('creates db instance', async () => {
+    instance = await pool.getDBInstance()
 
-      const client_1 = new Photon({ datasources: { sqlite: db_1.url } })
-      const client_2 = new Photon({ datasources: { sqlite: db_2.url } })
+    expect(created_dbs.some(db => fs.existsSync(db))).toBeTruthy()
+    expect(created_dbs.length).toBe(1)
+    expect(instance.url.indexOf(created_dbs[0]) > -1).toBeTruthy()
+  })
 
-      await client_1.users.create({
-        data: {
-          email: 'email',
-          isActive: true,
-          name: 'name',
-          house: {
-            create: {
-              numberOfRooms: 3,
-              address: 'address',
-            },
-          },
-          pet: {
-            create: {
-              animal: 'Dog',
-              birthday: new Date().toISOString(),
-              name: 'dogy',
-            },
-          },
-        },
-      })
+  test('releases db instance', async () => {
+    expect(created_dbs.some(db => fs.existsSync(db))).toBeTruthy()
 
-      const res_1 = await client_1.users()
-      const res_2 = await client_2.users()
+    await pool.releaseDBInstance(instance)
 
-      expect(res_1.length).toBe(1)
-      expect(res_2.length).toBe(0)
-    },
-    60 * 1000,
-  )
+    expect(created_dbs.every(db => !fs.existsSync(db))).toBeTruthy()
+  })
+})
+
+test('getTmpSQLiteDB gets tmp db', async () => {
+  const id = Math.random().toString(36)
+  expect(getTmpSQLiteDB(id)).toBe(`${os.tmpdir()}/prisma-sqlite-${id}-db.db`)
 })

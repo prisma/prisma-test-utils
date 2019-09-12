@@ -9,6 +9,10 @@ module.exports = {
   testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$',
   testPathIgnorePatterns: ['/node_modules/', '/__fixtures__/'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  moduleDirectories: ['node_modules', 'tests'],
+  moduleNameMapper: {
+    'tests/(.*)': '<rootDir>/tests/$1',
+  },
   collectCoverage: true,
   collectCoverageFrom: [
     '**/*.{ts,tsx}',

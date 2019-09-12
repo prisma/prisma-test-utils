@@ -15,6 +15,7 @@ User?: {
 name?: string | (() => string)
 email?: string | (() => string)
 isActive?: boolean | (() => boolean)
+age?: string | (() => string)
 friends?: { min?: number, max?: number } 
   }
 }
