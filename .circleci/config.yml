@@ -41,6 +41,17 @@ jobs:
             POSTGRES_PASSWORD: prisma
             POSTGRES_DB: prisma
             MYSQL_ROOT_PASSWORD: prisma
+  publish:
+    docker:
+      - image: 'circleci/node:11.3.0'
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: yarn install
+      - run:
+          name: Release packages
+          command: yarn release
 
 workflows:
   version: 2
