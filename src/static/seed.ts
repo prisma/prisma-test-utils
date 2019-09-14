@@ -195,6 +195,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
                 },
               }
             }
+            /* istanbul ignore next */
             default: {
               throw new Error(
                 `Expected a relation constraint got ${typeof seedModelField}`,
@@ -318,7 +319,8 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
         /* Validation */
 
         if (min > max) {
-          /* Inconsistent mock definition. */
+          /* istanbul ignore next */ /* Inconsistent mock definition. */
+
           throw new Error(
             /* prettier-ignore */
             mls`
@@ -326,7 +328,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
             `,
           )
         } else if (max > relationSeedModel.amount) {
-          /* Missing relation instances */
+          /* istanbul ignore next */ /* Missing relation instances */
           const missingInstances = max - relationSeedModel.amount
           throw new Error(
             /* prettier-ignore */
@@ -387,7 +389,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
         /* Validation */
 
         if (min > max) {
-          /* Inconsistent mock definition. */
+          /* istanbul ignore next */ /* Inconsistent mock definition. */
           throw new Error(
             /* prettier-ignore */
             mls`
@@ -395,7 +397,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
             `,
           )
         } else if (max > relationSeedModel.amount) {
-          /* Missing relation instances */
+          /* istanbul ignore next */ /* Missing relation instances */
           const missingInstances = max - relationSeedModel.amount
           throw new Error(
             /* prettier-ignore */
@@ -650,6 +652,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
           const [o] = remainingOrders
 
           /* Checks if the order is well defined */
+          /* istanbul ignore else */
           if (isOrderWellDefinedInPool(pool, o)) {
             const [steps] = getStepsFromOrder(allOrders, sortedSteps, pool, o)
 
@@ -937,6 +940,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
 
               if (!(field.kind === 'object')) {
                 /* Fallback for unsupported scalars */
+                /* istanbul ignore next */
                 throw new Error(
                   /* prettier-ignore */
                   mls`
@@ -1213,7 +1217,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
       pool: Pool,
       parent: string,
       child: string,
-      n: number = 1,
+      n: number,
     ): [Pool, ID[]] {
       const ids = _.get(pool, [parent, child])
       return [_.set(pool, [parent, child], ids.splice(n)), ids.slice(0, n)]
@@ -1255,7 +1259,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
       )
 
       /* Validation check, though it should never trigger */
-      /* istanbul ignore if */
+      /* istanbul ignore next */
       if (instanceTasks.length !== n) {
         throw new Error('Something very unexpected occured.')
       }
@@ -1290,9 +1294,9 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
    * @param opts
    */
   async function seedFixturesToDatabase(
-    photon: any, // TODO: generate photon type
+    photon: any,
     fixtures: Fixture[],
-    opts: { persist: boolean } = { persist: false },
+    opts: { persist: boolean },
   ): Promise<object[]> {
     if (!opts.persist) {
       /**
