@@ -1,0 +1,37 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:db/next.db"
+  default  = true
+}
+
+generator photon {
+  provider = "photonjs"
+  output   = "node_modules/@generated/photon"
+}
+
+generator test_utils {
+  provider = "prisma-test-utils"
+  output   = "node_modules/@generated/test-utils"
+}
+
+model Blog {
+  id        String   @id @default(cuid())
+  name      String
+  viewCount Int
+  posts     Post[]
+  authors   Author[]
+}
+
+model Author {
+  id    String  @id @default(cuid())
+  name  String?
+  posts Post[]
+  blog  Blog
+}
+
+model Post {
+  id    String   @id @default(cuid())
+  title String
+  tags  String[]
+  blog  Blog
+}

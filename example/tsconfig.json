@@ -7,5 +7,5 @@
     "rootDir": ".",
     "outDir": "dist"
   },
-  "exclude": ["dist", "__tests__"]
+  "exclude": ["dist", "tests"]
 }

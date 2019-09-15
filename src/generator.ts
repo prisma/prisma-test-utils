@@ -59,8 +59,6 @@ export async function generatePrismaTestUtils(
   /* Dynamic files */
   const dmmf = require(photonPath).dmmf as DMMF.Document
 
-  console.log({ dmmf })
-
   const seedLib = mls`
   | import Photon from '${photonPath}';
   | import { DMMF } from '@prisma/photon/runtime/dmmf-types';
