@@ -16,7 +16,7 @@ describe('mysql:', () => {
       return {
         database: database,
         host: '127.0.0.1',
-        port: 3307,
+        port: 3306,
         user: 'root',
         password: process.env.MYSQL_ROOT_PASSWORD,
       }
@@ -72,7 +72,7 @@ async function query<T>(client: mysql.Connection, query: string): Promise<T> {
 async function getMySQLClient(): Promise<mysql.Connection> {
   const client = mysql.createConnection({
     host: '127.0.0.1',
-    port: 3307,
+    port: 3306,
     user: 'root',
     password: process.env.MYSQL_ROOT_PASSWORD,
   })

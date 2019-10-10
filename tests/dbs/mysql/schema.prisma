@@ -1,5 +1,5 @@
 datasource mysql {
-  url      = "mysql://root:prisma@localhost:3307"
+  url      = "mysql://root:prisma@localhost:3306"
   provider = "mysql"
 }
 

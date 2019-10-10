@@ -16,7 +16,7 @@ describe('postgresql:', () => {
       return {
         database: process.env.POSTGRES_DB,
         host: '127.0.0.1',
-        port: 5433,
+        port: 5432,
         user: process.env.POSTGRES_USER,
         password: process.env.POSTGRES_PASSWORD,
         schema,
@@ -67,7 +67,7 @@ async function getSchemas(client: pg.Client): Promise<string[]> {
 async function getPostgreSQLClient(): Promise<pg.Client> {
   const client = new pg.Client({
     host: '127.0.0.1',
-    port: 5433,
+    port: 5432,
     user: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASSWORD,
     database: process.env.POSTGRES_DB,
