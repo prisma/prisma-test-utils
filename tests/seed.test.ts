@@ -55,6 +55,7 @@ describe('seed:', () => {
           amount: 3,
           factory: {
             animal: () => 'Dog',
+            birthday: () => '2019-10-10T18:26:07.269Z',
           },
         },
         Toy: {
@@ -80,6 +81,7 @@ describe('seed:', () => {
         Pet: {
           factory: {
             animal: 'Dog',
+            birthday: '2019-10-10T18:26:07.269Z',
           },
         },
       }),
