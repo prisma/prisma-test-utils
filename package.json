@@ -13,6 +13,7 @@
     "build": "rimraf dist && tsc -b",
     "build:runtime": "node scripts/build-runtime.js",
     "clean": "rimraf ./node_modules/ && rimraf ./*/node_modules/",
+    "coverage": "codecov",
     "prepublishOnly": "npm-run-all build build:runtime",
     "test": "dotenv -e .env.test.conf -- jest",
     "release": "semantic-release"
@@ -37,6 +38,7 @@
     "@types/pg": "^7.11.1",
     "@zeit/ncc": "^0.20.5",
     "chalk": "^2.4.2",
+    "codecov": "^3.6.1",
     "dotenv-cli": "^2.0.1",
     "execa": "^2.0.3",
     "fs-monkey": "^0.3.3",

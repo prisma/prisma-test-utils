@@ -35,6 +35,7 @@ jobs:
             yarn build
             yarn build:runtime
             yarn test
+            yarn coverage
           environment:
             PRISMA_GENERATE: true
             POSTGRES_USER: prisma

@@ -1,5 +1,9 @@
 # 🃏 prisma-test-utils
 
+[![CircleCI](https://circleci.com/gh/prisma/prisma-test-utils/tree/master.svg?style=shield)](https://circleci.com/gh/prisma/prisma-test-utils/tree/master)
+[![codecov](https://codecov.io/gh/prisma/prisma-test-utils/branch/master/graph/badge.svg)](https://codecov.io/gh/prisma/prisma-test-utils)
+[![npm version](https://badge.fury.io/js/prisma-test-utils.svg)](https://badge.fury.io/js/prisma-test-utils)
+
 > A collection of data model agnostic test utils.
 
 In testing workflows, generating seed data usually includes a lot of boilerplate. We rely on hardcoded fixtures that need to be migrated with changing code.
