@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/prisma/prisma-test-utils/branch/master/graph/badge.svg)](https://codecov.io/gh/prisma/prisma-test-utils)
 [![npm version](https://badge.fury.io/js/prisma-test-utils.svg)](https://badge.fury.io/js/prisma-test-utils)
 
-> A collection of data model agnostic test utils.
+> ⚠️ **This project is currently unmaintained. Please reach out in the [`#prisma2-preview`](https://prisma.slack.com/messages/CKQTGR6T0/) channel on the [Prisma Slack](https://slack.prisma.io) if you're interested in collaborating on it.**
 
 In testing workflows, generating seed data usually includes a lot of boilerplate. We rely on hardcoded fixtures that need to be migrated with changing code.
 
