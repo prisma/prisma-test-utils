@@ -1,31 +1,12 @@
-import { Dictionary, GeneratorDefinitionWithPackage } from '@prisma/cli'
-import {
-  getCompiledGenerators,
-  generatorDefinition as photonDefinition,
-} from '@prisma/photon'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-
-import { generatorDefinition as prismaTestUtilsDefinition } from '../../src/generator'
-
-import { getDatamodel } from '../utils/getDatamodel'
+import execa from 'execa'
 
 const dbPaths = {
   mysql: path.join(__dirname, `../dbs/mysql`),
   postgresql: path.join(__dirname, `../dbs/postgresql`),
   sqlite: path.join(__dirname, `../dbs/sqlite`),
-}
-
-const generators: Dictionary<GeneratorDefinitionWithPackage> = {
-  'prisma-test-utils': {
-    packagePath: 'prisma-test-utils',
-    definition: prismaTestUtilsDefinition,
-  },
-  photonjs: {
-    packagePath: '@prisma/photon',
-    definition: photonDefinition,
-  },
 }
 
 export default async () => {
@@ -40,20 +21,12 @@ export default async () => {
 
     await Promise.all(
       Object.values(dbPaths).map(async cwd => {
-        const datamodel = await getDatamodel(cwd)
-        const compiledGenerators = await getCompiledGenerators(
+        console.log(`Working in ${cwd}`)
+        const schemaPath = path.resolve(cwd, './schema.prisma')
+        return execa('yarn', ['prisma2', 'generate', '--schema', schemaPath], {
           cwd,
-          datamodel,
-          generators,
-        )
-
-        console.log(`Working in: ${cwd}`)
-
-        for (const generator of compiledGenerators) {
-          console.log(`Generating ${generator.prettyName}`)
-          await generator.generate()
-          console.log(`Done! (${generator.output})`)
-        }
+          stdio: 'inherit',
+        })
       }),
     )
 

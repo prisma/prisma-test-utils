@@ -23,18 +23,15 @@ export type SeedModels = {
 export type SeedModel = {
   amount?: number
   factory?: Dictionary<
-    SeedModelFieldDefinition | (() => SeedModelFieldDefinition)
+    | SeedModelFieldDefinition
+    | (() => SeedModelFieldDefinition)
+    | SeedModelFieldRelationConstraint
   >
 }
 
 export type ID = string
 
-export type SeedModelFieldDefinition =
-  | ID
-  | string
-  | number
-  | boolean
-  | SeedModelFieldRelationConstraint
+export type SeedModelFieldDefinition = ID | string | number | boolean
 
 export type SeedModelFieldRelationConstraint = {
   min?: number

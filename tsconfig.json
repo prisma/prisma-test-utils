@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     "declaration": true,
 
-    "strict": false,
+    "strict": true,
     "noUnusedLocals": false,
     "esModuleInterop": true,
     "suppressExcessPropertyErrors": false,

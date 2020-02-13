@@ -1,5 +1,8 @@
-import { GeneratorDefinition, GeneratorOptions } from '@prisma/cli'
-import { DMMF } from '@prisma/photon/runtime/dmmf-types'
+import {
+  generatorHandler,
+  GeneratorOptions,
+  DMMF,
+} from '@prisma/generator-helper'
 import mls from 'multilines'
 import * as path from 'path'
 import { ModuleKind, ScriptTarget } from 'typescript'
@@ -19,33 +22,38 @@ export async function generatePrismaTestUtils(
 ): Promise<string> {
   /* Config */
 
-  const photon = options.otherGenerators.find(og => og.provider === 'photonjs')
+  const client = options.otherGenerators.find(
+    og => og.provider === 'prisma-client-js',
+  )!
 
   /* istanbul ignore next */
-  if (!photon) {
-    throw new Error(`You need to generate Photon first.`)
+  if (!client) {
+    throw new Error(`You need to generate Prisma Client first.`)
   }
 
-  const photonPath = photon.output
-  const outputDir = options.generator.output
+  const photonPath = client.output!
+  const outputDir = options.generator.output!
 
   /* Static files. */
 
   const staticFs: VirtualFS = {
     [path.join(outputDir, './static/index.js')]: eval(`path.join(
       __dirname,
-      '../prisma-test-utils_ncc/index.js',
+      '../runtime/index.js',
     )`),
     [path.join(outputDir, './static/')]: eval(`path.join(
       __dirname,
-      '../prisma-test-utils_ncc',
+      '../runtime',
     )`),
   }
 
   try {
     await copyVFS(staticFs)
   } catch (err) /* istanbul ignore next */ {
-    throw err
+    console.log(`Error while copying Runtime`)
+    console.error(err)
+
+    return ''
   }
 
   /**
@@ -60,17 +68,14 @@ export async function generatePrismaTestUtils(
   const dmmf = require(photonPath).dmmf as DMMF.Document
 
   const seedLib = mls`
-  | import Photon from '${photonPath}';
-  | import { DMMF } from '@prisma/photon/runtime/dmmf-types';
+  | import { PrismaClient, dmmf } from '${photonPath}';
   | import { getSeed, SeedModels, SeedFunction } from './static';
   |
   | interface GeneratedSeedModels extends SeedModels {
   |   ${generateGeneratedSeedModelsType(dmmf)}
   | }
   |
-  | const dmmf: DMMF.Document = ${JSON.stringify(dmmf)};
-  |
-  | export const seed: SeedFunction<Photon, GeneratedSeedModels>  = getSeed<Photon, GeneratedSeedModels>(dmmf);
+  | export const seed: SeedFunction<PrismaClient, GeneratedSeedModels>  = getSeed<PrismaClient, GeneratedSeedModels>(dmmf);
   | export default seed
   | export { GeneratedSeedModels }
   | export {
@@ -85,12 +90,10 @@ export async function generatePrismaTestUtils(
   | } from './static'
   `
   const poolLib = mls`
-  | import { DMMF } from '@prisma/photon/runtime/dmmf-types';
+  | import { dmmf } from '${photonPath}';
   | import { getMySQLPool, getPostgreSQLPool, getSQLitePool } from './static';
   |
-  | const dmmf: DMMF.Document = ${JSON.stringify(dmmf)};
-  |
-  | export default ${generatePoolType(options)}(dmmf, "${options.cwd}");
+  | export default ${generatePoolType(options)}(dmmf, "${__dirname}");
   | export { MySQLPoolOptions, PostgreSQLPoolOptions, SQLitePoolOptions } from './static'
   | export { Pool, DBInstance } from './static';
   `
@@ -116,14 +119,25 @@ export async function generatePrismaTestUtils(
     })
     await writeToFS(compiledFS)
   } catch (err) /* istanbul ignore next */ {
-    throw err
+    console.log(`Error in Test Utils generation.`)
+    console.error(err)
   }
 
   return ''
 }
 
-export const generatorDefinition: GeneratorDefinition = {
-  prettyName: 'Prisma Test Utils',
-  generate: generatePrismaTestUtils,
-  defaultOutput: 'node_modules/@generated/prisma-test-utils',
-}
+/* Generator specification */
+
+generatorHandler({
+  onManifest() {
+    return {
+      prettyName: 'Prisma Test Utils',
+      defaultOutput: 'node_modules/@prisma/test-utils',
+      requiresGenerators: ['prisma-client-js'],
+      requiresEngines: ['queryEngine', 'migrationEngine'],
+    }
+  },
+  async onGenerate(options) {
+    return generatePrismaTestUtils(options)
+  },
+})

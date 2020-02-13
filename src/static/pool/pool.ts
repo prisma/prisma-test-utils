@@ -132,8 +132,8 @@ export abstract class InternalPool implements Pool {
 
 class Waiter {
   private promise: Promise<DBInstance>
-  private resolve: (dbi: DBInstance) => void
-  private reject: (reason?: any) => void
+  private resolve?: (dbi: DBInstance) => void
+  private reject?: (reason?: any) => void
 
   constructor() {
     this.promise = new Promise((resolve, reject) => {
@@ -147,10 +147,10 @@ class Waiter {
   }
 
   allocate(instance: DBInstance): void {
-    this.resolve(instance)
+    this.resolve!(instance)
   }
 
   fail(reason?: any): void {
-    this.reject(reason)
+    this.reject!(reason)
   }
 }

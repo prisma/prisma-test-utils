@@ -4,12 +4,12 @@ datasource postgres {
 }
 
 generator photonjs {
-  provider = "photonjs"
-  output   = "./@generated/photon"
+  provider = "prisma-client-js"
+  output   = "./@generated/client"
 }
 
 generator testutils {
-  provider = "prisma-test-utils"
+  provider = "/Users/maticzavadlal/Code/work/prisma/prisma-test-utils/dist/generator.js"
   output   = "./@generated/prisma-test-utils"
 }
 

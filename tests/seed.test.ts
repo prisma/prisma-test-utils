@@ -4,10 +4,10 @@ import * as path from 'path'
 import { migrateLift } from '../src/static/pool/lift'
 
 import seed from './dbs/sqlite/@generated/prisma-test-utils/seed'
-import Photon, { dmmf } from './dbs/sqlite/@generated/photon'
+import { PrismaClient, dmmf } from './dbs/sqlite/@generated/client'
 
 describe('seed:', () => {
-  let client: Photon
+  let client: PrismaClient
 
   beforeAll(async () => {
     const id = Math.random().toString()
@@ -34,7 +34,7 @@ describe('seed:', () => {
     })
 
     /* Create new Photon instance. */
-    client = new Photon({
+    client = new PrismaClient({
       datasources: {
         sqlite: `file:${dbFile}`,
       },
@@ -91,10 +91,10 @@ describe('seed:', () => {
     /* Tests. */
 
     const data = await Promise.all([
-      client.houses(),
-      client.pets(),
-      client.toys(),
-      client.users(),
+      client.house.findMany(),
+      client.pet.findMany(),
+      client.toy.findMany(),
+      client.user.findMany(),
     ])
 
     expect(data).toMatchSnapshot()

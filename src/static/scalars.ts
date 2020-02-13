@@ -1,4 +1,4 @@
-import { DMMF } from '@prisma/photon/runtime/dmmf-types'
+import { DMMF } from '@prisma/client/runtime'
 
 /**
  * A list of types and their matching DMMF types.

@@ -1,5 +1,5 @@
-import { DataSource } from '@prisma/photon'
-import { DMMF } from '@prisma/photon/runtime/dmmf-types'
+import { DMMF } from '@prisma/client/runtime/dmmf-types'
+import { DataSource } from '@prisma/generator-helper'
 import _ from 'lodash'
 import pg from 'pg'
 import url from 'url'
@@ -141,9 +141,9 @@ function parsePostgreSQLUrl(urlStr: string): PostgreSQLConnection {
     urlStr,
     true,
   )
-  const port = parseInt(rawPort, 10)
-  const [, user, password] = auth.match(/(\w+):(\w+)/)
-  const [, database] = pathname.match(/\/(\w+)/)
+  const port = parseInt(rawPort!, 10)
+  const [, user, password] = auth!.match(/(\w+):(\w+)/)!
+  const [, database] = pathname!.match(/\/(\w+)/)!
 
   /* istanbul ignore next */
   if (typeof query.schema !== 'string') {
@@ -155,7 +155,7 @@ function parsePostgreSQLUrl(urlStr: string): PostgreSQLConnection {
   return {
     user,
     password,
-    host,
+    host: host!,
     port,
     database,
     schema,

@@ -16,5 +16,13 @@ export function withDefault<T>(fallback: T, val: T | undefined): T {
  * @param xs
  */
 export function filterMap<T, Y>(xs: T[], f: (x: T) => Y | null): Y[] {
-  return xs.map(f).filter(x => x !== null)
+  return xs.map(f).filter(notNull)
+}
+
+/**
+ * Determines whether a values is null.
+ * @param val
+ */
+export function notNull<T>(val: T | null): val is T {
+  return val !== null
 }

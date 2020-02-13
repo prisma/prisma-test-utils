@@ -1,5 +1,5 @@
-import { DMMF } from '@prisma/photon/runtime/dmmf-types'
-import { DataSource } from '@prisma/photon'
+import { DMMF } from '@prisma/client/runtime/dmmf-types'
+import { DataSource } from '@prisma/generator-helper'
 import _ from 'lodash'
 import mysql from 'mysql'
 import url from 'url'
@@ -165,14 +165,14 @@ function readMySQLURI(connection: MySQLConnection): string {
  */
 function parseMySQLURI(uri: string): MySQLConnection {
   const { auth, hostname: host, port: rawPort, pathname } = url.parse(uri, true)
-  const [, user, password] = auth.match(/(\w+):(\w+)/)
-  const [, database] = pathname.match(/\/(.+)/)
-  const port = parseInt(rawPort, 10)
+  const [, user, password] = auth!.match(/(\w+):(\w+)/)!
+  const [, database] = pathname!.match(/\/(.+)/)!
+  const port = parseInt(rawPort!, 10)
 
   return {
     user,
     password,
-    host,
+    host: host!,
     port,
     database,
   }

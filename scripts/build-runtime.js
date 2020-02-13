@@ -10,18 +10,20 @@ const runtimeTsConfig = {
   compilerOptions: {
     lib: ['esnext', 'esnext.asynciterable'],
     module: 'commonjs',
-    target: 'es2017',
+    target: 'es2018',
     strict: false,
     esModuleInterop: true,
     sourceMap: true,
     noImplicitAny: false,
-    outDir: 'prisma-test-utils_ncc',
+    outDir: 'runtime',
     rootDir: 'src/static',
     declaration: true,
   },
   include: ['src/static'],
   exclude: [
+    'archive',
     'dist',
+    'build',
     'cli',
     'examples',
     'runtime',
@@ -39,12 +41,11 @@ mockFs({
 })
 
 const options = {
-  externals: ['typescript', '@prisma/photon', '@prisma/lift'],
-  external: ['typescript', '@prisma/photon', '@prisma/lift'],
+  minify: true,
 }
 
-let targetDir = path.join(__dirname, '../prisma-test-utils_ncc')
-const sourceFile = path.join(__dirname, '../src/static/index.ts')
+let targetDir = path.join(__dirname, '../runtime')
+let sourceFile = path.join(__dirname, '../src/static/index.ts')
 
 require('@zeit/ncc')(sourceFile, options)
   .then(async ({ code, map, assets }) => {
@@ -59,7 +60,6 @@ async function saveToDisc(source, map, assets, outputDir) {
     outputDir + '/**',
     '!' + outputDir,
     `!${path.join(outputDir, 'prisma')}`,
-    `!${path.join(outputDir, 'schema-inferrer-bin')}`,
   ])
   await makeDir(outputDir)
   assets['index.js'] = { source: fixCode(source) }
@@ -68,6 +68,7 @@ async function saveToDisc(source, map, assets, outputDir) {
   }
   // TODO add concurrency when we would have too many files
   const madeDirs = {}
+  const files = []
   await Promise.all(
     Object.entries(assets).map(async ([filePath, file]) => {
       const targetPath = path.join(outputDir, filePath)
@@ -76,17 +77,33 @@ async function saveToDisc(source, map, assets, outputDir) {
         await makeDir(targetDir)
         madeDirs[targetDir] = true
       }
-      // if (filePath === 'index.d.ts') {
-      // let content = file.source.toString()
-      // content = content.replace('@prisma/engine-core', './dist/Engine')
-      //   await writeFile(targetPath, indexDTS, 'utf-8')
-      // } else {
-      console.log(`writing`, targetPath)
-      await writeFile(targetPath, file.source)
-      // }
+      if (!file.source) {
+        files.push({
+          size: Math.round(file.length / 1024),
+          targetPath,
+        })
+        await writeFile(targetPath, file)
+      } else {
+        files.push({
+          size: Math.round(file.source.length / 1024),
+          targetPath,
+        })
+        await writeFile(targetPath, file.source)
+      }
     }),
   )
-  const after = Date.now()
+  files.sort((a, b) => (a.size < b.size ? -1 : 1))
+  const max = files.reduce((max, curr) => Math.max(max, curr.size), 0)
+  const maxLength = `${max}kB`.length
+  const doneStr = files
+    .map(
+      ({ size, targetPath }) =>
+        `${size}kB`.padStart(maxLength) +
+        '  ' +
+        path.relative(process.cwd(), targetPath),
+    )
+    .join('\n')
+  console.log(doneStr)
 }
 
 function fixCode(code) {

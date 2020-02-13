@@ -1,9 +1,9 @@
-import { DMMF } from '@prisma/photon/runtime/dmmf-types'
+import { DMMF } from '@prisma/generator-helper'
 import ml from 'multilines'
 import { EOL } from 'os'
 
-import { Scalar, isSupportedScalar, isScalar } from '../static/scalars'
-import { withDefault, filterMap } from '../static/utils'
+import { Scalar } from '../static/scalars'
+import { filterMap } from '../static/utils'
 
 /**
  * Generates input types for the `seed` function.
@@ -69,7 +69,7 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
         const union = values.map(val => `"${val}"`).join(` | `)
         return `${field.name}: (${union}) | (() => ${union})`
       }
-      case 'object': {
+      case 'relation': {
         /**
          * The field should return a min or max number on abmigious
          * fields.
@@ -94,6 +94,10 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
         const scalar = getTSTypeFromDMMFScalar(field.type)
         const supported = isSupportedScalar(field)
         return `${field.name}${q(supported)}: ${scalar} | (() => ${scalar})`
+      }
+      default: {
+        const never: never = field.kind
+        return null
       }
     }
   }
@@ -142,22 +146,23 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
     /**
      * Find the back relation.
      */
-    const relationModel = models.find(m => m.name === field.type)
-    const relationField = withDefault<DMMF.Field>(
-      {
-        kind: 'object',
-        name: '',
-        isRequired: false,
-        isList: false,
-        isId: false,
-        type: field.type,
-        isGenerated: false,
-        isUnique: false,
-        dbName: '',
-      },
-      relationModel.fields.find(f => f.type === model.name),
-    )
+    const relationModel = models.find(m => m.name === field.type)!
+    // const relationField = withDefault<DMMF.Field>(
+    //   {
+    //     kind: 'relation',
+    //     name: '',
+    //     isRequired: false,
+    //     isList: false,
+    //     isId: false,
+    //     type: field.type,
+    //     isGenerated: false,
+    //     isUnique: false,
+    //     dbName: '',
+    //   },
+    //   relationModel.fields.find(f => f.type === model.name),
+    // )
 
+    const relationField = relationModel.fields.find(f => f.type === model.name)!
     /* Relation type definitions */
     if (field.isList && relationField.isList) {
       /**
@@ -231,4 +236,22 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
       }
     }
   }
+}
+
+/* Helper functions */
+
+/**
+ * Determines whether a field scalar type is supported by default or not.
+ * @param field
+ */
+export function isSupportedScalar(field: DMMF.Field): boolean {
+  return Object.values(Scalar).some(s => s === field.type)
+}
+
+/**
+ * Determines whether a field is a scalar.
+ * @param field
+ */
+export function isScalar(field: DMMF.Field): boolean {
+  return field.kind === 'scalar'
 }

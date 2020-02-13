@@ -1,6 +1,7 @@
 import { LiftEngine } from '@prisma/lift'
-import { DMMF } from '@prisma/photon/runtime/dmmf-types'
-import { dmmfToDml, DataSource } from '@prisma/photon'
+import { DataSource } from '@prisma/generator-helper'
+import { DMMF } from '@prisma/client/runtime/dmmf-types'
+// import { dmmfToDml } from '@prisma/photon'
 
 import * as fs from 'fs'
 import * as os from 'os'

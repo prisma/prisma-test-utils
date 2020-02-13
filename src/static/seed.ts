@@ -1,4 +1,4 @@
-import { DMMF } from '@prisma/photon/runtime/dmmf-types'
+import { DMMF } from '@prisma/client/runtime'
 import Chance from 'chance'
 import _ from 'lodash'
 import { Dictionary } from 'lodash'
@@ -114,7 +114,15 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
   }
 
   type FixtureData = Dictionary<
-    ID | string | number | boolean | ID[] | string[] | number[] | boolean[]
+    | string
+    | number
+    | boolean
+    | string[]
+    | number[]
+    | boolean[]
+    | { connect: { id: ID } }
+    | { connect: { id: ID }[] }
+    | { create: FixtureData }
   >
 
   /**
@@ -285,20 +293,23 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
        * NOTE: relaitonField is a back reference to the examined model.
        */
       const relationModel = getDMMFModel(dmmfModels, field.type)
-      const relationField = withDefault<DMMF.Field>(
-        {
-          kind: 'object',
-          name: '',
-          isRequired: false,
-          isList: false,
-          isId: false,
-          type: field.type,
-          isGenerated: false,
-          isUnique: false,
-          dbName: '',
-        },
-        relationModel.fields.find(f => f.type === fieldModel.name),
-      )
+      // const relationField = withDefault<DMMF.Field>(
+      //   {
+      //     kind: 'relation',
+      //     name: '',
+      //     isRequired: false,
+      //     isList: false,
+      //     isId: false,
+      //     type: field.type,
+      //     isGenerated: false,
+      //     isUnique: false,
+      //     dbName: '',
+      //   },
+      //   relationModel.fields.find(f => f.type === fieldModel.name),
+      // )
+      const relationField = relationModel.fields.find(
+        f => f.type === fieldModel.name,
+      )!
       const relationSeedModel = getSeedModel(seedModels, field.type)
 
       /* Relation type definitions */
@@ -790,7 +801,10 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
      */
     type Pool = Dictionary<{ [child: string]: ID[] }>
 
-    const [fixtures] = iterate(_.sortBy(tasks, t => t.order), {})
+    const [fixtures] = iterate(
+      _.sortBy(tasks, t => t.order),
+      {},
+    )
 
     return fixtures
 
@@ -1314,7 +1328,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
         return acc.then(async res => {
           /* Create a single instance */
           try {
-            const seed = await photon[f.mapping.plural].create({
+            const seed = await photon[f.mapping.findMany!].create({
               data: f.data,
             })
 
@@ -1330,22 +1344,19 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
 
       /* Internally executes the chain. */
       const seeds: { data: any; model: string }[] = (await actions) as any
-      return seeds.reduce(
-        (acc, seed) => {
-          if (!Boolean(acc[seed.model])) {
-            return {
-              ...acc,
-              [`${seed.model}`]: [seed.data],
-            }
-          } else {
-            return {
-              ...acc,
-              [`${seed.model}`]: acc[seed.model].concat(seed.data),
-            }
+      return seeds.reduce((acc, seed) => {
+        if (!Boolean(acc[seed.model])) {
+          return {
+            ...acc,
+            [`${seed.model}`]: [seed.data],
           }
-        },
-        {} as any,
-      )
+        } else {
+          return {
+            ...acc,
+            [`${seed.model}`]: acc[seed.model].concat(seed.data),
+          }
+        }
+      }, {} as any)
     }
   }
 }

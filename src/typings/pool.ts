@@ -1,4 +1,4 @@
-import { GeneratorOptions } from '@prisma/cli'
+import { GeneratorOptions } from '@prisma/generator-helper'
 
 /**
  * Returns a dedicated function name matching the specified datasource.
@@ -8,7 +8,7 @@ import { GeneratorOptions } from '@prisma/cli'
 export function generatePoolType(
   options: GeneratorOptions,
 ): 'getPostgreSQLPool' | 'getMySQLPool' | 'getSQLitePool' {
-  const [datasource] = options.dataSources
+  const [datasource] = options.datasources
 
   /* istanbul ignore if */
   if (!datasource) {

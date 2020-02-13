@@ -1,5 +1,5 @@
-import { DataSource } from '@prisma/photon'
-import { DMMF } from '@prisma/photon/runtime/dmmf-types'
+import { DMMF } from '@prisma/client/runtime/dmmf-types'
+import { DataSource } from '@prisma/generator-helper'
 import * as fs from 'fs'
 import _ from 'lodash'
 import * as os from 'os'
