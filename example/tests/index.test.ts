@@ -1,6 +1,6 @@
-import { PrismaClient } from '@generated/photon'
-import seed from '@generated/test-utils/seed'
-import SQLitePool, { Pool } from '@generated/test-utils/pool'
+import { PrismaClient } from '@prisma/client'
+import seed from '@prisma/test-utils/seed'
+import SQLitePool, { Pool } from '@prisma/test-utils/pool'
 
 describe('blog:', () => {
   let pool: Pool
