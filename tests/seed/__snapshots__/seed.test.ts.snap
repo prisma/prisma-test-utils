@@ -1,0 +1,384 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`seed: correctly generates seed data 1`] = `
+Array [
+  Object {
+    "id": "f70c6744c2cb5a28b4c65aa06",
+    "name": "tima",
+    "price": -376088146896.4864,
+  },
+  Object {
+    "id": "41cae0fd2b745d13942a845c2",
+    "name": "bave",
+    "price": -107811686055.936,
+  },
+  Object {
+    "id": "b428ac91ec575e13a34ca0872",
+    "name": "sa",
+    "price": 37531676993.1264,
+  },
+  Object {
+    "animal": "Dog",
+    "birthday": "2019-10-10T18:26:07.269Z",
+    "id": "0f816e384f0e543eae7cba017",
+    "name": "woscujduv",
+    "toys": Object {
+      "connect": Array [
+        Object {
+          "id": "f70c6744c2cb5a28b4c65aa06",
+        },
+      ],
+    },
+  },
+  Object {
+    "animal": "Dog",
+    "birthday": "2019-10-10T18:26:07.269Z",
+    "id": "2fbbfe5f56455e93b1b068763",
+    "name": "biga",
+    "toys": Object {
+      "connect": Array [
+        Object {
+          "id": "41cae0fd2b745d13942a845c2",
+        },
+      ],
+    },
+  },
+  Object {
+    "animal": "Dog",
+    "birthday": "2019-10-10T18:26:07.269Z",
+    "id": "2f4369cd41375dd0a4e6c9947",
+    "name": "iv",
+    "toys": Object {
+      "connect": Array [],
+    },
+  },
+  Object {
+    "email": "ugher",
+    "id": "7b9ff9bed51a58f8bac3312d6",
+    "isActive": true,
+    "name": "rok",
+    "pet": Object {
+      "connect": Object {
+        "id": "0f816e384f0e543eae7cba017",
+      },
+    },
+  },
+  Object {
+    "email": "pa",
+    "id": "ce0ae4031aae5f95a5c32203d",
+    "isActive": false,
+    "name": "liptemdov",
+    "pet": Object {
+      "connect": Object {
+        "id": "2fbbfe5f56455e93b1b068763",
+      },
+    },
+  },
+  Object {
+    "address": "guz",
+    "id": "4f5da637df5b5c06b1398c5f6",
+    "numberOfRooms": 237085688,
+    "residents": Object {
+      "connect": Array [
+        Object {
+          "id": "ce0ae4031aae5f95a5c32203d",
+        },
+      ],
+    },
+  },
+  Object {
+    "address": "sajopbed",
+    "id": "3ed0b093995d5fef868989179",
+    "numberOfRooms": -835955859,
+    "residents": Object {
+      "connect": Array [],
+    },
+  },
+  Object {
+    "address": "miwtitpo",
+    "id": "26250dc6ad2f5c6f86865e43b",
+    "numberOfRooms": 330299675,
+    "residents": Object {
+      "connect": Array [],
+    },
+  },
+]
+`;
+
+exports[`seed: correctly seeds the data 1`] = `
+Array [
+  Array [
+    Object {
+      "address": "bedabe",
+      "id": "61ac9c2ed3b65c59b50365314",
+      "numberOfRooms": 1526691565,
+      "residents": Array [
+        Object {
+          "email": "tugohi",
+          "id": "3995dfef668958919958b9c79",
+          "isActive": true,
+          "name": "bedri",
+        },
+      ],
+    },
+    Object {
+      "address": "tatubsow",
+      "id": "6c2ab7272fc25151a4059aefa",
+      "numberOfRooms": 1292567379,
+      "residents": Array [
+        Object {
+          "email": "juh",
+          "id": "0e99f6a09f13504098bee1d8e",
+          "isActive": false,
+          "name": "onagouja",
+        },
+      ],
+    },
+    Object {
+      "address": "er",
+      "id": "5145c273805158059ddebdb1a",
+      "numberOfRooms": -2047531431,
+      "residents": Array [
+        Object {
+          "email": "cebuc",
+          "id": "eaa8ef3cf3875ed082b8ad313",
+          "isActive": false,
+          "name": "katji",
+        },
+      ],
+    },
+  ],
+  Array [
+    Object {
+      "animal": "Dog",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": "2f4369cd41375dd0a4e6c9947",
+      "name": "Craig Pittman",
+      "toys": Array [
+        Object {
+          "id": "f70c6744c2cb5a28b4c65aa06",
+          "name": "tima",
+          "price": -376088146896.4864,
+        },
+      ],
+      "users": Array [
+        Object {
+          "email": "tugohi",
+          "id": "3995dfef668958919958b9c79",
+          "isActive": true,
+          "name": "bedri",
+        },
+      ],
+    },
+    Object {
+      "animal": "Dog",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": "f7b9ff9bed515a8f9eac3312d",
+      "name": "Douglas Vargas",
+      "toys": Array [
+        Object {
+          "id": "41cae0fd2b745d13942a845c2",
+          "name": "bave",
+          "price": -107811686055.936,
+        },
+      ],
+      "users": Array [
+        Object {
+          "email": "taf",
+          "id": "f56865e43b3f55eea40012995",
+          "isActive": false,
+          "name": "gesji",
+        },
+      ],
+    },
+    Object {
+      "animal": "Dog",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": "1fb0e0de626e5ce0ae4031aae",
+      "name": "Gabriel Phelps",
+      "toys": Array [
+        Object {
+          "id": "0f816e384f0e543eae7cba017",
+          "name": "woscujduv",
+          "price": 630573438389.4528,
+        },
+      ],
+      "users": Array [
+        Object {
+          "email": "juh",
+          "id": "0e99f6a09f13504098bee1d8e",
+          "isActive": false,
+          "name": "onagouja",
+        },
+      ],
+    },
+    Object {
+      "animal": "Dog",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": "45b7fdd67f25505188b78cf3c",
+      "name": "Manuel Douglas",
+      "toys": Array [
+        Object {
+          "id": "2fbbfe5f56455e93b1b068763",
+          "name": "biga",
+          "price": 712944317261.4144,
+        },
+      ],
+      "users": Array [
+        Object {
+          "email": "uhu",
+          "id": "c66f3ee717e8549b8a357d5b6",
+          "isActive": false,
+          "name": "dinbel",
+        },
+      ],
+    },
+    Object {
+      "animal": "Dog",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": "f5bc0611398c55f6ad9396ed5",
+      "name": "Landon Parker",
+      "toys": Array [],
+      "users": Array [
+        Object {
+          "email": "cebuc",
+          "id": "eaa8ef3cf3875ed082b8ad313",
+          "isActive": false,
+          "name": "katji",
+        },
+      ],
+    },
+  ],
+  Array [
+    Object {
+      "id": "f70c6744c2cb5a28b4c65aa06",
+      "name": "tima",
+      "pet": Object {
+        "animal": "Dog",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": "2f4369cd41375dd0a4e6c9947",
+        "name": "Craig Pittman",
+      },
+      "price": -376088146896.4864,
+    },
+    Object {
+      "id": "41cae0fd2b745d13942a845c2",
+      "name": "bave",
+      "pet": Object {
+        "animal": "Dog",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": "f7b9ff9bed515a8f9eac3312d",
+        "name": "Douglas Vargas",
+      },
+      "price": -107811686055.936,
+    },
+    Object {
+      "id": "b428ac91ec575e13a34ca0872",
+      "name": "sa",
+      "pet": null,
+      "price": 37531676993.1264,
+    },
+    Object {
+      "id": "0f816e384f0e543eae7cba017",
+      "name": "woscujduv",
+      "pet": Object {
+        "animal": "Dog",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": "1fb0e0de626e5ce0ae4031aae",
+        "name": "Gabriel Phelps",
+      },
+      "price": 630573438389.4528,
+    },
+    Object {
+      "id": "2fbbfe5f56455e93b1b068763",
+      "name": "biga",
+      "pet": Object {
+        "animal": "Dog",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": "45b7fdd67f25505188b78cf3c",
+        "name": "Manuel Douglas",
+      },
+      "price": 712944317261.4144,
+    },
+  ],
+  Array [
+    Object {
+      "email": "tugohi",
+      "house": Object {
+        "address": "bedabe",
+        "id": "61ac9c2ed3b65c59b50365314",
+        "numberOfRooms": 1526691565,
+      },
+      "id": "3995dfef668958919958b9c79",
+      "isActive": true,
+      "name": "bedri",
+      "pet": Object {
+        "animal": "Dog",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": "2f4369cd41375dd0a4e6c9947",
+        "name": "Craig Pittman",
+      },
+    },
+    Object {
+      "email": "taf",
+      "house": null,
+      "id": "f56865e43b3f55eea40012995",
+      "isActive": false,
+      "name": "gesji",
+      "pet": Object {
+        "animal": "Dog",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": "f7b9ff9bed515a8f9eac3312d",
+        "name": "Douglas Vargas",
+      },
+    },
+    Object {
+      "email": "juh",
+      "house": Object {
+        "address": "tatubsow",
+        "id": "6c2ab7272fc25151a4059aefa",
+        "numberOfRooms": 1292567379,
+      },
+      "id": "0e99f6a09f13504098bee1d8e",
+      "isActive": false,
+      "name": "onagouja",
+      "pet": Object {
+        "animal": "Dog",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": "1fb0e0de626e5ce0ae4031aae",
+        "name": "Gabriel Phelps",
+      },
+    },
+    Object {
+      "email": "uhu",
+      "house": null,
+      "id": "c66f3ee717e8549b8a357d5b6",
+      "isActive": false,
+      "name": "dinbel",
+      "pet": Object {
+        "animal": "Dog",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": "45b7fdd67f25505188b78cf3c",
+        "name": "Manuel Douglas",
+      },
+    },
+    Object {
+      "email": "cebuc",
+      "house": Object {
+        "address": "er",
+        "id": "5145c273805158059ddebdb1a",
+        "numberOfRooms": -2047531431,
+      },
+      "id": "eaa8ef3cf3875ed082b8ad313",
+      "isActive": false,
+      "name": "katji",
+      "pet": Object {
+        "animal": "Dog",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": "f5bc0611398c55f6ad9396ed5",
+        "name": "Landon Parker",
+      },
+    },
+  ],
+]
+`;

@@ -1,0 +1,50 @@
+datasource sqlite {
+  url      = "file:./data.db"
+  provider = "sqlite"
+}
+
+generator photonjs {
+  provider = "prisma-client-js"
+  output   = "./@generated/client"
+}
+
+generator testutils {
+  provider = "/Users/maticzavadlal/Code/work/prisma/prisma-test-utils/dist/generator.js"
+  output   = "./@generated/prisma-test-utils"
+}
+
+model User {
+  id       String  @id @default(cuid())
+  name     String
+  email    String
+  isActive Boolean
+  pet      Pet
+  house    House?  @relation(name: "UserHouse")
+}
+
+enum Animal {
+  Dog
+  Cat
+  Dinosaur
+}
+
+model Pet {
+  id       String   @id @default(cuid())
+  name     String
+  animal   Animal
+  toys     Toy[]
+  birthday DateTime
+}
+
+model Toy {
+  id    String @id @default(cuid())
+  name  String
+  price Float
+}
+
+model House {
+  id            String @id @default(cuid())
+  address       String
+  numberOfRooms Int
+  residents     User[] @relation(name: "UserHouse")
+}

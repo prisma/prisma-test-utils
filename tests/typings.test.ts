@@ -1,8 +1,8 @@
-import { getDMMF, getConfig } from '@prisma/photon'
-import { DMMF } from '@prisma/photon/runtime/dmmf-types'
+import { getDMMF, getConfig } from '@prisma/sdk'
 
 import { generatePoolType } from '../src/typings/pool'
 import { generateGeneratedSeedModelsType } from '../src/typings/seed'
+import { DMMF } from '@prisma/generator-helper'
 
 describe('typings:', () => {
   test('generates seed types correctly', async () => {
@@ -59,7 +59,7 @@ model House {
   residents     User[]
 }
   `
-    const dmmf = await getDMMF({ datamodel })
+    const dmmf: DMMF.Document = await getDMMF({ datamodel })
     expect(generateGeneratedSeedModelsType(dmmf)).toMatchSnapshot()
   })
 
@@ -75,18 +75,19 @@ model User {
   name     String
 }
   `
-    const options = await getConfig(datamodel)
+    const options = await getConfig({ datamodel })
     expect(
       generatePoolType({
-        cwd: '',
+        schemaPath: '',
+        version: '',
         datamodel,
-        dataSources: options.datasources,
+        datasources: options.datasources,
         dmmf: null,
         generator: {
           output: '',
           name: '',
           provider: '',
-          platforms: [],
+          binaryTargets: [],
           config: {},
         },
         otherGenerators: [],
@@ -106,18 +107,19 @@ model User {
   name     String
 }
   `
-    const options = await getConfig(datamodel)
+    const options = await getConfig({ datamodel })
     expect(
       generatePoolType({
-        cwd: '',
+        schemaPath: '',
+        version: '',
         datamodel,
-        dataSources: options.datasources,
+        datasources: options.datasources,
         dmmf: null,
         generator: {
           output: '',
           name: '',
           provider: '',
-          platforms: [],
+          binaryTargets: [],
           config: {},
         },
         otherGenerators: [],
@@ -137,18 +139,19 @@ model User {
   name     String
 }
   `
-    const options = await getConfig(datamodel)
+    const options = await getConfig({ datamodel })
     expect(
       generatePoolType({
-        cwd: '',
+        schemaPath: '',
+        version: '',
         datamodel,
-        dataSources: options.datasources,
+        datasources: options.datasources,
         dmmf: null,
         generator: {
           output: '',
           name: '',
           provider: '',
-          platforms: [],
+          binaryTargets: [],
           config: {},
         },
         otherGenerators: [],

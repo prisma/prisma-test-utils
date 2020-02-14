@@ -1,4 +1,5 @@
-import { DMMF } from '@prisma/generator-helper'
+// TODO: this should be imported from @prisma/generator-helper
+import { DMMF } from '@prisma/client/runtime/dmmf-types'
 import ml from 'multilines'
 import { EOL } from 'os'
 
@@ -69,20 +70,30 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
         const union = values.map(val => `"${val}"`).join(` | `)
         return `${field.name}: (${union}) | (() => ${union})`
       }
-      case 'relation': {
+      case 'object': {
         /**
          * The field should return a min or max number on abmigious
          * fields.
          */
-        switch (getRelationType(model, field)) {
+        const relationType = getRelationType(model, field)
+        switch (relationType) {
           case '1-to-many': {
             return `${field.name}?: { min?: number, max?: number }`
           }
           case 'many-to-many': {
             return `${field.name}?: { min?: number, max?: number }`
           }
+          case '1-to-1': {
+            if (field.isRequired) return null
+            return `${field.name}?: { min?: 0 | 1, max?: 0 | 1 }`
+          }
+          case 'many-to-1': {
+            if (field.isRequired) return null
+            return `${field.name}?: { min?: 0 | 1, max?: 0 | 1 }`
+          }
           default: {
-            return null
+            const never: never = relationType
+            throw new Error('Not possible!')
           }
         }
       }
@@ -97,7 +108,7 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
       }
       default: {
         const never: never = field.kind
-        return null
+        throw new Error(`Received unexpected ${field.kind}`)
       }
     }
   }

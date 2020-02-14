@@ -3,13 +3,18 @@ import {
   GeneratorOptions,
   DMMF,
 } from '@prisma/generator-helper'
+import { DMMF as PrismaClientDMMF } from '@prisma/client/runtime/dmmf-types'
 import mls from 'multilines'
 import * as path from 'path'
+import rimraf from 'rimraf'
 import { ModuleKind, ScriptTarget } from 'typescript'
+import { promisify } from 'util'
 
 import { VirtualFS, writeToFS, copyVFS, compileVFS } from './vfs'
-import { generateGeneratedSeedModelsType } from './typings/seed'
-import { generatePoolType } from './typings/pool'
+import { generateGeneratedSeedModelsType } from './intellisense/seed'
+import { generatePoolType } from './intellisense/pool'
+
+const del = promisify(rimraf)
 
 /**
  * Generates prisma-test-utils library using Prisma Generators.
@@ -33,6 +38,15 @@ export async function generatePrismaTestUtils(
 
   const photonPath = client.output!
   const outputDir = options.generator.output!
+
+  try {
+    await del(outputDir, {})
+  } catch (err) /* istanbul ignore next */ {
+    console.log(`Error while copying Runtime`)
+    console.error(err)
+
+    return ''
+  }
 
   /* Static files. */
 
@@ -65,7 +79,7 @@ export async function generatePrismaTestUtils(
    */
 
   /* Dynamic files */
-  const dmmf = require(photonPath).dmmf as DMMF.Document
+  const dmmf = require(photonPath).dmmf as PrismaClientDMMF.Document
 
   const seedLib = mls`
   | import { PrismaClient, dmmf } from '${photonPath}';

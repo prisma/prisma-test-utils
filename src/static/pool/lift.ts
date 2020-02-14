@@ -1,7 +1,7 @@
 import { LiftEngine } from '@prisma/lift'
 import { DataSource } from '@prisma/generator-helper'
 import { DMMF } from '@prisma/client/runtime/dmmf-types'
-// import { dmmfToDml } from '@prisma/photon'
+import { dmmfToDml } from '@prisma/sdk'
 
 import * as fs from 'fs'
 import * as os from 'os'
@@ -27,63 +27,65 @@ export async function migrateLift({
   tmpPrismaSchemaPath,
   dmmf,
 }: LiftMigrationOptions): Promise<{ id: string; datamodel: string }> {
-  /* Create datamodel. */
-  const datamodelDmmf = {
-    enums: [],
-    models: [],
-    ...dmmf.datamodel,
-  }
+  return { id, datamodel: '' }
 
-  const datamodel = await dmmfToDml({
-    dmmf: datamodelDmmf,
-    config: { datasources, generators: [] },
-  })
+  // /* Create datamodel. */
+  // const datamodelDmmf = {
+  //   enums: [],
+  //   models: [],
+  //   ...dmmf.datamodel,
+  // }
 
-  fs.writeFileSync(tmpPrismaSchemaPath, datamodel)
+  // const datamodel = await dmmfToDml({
+  //   dmmf: datamodelDmmf,
+  //   config: { datasources, generators: [] },
+  // })
 
-  /* Init Lift. */
-  const lift = new LiftEngine({ projectDir, schemaPath: tmpPrismaSchemaPath })
+  // fs.writeFileSync(tmpPrismaSchemaPath, datamodel)
 
-  /* Get migration. */
-  const { datamodelSteps, errors: stepErrors } = await lift.inferMigrationSteps(
-    {
-      migrationId: id,
-      datamodel: datamodel,
-      assumeToBeApplied: [],
-      sourceConfig: datamodel,
-    },
-  )
+  // /* Init Lift. */
+  // const lift = new LiftEngine({ projectDir, schemaPath: tmpPrismaSchemaPath })
 
-  /* istanbul ignore next */
-  if (stepErrors.length > 0) {
-    throw stepErrors
-  }
+  // /* Get migration. */
+  // const { datamodelSteps, errors: stepErrors } = await lift.inferMigrationSteps(
+  //   {
+  //     migrationId: id,
+  //     datamodel: datamodel,
+  //     assumeToBeApplied: [],
+  //     sourceConfig: datamodel,
+  //   },
+  // )
 
-  const { errors } = await lift.applyMigration({
-    force: true,
-    migrationId: id,
-    steps: datamodelSteps,
-    sourceConfig: datamodel,
-  })
+  // /* istanbul ignore next */
+  // if (stepErrors.length > 0) {
+  //   throw stepErrors
+  // }
 
-  /* istanbul ignore next */
-  if (errors.length > 0) {
-    throw errors
-  }
+  // const { errors } = await lift.applyMigration({
+  //   force: true,
+  //   migrationId: id,
+  //   steps: datamodelSteps,
+  //   sourceConfig: datamodel,
+  // })
 
-  const progress = () =>
-    lift.migrationProgess({
-      migrationId: id,
-      sourceConfig: datamodel,
-    })
+  // /* istanbul ignore next */
+  // if (errors.length > 0) {
+  //   throw errors
+  // }
 
-  while ((await progress()).status !== 'MigrationSuccess') {
-    /* Just wait */
-  }
+  // const progress = () =>
+  //   lift.migrationProgess({
+  //     migrationId: id,
+  //     sourceConfig: datamodel,
+  //   })
 
-  lift.stop()
+  // while ((await progress()).status !== 'MigrationSuccess') {
+  //   /* Just wait */
+  // }
 
-  return { id, datamodel }
+  // lift.stop()
+
+  // return { id, datamodel }
 }
 
 /**

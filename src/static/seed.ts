@@ -44,10 +44,23 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
 
     /* Fixture calculations */
 
+    debugger
+
     const orders: Order[] = getOrdersFromDMMF(dmmf, models)
+
+    debugger
+
     const steps: Step[] = getStepsFromOrders(orders)
+
+    debugger
+
     const tasks: Task[] = getTasksFromSteps(steps)
+
+    debugger
+
     const fixtures: Fixture[] = getFixturesFromTasks(faker, models, tasks)
+
+    debugger
 
     /* Creates Photon instance and pushes data. */
 
@@ -87,7 +100,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
     type: RelationType
     relationTo: string
     field: DMMF.Field
-    relation: DMMF.Field // signifies the back relation
+    backRelationField: DMMF.Field // signifies the back relation
     min: number
     max: number
   }
@@ -183,7 +196,13 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
           switch (typeof seedModelField) {
             case 'object': {
               /* Calculate the relation properties */
-              const { type, min, max, relation, relationTo } = getRelationType(
+              const {
+                type,
+                min,
+                max,
+                backRelationField,
+                relationTo,
+              } = getRelationType(
                 dmmf.datamodel.models,
                 seedModels,
                 field,
@@ -199,7 +218,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
                   max: max,
                   relationTo: relationTo,
                   field,
-                  relation,
+                  backRelationField,
                 },
               }
             }
@@ -277,7 +296,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
       min: number
       max: number
       relationTo: string
-      relation: DMMF.Field
+      backRelationField: DMMF.Field
     } {
       /**
        * model A {
@@ -293,35 +312,21 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
        * NOTE: relaitonField is a back reference to the examined model.
        */
       const relationModel = getDMMFModel(dmmfModels, field.type)
-      // const relationField = withDefault<DMMF.Field>(
-      //   {
-      //     kind: 'relation',
-      //     name: '',
-      //     isRequired: false,
-      //     isList: false,
-      //     isId: false,
-      //     type: field.type,
-      //     isGenerated: false,
-      //     isUnique: false,
-      //     dbName: '',
-      //   },
-      //   relationModel.fields.find(f => f.type === fieldModel.name),
-      // )
-      const relationField = relationModel.fields.find(
+      const backRelationField = relationModel.fields.find(
         f => f.type === fieldModel.name,
       )!
       const relationSeedModel = getSeedModel(seedModels, field.type)
 
       /* Relation type definitions */
-      if (field.isList && relationField.isList) {
+      if (field.isList && backRelationField.isList) {
         /**
          * many-to-many (A)
          *
          * model A {
-         *  bs: [B]
+         *  bs: B[]
          * }
          * model B {
-         *  as: [A]
+         *  as: A[]
          * }
          */
         const min = withDefault(0, definition.min)
@@ -357,12 +362,12 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
             relationTo: getRelationDirection(
               'many-to-many',
               field,
-              relationField,
+              backRelationField,
             ),
-            relation: relationField,
+            backRelationField: backRelationField,
           }
         }
-      } else if (!field.isList && relationField.isList) {
+      } else if (!field.isList && backRelationField.isList) {
         /**
          * many-to-1 (A)
          *
@@ -378,10 +383,14 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
           type: 'many-to-1',
           min: field.isRequired ? 1 : 0,
           max: 1,
-          relationTo: getRelationDirection('many-to-1', field, relationField),
-          relation: relationField,
+          relationTo: getRelationDirection(
+            'many-to-1',
+            field,
+            backRelationField,
+          ),
+          backRelationField: backRelationField,
         }
-      } else if (field.isList && !relationField.isList) {
+      } else if (field.isList && !backRelationField.isList) {
         /**
          * 1-to-many (A)
          *
@@ -423,8 +432,12 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
             type: '1-to-many',
             min: min,
             max: max,
-            relationTo: getRelationDirection('1-to-many', field, relationField),
-            relation: relationField,
+            relationTo: getRelationDirection(
+              '1-to-many',
+              field,
+              backRelationField,
+            ),
+            backRelationField: backRelationField,
           }
         }
       } else {
@@ -443,7 +456,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
 
         if (
           field.isRequired &&
-          relationField.isRequired &&
+          backRelationField.isRequired &&
           fieldSeedModel.amount !== relationSeedModel.amount
         ) {
           /* Required 1-to-1 relation unit amount mismatch. */
@@ -456,7 +469,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
           )
         } else if (
           !field.isRequired &&
-          relationField.isRequired &&
+          backRelationField.isRequired &&
           fieldSeedModel.amount < relationSeedModel.amount
         ) {
           /* An optional 1-to-1 relation inadequate unit amount. */
@@ -473,8 +486,12 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
             type: '1-to-1',
             min: field.isRequired ? 1 : 0,
             max: 1,
-            relationTo: getRelationDirection('1-to-1', field, relationField),
-            relation: relationField,
+            relationTo: getRelationDirection(
+              '1-to-1',
+              field,
+              backRelationField,
+            ),
+            backRelationField: backRelationField,
           }
         }
       }
@@ -489,18 +506,16 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
     function getRelationDirection(
       relationType: RelationType,
       field: DMMF.Field,
-      relation: DMMF.Field,
+      backRelationField: DMMF.Field,
     ): string {
-      /**
-       * Relation is binding if it's a required relation and not a list,
-       * because lists can be empty and optional fields can be null.
-       */
-      const fieldBinding = field.isRequired && !field.isList
-      const relationBinding = relation.isRequired && !field.isList
-
       switch (relationType) {
+        /**
+         * NOTE: field and backRelationField might seem inverted here.
+         *      The trick is that to get the right type we have to examine
+         *      back relation to get the current type, and vice versa.
+         */
         case '1-to-1': {
-          if (fieldBinding && relationBinding) {
+          if (field.isRequired && backRelationField.isRequired) {
             /**
              * model A {
              *  b: B
@@ -511,8 +526,8 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
              *
              * -> Create B while creating A, the order doesn't matter.
              */
-            return _.head([field.type, relation.type].sort())!
-          } else if (!fieldBinding && relationBinding) {
+            return _.head([field.type, backRelationField.type].sort())!
+          } else if (!field.isRequired && backRelationField.isRequired) {
             /**
              * model A {
              *  b: B?
@@ -523,8 +538,8 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
              *
              * We should create A first, and connect B with A once we create B.
              */
-            return relation.type
-          } else if (fieldBinding && !relationBinding) {
+            return backRelationField.type
+          } else if (field.isRequired && !backRelationField.isRequired) {
             /**
              * model A {
              *  b: B
@@ -547,11 +562,14 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
              *
              * -> The order doesn't matter just be consistent.
              */
-            return _.head([field.type, relation.type].sort())!
+            return _.head([field.type, backRelationField.type].sort())!
           }
         }
         case '1-to-many': {
-          if (relationBinding) {
+          /**
+           * Fields are expected to be lists - not required.
+           */
+          if (!field.isRequired && backRelationField.isRequired) {
             /**
              * model A {
              *  b: B[]
@@ -562,8 +580,8 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
              *
              * -> We should create A and connect Bs to it later.
              */
-            return relation.type
-          } else {
+            return backRelationField.type
+          } else if (!field.isRequired && !backRelationField.isRequired) {
             /**
              * model A {
              *  b: B[]
@@ -574,11 +592,16 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
              *
              * -> We should create B first.
              */
-            return relation.type
+            return field.type
+          } else {
+            throw new Error('Someting unexpected happened!')
           }
         }
         case 'many-to-1': {
-          if (fieldBinding) {
+          /**
+           * Back relations are expected to be lists - not required.
+           */
+          if (field.isRequired && !backRelationField.isRequired) {
             /**
              * model A {
              *  b: B
@@ -587,10 +610,10 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
              *  a: A[]
              * }
              *
-             * -> We should create As while creating B. B is required.
+             * -> We should create B and connect As to it.
              */
             return field.type
-          } else {
+          } else if (!field.isRequired && !backRelationField.isRequired) {
             /**
              * model A {
              *  b: B?
@@ -599,9 +622,11 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
              *  a: A[]
              * }
              *
-             * -> We should create A(s) first and then connect them with B.
+             * -> We should create A(s) first and then connect B with them.
              */
-            return relation.type
+            return backRelationField.type
+          } else {
+            throw new Error('Someting unexpected happened!')
           }
         }
         case 'many-to-many': {
@@ -615,7 +640,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
            *
            * -> The order doesn't matter, just be consistent.
            */
-          return _.head([field.type, relation.type].sort())!
+          return _.head([field.type, backRelationField.type].sort())!
         }
       }
     }
@@ -1017,7 +1042,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
                     }
                   } else {
                     /* Create an instance and connect it to the relation. */
-                    if (!relation.relation.isRequired) {
+                    if (!relation.backRelationField.isRequired) {
                       const [newPool, ids] = getIDInstancesFromPool(
                         pool,
                         fieldModel.name,
@@ -1091,12 +1116,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
                       units,
                     )
 
-                    const connections = ids.reduce<{ id: string }[]>(
-                      (acc, id) => {
-                        return [...acc, { id }]
-                      },
-                      [],
-                    )
+                    const connections = ids.map<{ id: string }>(id => ({ id }))
 
                     return [
                       newPool,
@@ -1134,20 +1154,23 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
 
                     return [newPool, tasks, acc]
                   } else {
-                    /* Create this instance and connect to others. */
-                    const [newPool, ids] = getIDInstancesFromPool(
+                    /* Create this instance and connects it. */
+                    const [newPool, [id]] = getIDInstancesFromPool(
                       pool,
                       fieldModel.name,
                       field.type,
                       units,
                     )
 
-                    const connections = ids.reduce<{ id: string }[]>(
-                      (acc, id) => {
-                        return [...acc, { id }]
-                      },
-                      [],
-                    )
+                    if (!id && relation.field.isRequired) {
+                      throw new Error(
+                        `Missing data for required relation: ${relation.field.relationName}`,
+                      )
+                    }
+
+                    if (!id && !relation.field.isRequired) {
+                      return [newPool, tasks, acc]
+                    }
 
                     return [
                       newPool,
@@ -1155,7 +1178,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
                       {
                         ...acc,
                         [field.name]: {
-                          connect: connections,
+                          connect: { id },
                         },
                       },
                     ]
@@ -1193,12 +1216,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
                       units,
                     )
 
-                    const connections = ids.reduce<{ id: string }[]>(
-                      (acc, id) => {
-                        return [...acc, { id }]
-                      },
-                      [],
-                    )
+                    const connections = ids.map<{ id: string }>(id => ({ id }))
 
                     return [
                       newPool,
@@ -1308,7 +1326,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
    * @param opts
    */
   async function seedFixturesToDatabase(
-    photon: any,
+    client: any,
     fixtures: Fixture[],
     opts: { persist: boolean },
   ): Promise<object[]> {
@@ -1328,7 +1346,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
         return acc.then(async res => {
           /* Create a single instance */
           try {
-            const seed = await photon[f.mapping.findMany!].create({
+            const seed = await client[f.mapping.model.toLowerCase()].create({
               data: f.data,
             })
 

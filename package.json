@@ -15,7 +15,7 @@
     "clean": "rimraf ./node_modules/ && rimraf ./*/node_modules/",
     "coverage": "codecov",
     "prepublishOnly": "npm-run-all build build:runtime",
-    "test": "dotenv -e .env.test.conf -- jest",
+    "test": "dotenv -e .env.test.conf -- jest --config jest.config.js",
     "release": "semantic-release"
   },
   "dependencies": {
@@ -37,6 +37,7 @@
     "@types/mysql": "^2.15.7",
     "@types/node": "^13.7.1",
     "@types/pg": "^7.11.1",
+    "@types/rimraf": "^2.0.3",
     "@zeit/ncc": "^0.21.1",
     "chalk": "^3.0.0",
     "codecov": "^3.6.1",
