@@ -5,7 +5,7 @@
   "types": "dist/generator.d.ts",
   "files": [
     "dist",
-    "prisma-test-utils_ncc"
+    "runtime"
   ],
   "repository": "https://github.com/prisma/prisma-test-utils.git",
   "author": "maticzav <matic.zavadlal@gmail.com>",

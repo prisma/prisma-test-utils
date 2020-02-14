@@ -1,4 +1,4 @@
-import Photon from '@generated/photon'
+import { PrismaClient } from '@generated/photon'
 import seed from '@generated/test-utils/seed'
 import SQLitePool, { Pool } from '@generated/test-utils/pool'
 
@@ -19,7 +19,7 @@ describe('blog:', () => {
 
   test('creates blog', () =>
     pool.run(async db => {
-      const client = new Photon({
+      const client = new PrismaClient({
         datasources: {
           db: db.url,
         },
@@ -43,7 +43,7 @@ describe('blog:', () => {
       })
 
       /* Query authors. */
-      const authors = await client.authors()
+      const authors = await client.author.findMany()
 
       expect(authors).toMatchSnapshot()
 

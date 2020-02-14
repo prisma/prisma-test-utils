@@ -9,7 +9,7 @@ generator photonjs {
 }
 
 generator testutils {
-  provider = "/Users/maticzavadlal/Code/work/prisma/prisma-test-utils/dist/generator.js"
+  provider = "./../../../dist/generator.js"
   output   = "./@generated/prisma-test-utils"
 }
 

@@ -1,22 +1,40 @@
-import Photon from '@generated/photon'
+import { PrismaClient } from '@prisma/client'
+import seed from '@prisma/test-utils/seed'
 
-const photon = new Photon()
+const client = new PrismaClient()
 
 async function main() {
-  await photon.connect()
-
-  const result = await photon.blogs.create({
-    data: {
-      name: 'Photon Blog',
-      viewCount: 5,
-    },
+  await seed({
+    client,
+    models: kit => ({
+      '*': {
+        amount: 3,
+      },
+      Author: {
+        amount: 2,
+        factory: {
+          name: kit.faker.name,
+          posts: {
+            min: 3,
+          },
+        },
+      },
+      Post: {
+        amount: 5,
+        factory: {
+          title: kit.faker.sentence,
+        },
+      },
+      Blog: {
+        amount: 5,
+      },
+    }),
   })
 
-  console.log(result)
-  photon.disconnect()
+  client.disconnect()
 }
 
 main().catch(e => {
   console.error(e)
-  photon.disconnect()
+  client.disconnect()
 })

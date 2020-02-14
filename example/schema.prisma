@@ -5,13 +5,11 @@ datasource db {
 }
 
 generator photon {
-  provider = "photonjs"
-  output   = "node_modules/@generated/photon"
+  provider = "prisma-client-js"
 }
 
 generator test_utils {
-  provider = "prisma-test-utils"
-  output   = "node_modules/@generated/test-utils"
+  provider = "../dist/generator.js"
 }
 
 model Blog {
@@ -30,8 +28,7 @@ model Author {
 }
 
 model Post {
-  id    String   @id @default(cuid())
+  id    String @id @default(cuid())
   title String
-  tags  String[]
   blog  Blog
 }
