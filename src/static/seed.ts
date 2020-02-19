@@ -143,7 +143,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
    */
   type Fixture = {
     order: number // starts with 0
-    id: string
+    id: ID
     model: DMMF.Model
     mapping: DMMF.Mapping
     data: FixtureData
@@ -381,7 +381,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
 
         return {
           type: 'many-to-1',
-          min: field.isRequired ? 1 : 0,
+          min: field.isRequired ? 1 : withDefault(0, definition.min),
           max: 1,
           relationTo: getRelationDirection(
             'many-to-1',
@@ -484,7 +484,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
           /* Sufficient amounts. */
           return {
             type: '1-to-1',
-            min: field.isRequired ? 1 : 0,
+            min: field.isRequired ? 1 : withDefault(0, definition.min),
             max: 1,
             relationTo: getRelationDirection(
               '1-to-1',
@@ -819,7 +819,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
   function getFixturesFromTasks(
     faker: Chance.Chance,
     seedModels: SeedModels,
-    tasks: Task[],
+    allTasks: Task[],
   ): Fixture[] {
     /**
      * Pool describes the resources made available by a parent type to its children.
@@ -827,7 +827,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
     type Pool = Dictionary<{ [child: string]: ID[] }>
 
     const [fixtures] = iterate(
-      _.sortBy(tasks, t => t.order),
+      _.sortBy(allTasks, t => t.order),
       {},
     )
 
@@ -841,7 +841,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
     function iterate(
       tasks: Task[],
       pool: Pool,
-      n: number = 0,
+      iteration: number = 0,
     ): [Fixture[], Pool] {
       switch (tasks.length) {
         case 0: {
@@ -851,7 +851,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
           const [task, ...remainingTasks] = tasks
 
           /* Fixture calculation */
-          const id = getFixtureId()
+          const id = getFixtureId(task, remainingTasks.length)
           const [data, newPool, newTasks] = getMockDataForTask(
             id,
             pool,
@@ -860,7 +860,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
           )
 
           const fixture: Fixture = {
-            order: n,
+            order: iteration,
             id: id,
             model: task.model,
             mapping: task.mapping,
@@ -872,7 +872,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
           const [recursedFixtures, recursedPool] = iterate(
             newTasks,
             newPool,
-            n + 1,
+            iteration + 1,
           )
           return [[fixture, ...recursedFixtures], recursedPool]
         }
@@ -882,11 +882,27 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
     /**
      * Generates a unique identifier based on the database kind.
      */
-    function getFixtureId(): ID {
-      return faker
-        .guid()
-        .replace(/\-/g, '')
-        .slice(0, 25)
+    function getFixtureId(task: Task, remainingTasksN: number): ID {
+      /**
+       * Calculates the current iteration from the number of
+       * all tasks function got and the remaining number of tasks there are.
+       */
+      const iteration = allTasks.length - remainingTasksN
+      const idField = task.model.fields.find(field => field.isId)!
+      switch (idField.type) {
+        case Scalar.int: {
+          return iteration
+        }
+        case Scalar.string: {
+          return faker
+            .guid()
+            .replace(/\-/g, '')
+            .slice(0, 25)
+        }
+        default: {
+          throw new Error(`${idField.type} @ids are not yet supported!`)
+        }
+      }
     }
 
     /**
@@ -896,7 +912,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
     function getMockDataForTask(
       id: ID,
       _pool: Pool,
-      _tasks: Task[],
+      remainingTasks: Task[],
       task: Task,
     ): [FixtureData, Pool, Task[]] {
       const [finalPool, finalTasks, fixture] = task.model.fields.reduce<
@@ -929,18 +945,10 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
             }
           }
 
-          /* ID fields */
+          /* ID field */
 
           if (field.isId) {
-            switch (field.type) {
-              case Scalar.string: {
-                return [pool, tasks, { ...acc, [field.name]: id }]
-              }
-              /* istanbul ignore next */
-              case Scalar.int: {
-                throw new Error('Int @ids are not yet supported!')
-              }
-            }
+            return [pool, tasks, { ...acc, [field.name]: id }]
           }
 
           /* Scalar and relation field mocks */
@@ -1116,7 +1124,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
                       units,
                     )
 
-                    const connections = ids.map<{ id: string }>(id => ({ id }))
+                    const connections = ids.map<{ id: ID }>(id => ({ id }))
 
                     return [
                       newPool,
@@ -1216,7 +1224,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
                       units,
                     )
 
-                    const connections = ids.map<{ id: string }>(id => ({ id }))
+                    const connections = ids.map<{ id: ID }>(id => ({ id }))
 
                     return [
                       newPool,
@@ -1234,7 +1242,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
             }
           }
         },
-        [_pool, _tasks, {}],
+        [_pool, remainingTasks, {}],
       )
 
       return [fixture, finalPool, finalTasks]
@@ -1273,13 +1281,13 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
      * Creates instances of a requested relation and drains the remaining tasks.
      */
     function getInstances(
-      _tasks: Task[],
+      tasks: Task[],
       _pool: Pool,
       model: string,
       n: number,
     ): [Task[], Pool, FixtureData[]] {
       /* Find the requested tasks. */
-      const [instanceTasks, remainingTasks] = _tasks.reduce<[Task[], Task[]]>(
+      const [instanceTasks, remainingTasks] = tasks.reduce<[Task[], Task[]]>(
         ([acc, otherTasks], task) => {
           if (task.model.name === model && acc.length < n) {
             return [acc.concat(task), otherTasks]
@@ -1301,7 +1309,7 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
         [Pool, Task[], FixtureData[]]
       >(
         ([pool, tasks, acc], task) => {
-          const id = getFixtureId()
+          const id = getFixtureId(task, tasks.length)
           const [fixture, newPool, newTasks] = getMockDataForTask(
             id,
             pool,

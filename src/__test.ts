@@ -21,6 +21,16 @@ async function test() {
           birthday: '2019-10-10T18:26:07.269Z',
         },
       },
+      House: {
+        amount: 3,
+      },
+      User: {
+        factory: {
+          house: {
+            min: 1,
+          },
+        },
+      },
     }),
     persist: true,
   })

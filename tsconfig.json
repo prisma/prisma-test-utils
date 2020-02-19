@@ -16,5 +16,6 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist", "example", "runtime"]
+  "exclude": ["node_modules", "dist", "example", "runtime", "**/__*.ts"]
+  // "exclude": ["node_modules", "dist", "example", "runtime"]
 }

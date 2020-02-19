@@ -4,9 +4,9 @@ import * as path from 'path'
 import execa from 'execa'
 
 const dbPaths = {
-  mysql: path.join(__dirname, `../dbs/mysql`),
-  postgresql: path.join(__dirname, `../dbs/postgresql`),
-  sqlite: path.join(__dirname, `../dbs/sqlite`),
+  // mysql: path.join(__dirname, `../dbs/mysql`),
+  // postgresql: path.join(__dirname, `../dbs/postgresql`),
+  // sqlite: path.join(__dirname, `../dbs/sqlite`),
   seed: path.join(__dirname, '../seed'),
 }
 

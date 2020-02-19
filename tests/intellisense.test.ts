@@ -1,8 +1,8 @@
+import { DMMF } from '@prisma/generator-helper'
 import { getDMMF, getConfig } from '@prisma/sdk'
 
-import { generatePoolType } from '../src/typings/pool'
-import { generateGeneratedSeedModelsType } from '../src/typings/seed'
-import { DMMF } from '@prisma/generator-helper'
+import { generatePoolType } from '../src/intellisense/pool'
+import { generateGeneratedSeedModelsType } from '../src/intellisense/seed'
 
 describe('typings:', () => {
   test('generates seed types correctly', async () => {

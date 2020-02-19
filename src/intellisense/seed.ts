@@ -108,7 +108,7 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
       }
       default: {
         const never: never = field.kind
-        throw new Error(`Received unexpected ${field.kind}`)
+        throw new Error(`Received unexpected field kind "${field.kind}"`)
       }
     }
   }

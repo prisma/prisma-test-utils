@@ -5,7 +5,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch Debugger",
-      "program": "${workspaceFolder}/src/test.ts",
+      "program": "${workspaceFolder}/src/__test.ts",
       "preLaunchTask": "tsc: build - tsconfig.json",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
     }

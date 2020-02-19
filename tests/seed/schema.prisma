@@ -9,12 +9,13 @@ generator photonjs {
 }
 
 generator testutils {
-  provider = "./../../../dist/generator.js"
+  provider = "./dist/generator.js"
+  // the path is resolved relative to cwd not relative to file path
   output   = "./@generated/prisma-test-utils"
 }
 
 model User {
-  id       String  @id @default(cuid())
+  id       String  @id
   name     String
   email    String
   isActive Boolean
@@ -23,13 +24,11 @@ model User {
 }
 
 enum Animal {
-  Dog
-  Cat
-  Dinosaur
+  Dog Cat Dinosaur
 }
 
 model Pet {
-  id       String   @id @default(cuid())
+  id       Int      @id
   name     String
   animal   Animal
   toys     Toy[]
@@ -37,13 +36,13 @@ model Pet {
 }
 
 model Toy {
-  id    String @id @default(cuid())
+  id    String @id
   name  String
   price Float
 }
 
 model House {
-  id            String @id @default(cuid())
+  id            String @id
   address       String
   numberOfRooms Int
   residents     User[] @relation(name: "UserHouse")

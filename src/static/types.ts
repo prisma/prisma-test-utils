@@ -29,7 +29,7 @@ export type SeedModel = {
   >
 }
 
-export type ID = string
+export type ID = string | number
 
 export type SeedModelFieldDefinition = ID | string | number | boolean
 
