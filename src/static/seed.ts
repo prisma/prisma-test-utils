@@ -888,19 +888,49 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
        * all tasks function got and the remaining number of tasks there are.
        */
       const iteration = allTasks.length - remainingTasksN
-      const idField = task.model.fields.find(field => field.isId)!
+      const idField = task.model.fields.find(field => field.isId)
+
+      if (!idField) {
+        throw new Error(`Missing id field in model "${task.model.name}"`)
+      }
+
+      if (idField.default && typeof idField.default === 'object') {
+        switch (idField.default.name) {
+          case 'autoincrement': {
+            return iteration
+          }
+          case 'cuid': {
+            return faker
+              .guid()
+              .replace(/\-/g, '')
+              .slice(0, 25)
+          }
+          case 'uuid': {
+            return faker.guid()
+          }
+          default: {
+            throw new Error(
+              `Unsupported default id value "${idField.default.name}" in ${task.model.name}`,
+            )
+          }
+        }
+      }
+
+      /**
+       * Fallbacks for id types.
+       */
       switch (idField.type) {
         case Scalar.int: {
           return iteration
         }
         case Scalar.string: {
-          return faker
-            .guid()
-            .replace(/\-/g, '')
-            .slice(0, 25)
+          /**
+           * Default Prisma ID spec is UUID.
+           */
+          return faker.guid()
         }
         default: {
-          throw new Error(`${idField.type} @ids are not yet supported!`)
+          throw new Error(`${idField.type} @ids are not supported!`)
         }
       }
     }
