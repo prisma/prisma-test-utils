@@ -3,8 +3,11 @@ import { Dictionary } from 'lodash'
 /**
  * Types used to describe the seed models.
  */
-export type SeedFunction<PhotonType, GeneratedSeedModels extends SeedModels> = (
-  options: SeedOptions<PhotonType, GeneratedSeedModels>,
+export type SeedFunction<
+  GeneratedPrismaClientType extends PrismaClientType,
+  GeneratedSeedModels extends SeedModels
+> = (
+  options: SeedOptions<GeneratedPrismaClientType, GeneratedSeedModels>,
 ) => Promise<object[]>
 
 export type SeedModelsDefinition<GeneratedSeedModels extends SeedModels> = (
@@ -38,8 +41,33 @@ export type SeedModelFieldRelationConstraint = {
   max?: number
 }
 
-export type SeedOptions<PhotonType, GeneratedSeedModel extends SeedModels> = {
-  client: PhotonType
+export type FixtureData = Dictionary<
+  | string
+  | number
+  | boolean
+  | string[]
+  | number[]
+  | boolean[]
+  | { connect: { id: ID } }
+  | { connect: { id: ID }[] }
+  | { create: FixtureData }
+>
+
+/**
+ * Represents the outline of the Prisma Client functions.
+ */
+export type PrismaClientType = any
+// {
+//   [model: string]: {
+//     create: ({ data }: { data: FixtureData }) => Promise<{ id: ID }>
+//   }
+// }
+
+export type SeedOptions<
+  GeneratedPrismaClientType extends PrismaClientType,
+  GeneratedSeedModel extends SeedModels
+> = {
+  client: GeneratedPrismaClientType
   models: SeedModelsDefinition<GeneratedSeedModel>
   seed?: number
   // persist?: boolean

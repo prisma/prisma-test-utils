@@ -3,16 +3,16 @@ datasource sqlite {
   provider = "sqlite"
 }
 
-generator photonjs {
+generator client {
   provider = "prisma-client-js"
   output   = "./@generated/client"
 }
 
-generator testutils {
-  provider = "./dist/generator.js"
-  // the path is resolved relative to cwd not relative to file path
-  output   = "./@generated/prisma-test-utils"
-}
+// generator testutils {
+//   provider = "./dist/generator.js"
+//   // the path is resolved relative to cwd not relative to file path
+//   output   = "./@generated/prisma-test-utils"
+// }
 
 model User {
   id       String  @id
@@ -28,7 +28,7 @@ enum Animal {
 }
 
 model Pet {
-  id       Int      @id
+  id       Int      @id @default(autoincrement())
   name     String
   animal   Animal
   toys     Toy[]

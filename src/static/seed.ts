@@ -1,4 +1,4 @@
-import { DMMF } from '@prisma/client/runtime'
+import { DMMF, debug } from '@prisma/client/runtime'
 import Chance from 'chance'
 import _ from 'lodash'
 import { Dictionary } from 'lodash'
@@ -13,29 +13,10 @@ import {
   SeedModelFieldDefinition,
   SeedModelFieldRelationConstraint,
   SeedFunction,
+  PrismaClientType,
+  FixtureData,
 } from './types'
 import { withDefault } from './utils'
-
-type FixtureData = Dictionary<
-  | string
-  | number
-  | boolean
-  | string[]
-  | number[]
-  | boolean[]
-  | { connect: { id: ID } }
-  | { connect: { id: ID }[] }
-  | { create: FixtureData }
->
-
-/**
- * Represents the outline of the Prisma Client functions.
- */
-type PrismaClientType = {
-  [model: string]: {
-    create: ({ data }: { data: FixtureData }) => Promise<{ id: ID }>
-  }
-}
 
 /**
  * Creates a function which can be used to seed mock data to database.
@@ -70,16 +51,8 @@ export function getSeed<
 
     /* Fixture calculations */
 
-    debugger
-
     const orders: Order[] = getOrdersFromDMMF(dmmf, models)
-
-    debugger
-
     const steps: Step[] = getStepsFromOrders(orders)
-
-    debugger
-
     const tasks: Task[] = getTasksFromSteps(steps)
 
     debugger
@@ -881,6 +854,8 @@ export function getSeed<
         }
       }
 
+      debugger
+
       /* Recursive step */
       /* Fixture calculation */
       // const id = getFixtureId(task, remainingTasks.length)
@@ -901,6 +876,8 @@ export function getSeed<
         },
       )
 
+      debugger
+
       const fixture: Fixture = {
         seed: seed,
         model: currentTask.model,
@@ -914,6 +891,10 @@ export function getSeed<
        */
 
       const poolWithTask = insertTaskIntoPool(seed.id, currentTask, newPool)
+
+      debugger
+
+      console.log(poolWithTask)
 
       /* Recurse */
       const recursed = await iterate(newTasks, poolWithTask, iteration + 1)
@@ -934,7 +915,7 @@ export function getSeed<
      * Generates mock data from the provided model. Scalars return a mock scalar or
      * list of mock scalars, relations return an ID or lists of IDs.
      *
-     * Generates mock data for scalars and relations but skips ids.
+     * Generates mock data for scalars and relations, but skips id fields with default setting.
      */
     function getMockForTask(
       availablePool: Pool,
@@ -950,8 +931,8 @@ export function getSeed<
       return task.model.fields
         .filter(
           field =>
-            /* Shouldn't be part of the idFields list nor a singular id field. */
-            !task.model.idFields.includes(field.name) && !field.isId,
+            /* ID field shouldn't have a default setting. */
+            !(field.isId && field.default !== undefined),
         )
         .reduce<Mock>(getMockDataForField, initialMock)
 
@@ -1005,55 +986,91 @@ export function getSeed<
           }
         }
 
+        /* ID field */
+
+        if (field.isId) {
+          switch (field.type) {
+            case Scalar.string: {
+              /* GUID id for strings */
+              return {
+                pool,
+                tasks,
+                data: { ...data, [field.name]: faker.guid() },
+              }
+            }
+            case Scalar.int: {
+              /* Autoincrement based on task order. */
+              return {
+                pool,
+                tasks,
+                data: { ...data, [field.name]: task.order },
+              }
+            }
+            default: {
+              throw new Error(`Unsupported ID type "${field.type}"`)
+            }
+          }
+        }
+
         /* Scalar and relation field mocks */
 
-        switch (field.type) {
-          /**
-           * Scalars
-           */
-          case Scalar.string: {
-            const string = faker.word()
-            return {
-              pool,
-              tasks,
-              data: { ...data, [field.name]: string },
-            }
-          }
-          case Scalar.int: {
-            const number = faker.integer({
-              min: -2147483647,
-              max: 2147483647,
-            })
-            return {
-              pool,
-              tasks,
-              data: { ...data, [field.name]: number },
-            }
-          }
-          case Scalar.float: {
-            const float = faker.floating()
+        switch (field.kind) {
+          case 'scalar': {
+            switch (field.type) {
+              /**
+               * Scalars
+               */
+              case Scalar.string: {
+                const string = faker.word()
+                return {
+                  pool,
+                  tasks,
+                  data: { ...data, [field.name]: string },
+                }
+              }
+              case Scalar.int: {
+                const number = faker.integer({
+                  min: -2147483647,
+                  max: 2147483647,
+                })
+                return {
+                  pool,
+                  tasks,
+                  data: { ...data, [field.name]: number },
+                }
+              }
+              case Scalar.float: {
+                const float = faker.floating()
 
-            return {
-              pool,
-              tasks,
-              data: { ...data, [field.name]: float },
-            }
-          }
-          case Scalar.date: {
-            const date = faker.date().toISOString()
+                return {
+                  pool,
+                  tasks,
+                  data: { ...data, [field.name]: float },
+                }
+              }
+              case Scalar.date: {
+                const date = faker.date().toISOString()
 
-            return {
-              pool,
-              tasks,
-              data: { ...data, [field.name]: date },
-            }
-          }
-          case Scalar.bool: {
-            const boolean = faker.bool()
-            return {
-              pool,
-              tasks,
-              data: { ...data, [field.name]: boolean },
+                return {
+                  pool,
+                  tasks,
+                  data: { ...data, [field.name]: date },
+                }
+              }
+              case Scalar.bool: {
+                const boolean = faker.bool()
+                return {
+                  pool,
+                  tasks,
+                  data: { ...data, [field.name]: boolean },
+                }
+              }
+              /* Unsupported scalar */
+              default: {
+                throw new Error(
+                  `Unsupported scalar field of type ${field.type}`,
+                )
+              }
             }
           }
           /**
@@ -1292,6 +1309,11 @@ export function getSeed<
               /* end of relation kind switches */
             }
           }
+          case 'enum': {
+            throw new Error(
+              `Enums are currently not supported as autogenerated mocks.`,
+            )
+          }
           /**
            * Default field type fallback.
            */
@@ -1325,8 +1347,15 @@ export function getSeed<
           return [pool, []]
         }
         default: {
-          const [id, ...remainingIds] = _.get(pool, [parent, child])
+          const [id, ...remainingIds] = _.get(pool, [parent, child], [])
+
+          /* Makes sure that ids are unique */
           if (_ids.includes(id)) {
+            /* istanbul ignore next */
+            if (n > remainingIds.length) {
+              throw new Error(`Requesting more ids than available.`)
+            }
+
             return getIDInstancesFromPool(pool, parent, child, n, _ids)
           } else {
             const poolWithoutId = _.set(pool, [parent, child], remainingIds)
@@ -1367,24 +1396,21 @@ export function getSeed<
     function insertTaskIntoPool(id: ID, task: Task, initialPool: Pool): Pool {
       return task.model.fields
         .filter(
-          field =>
-            /* Should either be an idField or a singular field definition. */
-            task.model.idFields.includes(field.name) || field.isId,
+          field => field.kind === 'object',
+          /* Should either be an idField or a singular field definition. */
+          // task.model.idFields.includes(field.name) || field.isId,
         )
         .reduce<Pool>(insertFieldIntoPool, initialPool)
 
       function insertFieldIntoPool(pool: Pool, field: DMMF.Field): Pool {
         const fieldModel = task.model
 
-        switch (field.type) {
+        switch (field.kind) {
           /**
-           * Scalars
+           * Scalars, Enums
            */
-          case Scalar.string:
-          case Scalar.int:
-          case Scalar.float:
-          case Scalar.date:
-          case Scalar.bool: {
+          case 'scalar':
+          case 'enum': {
             return pool
           }
           /**
@@ -1527,19 +1553,6 @@ export function getSeed<
               }
               /* end of relation kind switches */
             }
-          }
-          /**
-           * Default field type fallback.
-           */
-          default: {
-            /* istanbul ignore next */
-            throw new Error(
-              /* prettier-ignore */
-              mls`
-                  | Unsupported field type "${field.type}".
-                  | Please use a custom mock function or change your model definition.
-                  `,
-            )
           }
         }
       }

@@ -9,7 +9,14 @@ async function test() {
 
   debugger
 
+  // await client.toy.delete({
+  //   where: {
+  //     id: 'abcd-c2cb-5a28-b4c6-5aa0680dac0c',
+  //   },
+  // })
+
   await seed({
+    seed: 12,
     client,
     models: kit => ({
       '*': {
@@ -32,8 +39,9 @@ async function test() {
         },
       },
     }),
-    persist: true,
   })
+
+  client.disconnect()
 }
 
 test()
