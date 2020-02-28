@@ -16,22 +16,48 @@ import {
 } from './types'
 import { withDefault } from './utils'
 
+type FixtureData = Dictionary<
+  | string
+  | number
+  | boolean
+  | string[]
+  | number[]
+  | boolean[]
+  | { connect: { id: ID } }
+  | { connect: { id: ID }[] }
+  | { create: FixtureData }
+>
+
+/**
+ * Represents the outline of the Prisma Client functions.
+ */
+type PrismaClientType = {
+  [model: string]: {
+    create: ({ data }: { data: FixtureData }) => Promise<{ id: ID }>
+  }
+}
+
 /**
  * Creates a function which can be used to seed mock data to database.
  *
  * @param dmmf
  */
-export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
+export function getSeed<
+  GeneratedPrismaClientType extends PrismaClientType,
+  GeneratedSeedModels extends SeedModels
+>(
   dmmf: DMMF.Document,
-): SeedFunction<PhotonType, GeneratedSeedModels> {
-  return (options: SeedOptions<PhotonType, GeneratedSeedModels>) => {
+): SeedFunction<GeneratedPrismaClientType, GeneratedSeedModels> {
+  return async (
+    options: SeedOptions<GeneratedPrismaClientType, GeneratedSeedModels>,
+  ) => {
     /**
      * The wrapped function which handles the execution of
      * the seeding algorithm.
      */
     const opts = {
       seed: 42,
-      persist: true,
+      // persist: true,
       ...options,
     }
 
@@ -58,17 +84,18 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
 
     debugger
 
-    const fixtures: Fixture[] = getFixturesFromTasks(faker, models, tasks)
+    /* Creates mock data and pushes it to Prisma */
+
+    const fixtures: Fixture[] = await seedTasks(
+      options.client,
+      faker,
+      models,
+      tasks,
+    )
 
     debugger
 
-    /* Creates Photon instance and pushes data. */
-
-    const seeds = seedFixturesToDatabase(options.client, fixtures, {
-      persist: opts.persist,
-    })
-
-    return seeds
+    return fixtures
   }
 
   /**
@@ -126,26 +153,13 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
     relations: Dictionary<Relation>
   }
 
-  type FixtureData = Dictionary<
-    | string
-    | number
-    | boolean
-    | string[]
-    | number[]
-    | boolean[]
-    | { connect: { id: ID } }
-    | { connect: { id: ID }[] }
-    | { create: FixtureData }
-  >
-
   /**
    * Represents the virtual unit.
    */
   type Fixture = {
-    order: number // starts with 0
-    id: ID
     model: DMMF.Model
     mapping: DMMF.Mapping
+    seed: any
     data: FixtureData
     relations: Dictionary<{
       type: RelationType
@@ -801,7 +815,14 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
       return acc.concat(...intermediateTasks)
     }, [])
 
-    return tasks
+    const tasksWithCorrectOrder = _.sortBy(tasks, t => t.order).map(
+      (task, i) => ({
+        ...task,
+        order: i,
+      }),
+    )
+
+    return tasksWithCorrectOrder
   }
 
   /**
@@ -816,481 +837,510 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
    *
    * @param steps
    */
-  function getFixturesFromTasks(
+  async function seedTasks<Client extends PrismaClientType>(
+    client: Client,
     faker: Chance.Chance,
     seedModels: SeedModels,
-    allTasks: Task[],
-  ): Fixture[] {
+    tasks: Task[],
+  ): Promise<Fixture[]> {
     /**
      * Pool describes the resources made available by a parent type to its children.
      */
     type Pool = Dictionary<{ [child: string]: ID[] }>
 
-    const [fixtures] = iterate(
-      _.sortBy(allTasks, t => t.order),
-      {},
+    const initialPool: Pool = {}
+
+    const { fixtures } = await iterate(
+      _.sortBy(tasks, t => t.order),
+      initialPool,
     )
 
     return fixtures
 
-    /* Helper functions */
-
     /**
-     * Recursively changes tasks to fixtures.
+     * Iteration represents a single seed exeuction cycle.
      */
-    function iterate(
-      tasks: Task[],
-      pool: Pool,
-      iteration: number = 0,
-    ): [Fixture[], Pool] {
-      switch (tasks.length) {
-        case 0: {
-          return [[], {}]
-        }
-        default: {
-          const [task, ...remainingTasks] = tasks
-
-          /* Fixture calculation */
-          const id = getFixtureId(task, remainingTasks.length)
-          const [data, newPool, newTasks] = getMockDataForTask(
-            id,
-            pool,
-            remainingTasks,
-            task,
-          )
-
-          const fixture: Fixture = {
-            order: iteration,
-            id: id,
-            model: task.model,
-            mapping: task.mapping,
-            data: data,
-            relations: task.relations,
-          }
-
-          /* Recurse */
-          const [recursedFixtures, recursedPool] = iterate(
-            newTasks,
-            newPool,
-            iteration + 1,
-          )
-          return [[fixture, ...recursedFixtures], recursedPool]
-        }
-      }
+    type Iteration = {
+      fixtures: Fixture[]
+      pool: Pool
     }
 
     /**
-     * Generates a unique identifier based on the database kind.
+     * Recursively seeds tasks to database.
      */
-    function getFixtureId(task: Task, remainingTasksN: number): ID {
-      /**
-       * Calculates the current iteration from the number of
-       * all tasks function got and the remaining number of tasks there are.
-       */
-      const iteration = allTasks.length - remainingTasksN
-      const idField = task.model.fields.find(field => field.isId)
-
-      if (!idField) {
-        throw new Error(`Missing id field in model "${task.model.name}"`)
-      }
-
-      if (idField.default && typeof idField.default === 'object') {
-        switch (idField.default.name) {
-          case 'autoincrement': {
-            return iteration
-          }
-          case 'cuid': {
-            return faker
-              .guid()
-              .replace(/\-/g, '')
-              .slice(0, 25)
-          }
-          case 'uuid': {
-            return faker.guid()
-          }
-          default: {
-            throw new Error(
-              `Unsupported default id value "${idField.default.name}" in ${task.model.name}`,
-            )
-          }
+    async function iterate(
+      [currentTask, ...remainingTasks]: Task[],
+      availablePool: Pool,
+      iteration: number = 0,
+    ): Promise<Iteration> {
+      /* Edge case */
+      if (currentTask === undefined) {
+        return {
+          fixtures: [],
+          pool: availablePool,
         }
       }
+
+      /* Recursive step */
+      /* Fixture calculation */
+      // const id = getFixtureId(task, remainingTasks.length)
+      const { data, pool: newPool, tasks: newTasks } = getMockForTask(
+        availablePool,
+        remainingTasks,
+        currentTask,
+      )
+
+      debugger
 
       /**
-       * Fallbacks for id types.
+       * Load the data to database.
        */
-      switch (idField.type) {
-        case Scalar.int: {
-          return iteration
-        }
-        case Scalar.string: {
-          /**
-           * Default Prisma ID spec is UUID.
-           */
-          return faker.guid()
-        }
-        default: {
-          throw new Error(`${idField.type} @ids are not supported!`)
-        }
+      const seed = await client[currentTask.mapping.model.toLowerCase()].create(
+        {
+          data,
+        },
+      )
+
+      const fixture: Fixture = {
+        seed: seed,
+        model: currentTask.model,
+        mapping: currentTask.mapping,
+        data: data,
+        relations: currentTask.relations,
       }
+
+      /**
+       * Save the id to the pool by figuring out which fields are parents and which are children.
+       */
+
+      const poolWithTask = insertTaskIntoPool(seed.id, currentTask, newPool)
+
+      /* Recurse */
+      const recursed = await iterate(newTasks, poolWithTask, iteration + 1)
+
+      return {
+        fixtures: [fixture, ...recursed.fixtures],
+        pool: recursed.pool,
+      }
+    }
+
+    type Mock = {
+      pool: Pool
+      tasks: Task[]
+      data: FixtureData
     }
 
     /**
      * Generates mock data from the provided model. Scalars return a mock scalar or
      * list of mock scalars, relations return an ID or lists of IDs.
+     *
+     * Generates mock data for scalars and relations but skips ids.
      */
-    function getMockDataForTask(
-      id: ID,
-      _pool: Pool,
-      remainingTasks: Task[],
+    function getMockForTask(
+      availablePool: Pool,
+      otherTasks: Task[],
       task: Task,
-    ): [FixtureData, Pool, Task[]] {
-      const [finalPool, finalTasks, fixture] = task.model.fields.reduce<
-        [Pool, Task[], FixtureData]
-      >(
-        ([pool, tasks, acc], field) => {
-          const fieldModel = task.model
+    ): Mock {
+      const initialMock: Mock = {
+        pool: availablePool,
+        tasks: otherTasks,
+        data: {},
+      }
 
-          /* Custom field mocks */
+      return task.model.fields
+        .filter(
+          field =>
+            /* Shouldn't be part of the idFields list nor a singular id field. */
+            !task.model.idFields.includes(field.name) && !field.isId,
+        )
+        .reduce<Mock>(getMockDataForField, initialMock)
 
-          if (
-            seedModels[task.model.name] &&
-            seedModels[task.model.name]!.factory &&
-            seedModels[task.model.name]!.factory![field.name]
-          ) {
-            const mock = seedModels[task.model.name]!.factory![field.name]
-            switch (typeof mock) {
-              case 'function': {
-                const value = mock.call(faker)
-                return [pool, tasks, { ...acc, [field.name]: value }]
+      function getMockDataForField(
+        { pool, tasks, data }: Mock,
+        field: DMMF.Field,
+      ): Mock {
+        const fieldModel = task.model
+
+        /* Custom field mocks */
+
+        if (
+          seedModels[task.model.name] &&
+          seedModels[task.model.name]!.factory
+        ) {
+          const mock = seedModels[task.model.name]!.factory![field.name]
+          switch (typeof mock) {
+            case 'function': {
+              /* Custom function */
+              const value = mock.call(faker)
+              return {
+                pool,
+                tasks,
+                data: { ...data, [field.name]: value },
               }
-              case 'object': {
-                /* Relation constraint */
-                break
+            }
+            case 'object': {
+              /* Relation constraint */
+              break
+            }
+            case 'bigint':
+            case 'boolean':
+            case 'number':
+            case 'string': {
+              /* A constant value. */
+              const value = mock
+              return {
+                pool,
+                tasks,
+                data: { ...data, [field.name]: value },
               }
-              default: {
-                const value = mock
-                return [pool, tasks, { ...acc, [field.name]: value }]
-              }
             }
-          }
-
-          /* ID field */
-
-          if (field.isId) {
-            return [pool, tasks, { ...acc, [field.name]: id }]
-          }
-
-          /* Scalar and relation field mocks */
-
-          switch (field.type) {
-            case Scalar.string: {
-              const string = faker.word()
-
-              return [pool, tasks, { ...acc, [field.name]: string }]
-            }
-            case Scalar.int: {
-              const number = faker.integer({
-                min: -2147483647,
-                max: 2147483647,
-              })
-
-              return [pool, tasks, { ...acc, [field.name]: number }]
-            }
-            case Scalar.float: {
-              const float = faker.floating()
-
-              return [pool, tasks, { ...acc, [field.name]: float }]
-            }
-            case Scalar.date: {
-              const date = faker.date().toISOString()
-
-              return [pool, tasks, { ...acc, [field.name]: date }]
-            }
-            case Scalar.bool: {
-              const boolean = faker.bool()
-
-              return [pool, tasks, { ...acc, [field.name]: boolean }]
+            case 'symbol':
+            case 'undefined': {
+              /* Skipped definitions */
+              break
             }
             default: {
-              /* Relations */
+              throw new Error(`Unsupported type of mock "${typeof mock}".`)
+            }
+          }
+        }
 
-              if (!(field.kind === 'object')) {
-                /* Fallback for unsupported scalars */
-                /* istanbul ignore next */
-                throw new Error(
-                  /* prettier-ignore */
-                  mls`
+        /* Scalar and relation field mocks */
+
+        switch (field.type) {
+          /**
+           * Scalars
+           */
+          case Scalar.string: {
+            const string = faker.word()
+            return {
+              pool,
+              tasks,
+              data: { ...data, [field.name]: string },
+            }
+          }
+          case Scalar.int: {
+            const number = faker.integer({
+              min: -2147483647,
+              max: 2147483647,
+            })
+            return {
+              pool,
+              tasks,
+              data: { ...data, [field.name]: number },
+            }
+          }
+          case Scalar.float: {
+            const float = faker.floating()
+
+            return {
+              pool,
+              tasks,
+              data: { ...data, [field.name]: float },
+            }
+          }
+          case Scalar.date: {
+            const date = faker.date().toISOString()
+
+            return {
+              pool,
+              tasks,
+              data: { ...data, [field.name]: date },
+            }
+          }
+          case Scalar.bool: {
+            const boolean = faker.bool()
+            return {
+              pool,
+              tasks,
+              data: { ...data, [field.name]: boolean },
+            }
+          }
+          /**
+           * Relations
+           */
+          case 'object': {
+            /* Resources calculation */
+            const relation = task.relations[field.name]
+
+            switch (relation.type) {
+              case '1-to-1': {
+                /**
+                 * model A {
+                 *  b: B
+                 * }
+                 * model B {
+                 *  a: A
+                 * }
+                 *
+                 * 1-to-1 relation should take at most one id from the resource pool
+                 * and submit no new ids. Because we already manage constraints during
+                 * order creation step, we can ignore it now.
+                 */
+                if (
+                  relation.relationTo === fieldModel.name &&
+                  !relation.field.isRequired
+                ) {
+                  /* Will insert the ID of an instance into the pool. */
+                  return { pool, tasks, data }
+                } else if (
+                  relation.relationTo === fieldModel.name &&
+                  relation.field.isRequired
+                ) {
+                  /* Creates the instances while creating itself. */
+                  const {
+                    tasks: newTasks,
+                    pool: newPool,
+                    data: instance,
+                  } = getMockOfModel(tasks, pool, relation.field.type)
+
+                  return {
+                    pool: newPool,
+                    tasks: newTasks,
+                    data: {
+                      ...data,
+                      [field.name]: {
+                        create: instance,
+                      },
+                    },
+                  }
+                } else if (
+                  !(relation.relationTo === fieldModel.name) &&
+                  !relation.backRelationField.isRequired
+                ) {
+                  const units = faker.integer({
+                    min: relation.min,
+                    max: relation.max,
+                  })
+
+                  /* Create an instance and connect it to the relation. */
+                  const [newPool, ids] = getIDInstancesFromPool(
+                    pool,
+                    fieldModel.name,
+                    field.type,
+                    units,
+                  )
+
+                  /**
+                   * This makes sure that relations are properly connected.
+                   */
+                  switch (ids.length) {
+                    case 0: {
+                      return { pool: newPool, tasks, data }
+                    }
+                    case 1: {
+                      const [id] = ids
+                      return {
+                        pool: newPool,
+                        tasks,
+                        data: {
+                          ...data,
+                          [field.name]: {
+                            connect: { id: id! },
+                          },
+                        },
+                      }
+                    }
+                    /* istanbul ignore next */
+                    default: {
+                      throw new Error(`Something truly unexpected happened.`)
+                    }
+                  }
+                } else {
+                  /* Is created by the parent. */
+                  return { pool, tasks, data }
+                }
+              }
+              case '1-to-many': {
+                /**
+                 * model A {
+                 *  bs: B[]
+                 * }
+                 * model B {
+                 *  a: A
+                 * }
+                 *
+                 * 1-to-many creates the model instance and makes its ID available for later connections.
+                 */
+                if (relation.relationTo === fieldModel.name) {
+                  /* Create the relation while creating this model instance. */
+                  return { pool, tasks, data }
+                } else {
+                  const units = faker.integer({
+                    min: relation.min,
+                    max: relation.max,
+                  })
+
+                  /* Create this instance and connect to others. */
+                  const [newPool, ids] = getIDInstancesFromPool(
+                    pool,
+                    fieldModel.name,
+                    field.type,
+                    units,
+                  )
+
+                  const connections = ids.map<{ id: ID }>(id => ({ id }))
+
+                  return {
+                    pool: newPool,
+                    tasks,
+                    data: {
+                      ...data,
+                      [field.name]: {
+                        connect: connections,
+                      },
+                    },
+                  }
+                }
+              }
+              case 'many-to-1': {
+                /**
+                 * model A {
+                 *  b: B
+                 * }
+                 * model B {
+                 *  a: A[]
+                 * }
+                 *
+                 * Many-to-1 relations either create an instance and make it available for later use,
+                 * or connect to existing instance.
+                 */
+                if (relation.relationTo === fieldModel.name) {
+                  /* Insert IDs of model instance into the pool. */
+
+                  return { pool, tasks, data }
+                } else {
+                  const units = faker.integer({
+                    min: relation.min,
+                    max: relation.max,
+                  })
+
+                  /* Create this instance and connects it. */
+                  const [newPool, [id]] = getIDInstancesFromPool(
+                    pool,
+                    fieldModel.name,
+                    field.type,
+                    units,
+                  )
+
+                  if (!id && relation.field.isRequired) {
+                    throw new Error(
+                      `Missing data for required relation: ${relation.field.relationName}`,
+                    )
+                  }
+
+                  if (!id && !relation.field.isRequired) {
+                    return { pool: newPool, tasks, data }
+                  }
+
+                  return {
+                    pool: newPool,
+                    tasks,
+                    data: {
+                      ...data,
+                      [field.name]: {
+                        connect: { id },
+                      },
+                    },
+                  }
+                }
+              }
+              case 'many-to-many': {
+                /**
+                 * model A {
+                 *  bs: B[]
+                 * }
+                 * model B {
+                 *  as: A[]
+                 * }
+                 *
+                 * Many-to-many relationships simply have to follow consistency. They can either
+                 * create ID instances in the pool or connect to them.
+                 */
+                if (relation.relationTo === fieldModel.name) {
+                  /* Insert IDs of this instance to the pool. */
+
+                  return { pool, tasks, data }
+                } else {
+                  const units = faker.integer({
+                    min: relation.min,
+                    max: relation.max,
+                  })
+
+                  /* Create instances and connect to relation instances. */
+                  const [newPool, ids] = getIDInstancesFromPool(
+                    pool,
+                    fieldModel.name,
+                    field.type,
+                    units,
+                  )
+
+                  const connections = ids.map<{ id: ID }>(id => ({ id }))
+
+                  return {
+                    pool: newPool,
+                    tasks,
+                    data: {
+                      ...data,
+                      [field.name]: {
+                        connect: connections,
+                      },
+                    },
+                  }
+                }
+              }
+              /* end of relation kind switches */
+            }
+          }
+          /**
+           * Default field type fallback.
+           */
+          default: {
+            /* istanbul ignore next */
+            throw new Error(
+              /* prettier-ignore */
+              mls`
                   | Unsupported field type "${field.type}".
                   | Please use a custom mock function or change your model definition.
                   `,
-                )
-              }
-              /* Resources calculation */
-              const relation = task.relations[field.name]
-              const units = faker.integer({
-                min: relation.min,
-                max: relation.max,
-              })
-
-              switch (relation.type) {
-                case '1-to-1': {
-                  /**
-                   * model A {
-                   *  b: B
-                   * }
-                   * model B {
-                   *  a: A
-                   * }
-                   *
-                   * 1-to-1 relation should take at most one id from the resource pool
-                   * and submit no new ids. Because we already manage constraints during
-                   * order creation step, we can ignore it now.
-                   */
-                  if (relation.relationTo === fieldModel.name) {
-                    if (!relation.field.isRequired) {
-                      /* Insert the ID of an instance into the pool. */
-                      const newPool = insertIDInstancesIntoPool(
-                        pool,
-                        field.type,
-                        fieldModel.name,
-                        id,
-                      )
-
-                      return [newPool, tasks, acc]
-                    } else {
-                      /* Creates the instances while creating itself. */
-                      const [newTasks, newPool, [instance]] = getInstances(
-                        tasks,
-                        pool,
-                        relation.field.type,
-                        1,
-                      )
-
-                      return [
-                        newPool,
-                        newTasks,
-                        {
-                          ...acc,
-                          [field.name]: {
-                            create: instance,
-                          },
-                        },
-                      ]
-                    }
-                  } else {
-                    /* Create an instance and connect it to the relation. */
-                    if (!relation.backRelationField.isRequired) {
-                      const [newPool, ids] = getIDInstancesFromPool(
-                        pool,
-                        fieldModel.name,
-                        field.type,
-                        units,
-                      )
-
-                      /**
-                       * This makes sure that relations are properly connected.
-                       */
-                      switch (ids.length) {
-                        case 0: {
-                          return [newPool, tasks, acc]
-                        }
-
-                        case 1: {
-                          const [id] = ids
-                          return [
-                            newPool,
-                            tasks,
-                            {
-                              ...acc,
-                              [field.name]: {
-                                connect: { id: id! },
-                              },
-                            },
-                          ]
-                        }
-
-                        /* istanbul ignore next */
-                        default: {
-                          throw new Error(
-                            `Something truly unexpected happened.`,
-                          )
-                        }
-                      }
-                    } else {
-                      /* Is created by the parent. */
-                      return [pool, tasks, acc]
-                    }
-                  }
-                }
-                case '1-to-many': {
-                  /**
-                   * model A {
-                   *  bs: B[]
-                   * }
-                   * model B {
-                   *  a: A
-                   * }
-                   *
-                   * 1-to-many creates the model instance and makes its ID available for later connections.
-                   */
-                  if (relation.relationTo === fieldModel.name) {
-                    /* Create the relation while creating this model instance. */
-                    const newPool = insertIDInstancesIntoPool(
-                      pool,
-                      field.type,
-                      fieldModel.name,
-                      id,
-                      units,
-                    )
-
-                    return [newPool, tasks, acc]
-                  } else {
-                    /* Create this instance and connect to others. */
-                    const [newPool, ids] = getIDInstancesFromPool(
-                      pool,
-                      fieldModel.name,
-                      field.type,
-                      units,
-                    )
-
-                    const connections = ids.map<{ id: ID }>(id => ({ id }))
-
-                    return [
-                      newPool,
-                      tasks,
-                      {
-                        ...acc,
-                        [field.name]: {
-                          connect: connections,
-                        },
-                      },
-                    ]
-                  }
-                }
-                case 'many-to-1': {
-                  /**
-                   * model A {
-                   *  b: B
-                   * }
-                   * model B {
-                   *  a: A[]
-                   * }
-                   *
-                   * Many-to-1 relations either create an instance and make it available for later use,
-                   * or connect to existing instance.
-                   */
-                  if (relation.relationTo === fieldModel.name) {
-                    /* Insert IDs of model instance into the pool. */
-                    const newPool = insertIDInstancesIntoPool(
-                      pool,
-                      field.type,
-                      fieldModel.name,
-                      id,
-                      units,
-                    )
-
-                    return [newPool, tasks, acc]
-                  } else {
-                    /* Create this instance and connects it. */
-                    const [newPool, [id]] = getIDInstancesFromPool(
-                      pool,
-                      fieldModel.name,
-                      field.type,
-                      units,
-                    )
-
-                    if (!id && relation.field.isRequired) {
-                      throw new Error(
-                        `Missing data for required relation: ${relation.field.relationName}`,
-                      )
-                    }
-
-                    if (!id && !relation.field.isRequired) {
-                      return [newPool, tasks, acc]
-                    }
-
-                    return [
-                      newPool,
-                      tasks,
-                      {
-                        ...acc,
-                        [field.name]: {
-                          connect: { id },
-                        },
-                      },
-                    ]
-                  }
-                }
-                case 'many-to-many': {
-                  /**
-                   * model A {
-                   *  bs: B[]
-                   * }
-                   * model B {
-                   *  as: A[]
-                   * }
-                   *
-                   * Many-to-many relationships simply have to follow consistency. They can either
-                   * create ID instances in the pool or connect to them.
-                   */
-                  if (relation.relationTo === fieldModel.name) {
-                    /* Insert IDs of this instance to the pool. */
-                    const newPool = insertIDInstancesIntoPool(
-                      pool,
-                      field.type,
-                      fieldModel.name,
-                      id,
-                      units,
-                    )
-
-                    return [newPool, tasks, acc]
-                  } else {
-                    /* Create instances and connect to relation instances. */
-                    const [newPool, ids] = getIDInstancesFromPool(
-                      pool,
-                      fieldModel.name,
-                      field.type,
-                      units,
-                    )
-
-                    const connections = ids.map<{ id: ID }>(id => ({ id }))
-
-                    return [
-                      newPool,
-                      tasks,
-                      {
-                        ...acc,
-                        [field.name]: {
-                          connect: connections,
-                        },
-                      },
-                    ]
-                  }
-                }
-              }
-            }
+            )
           }
-        },
-        [_pool, remainingTasks, {}],
-      )
-
-      return [fixture, finalPool, finalTasks]
+        }
+      }
     }
 
-    // TODO: Is it possible that a relation gets multiple same ids?
-
     /**
-     * Retrieves an ID from the pool and removes its instance.
+     * Recursively retrives n unique ids and removes them from the pool.
      */
     function getIDInstancesFromPool(
       pool: Pool,
       parent: string,
       child: string,
       n: number,
+      /* Internals */
+      _ids: ID[] = [],
     ): [Pool, ID[]] {
-      const ids = _.get(pool, [parent, child])
-      return [_.set(pool, [parent, child], ids.splice(n)), ids.slice(0, n)]
+      switch (n) {
+        case 0: {
+          return [pool, []]
+        }
+        default: {
+          const [id, ...remainingIds] = _.get(pool, [parent, child])
+          if (_ids.includes(id)) {
+            return getIDInstancesFromPool(pool, parent, child, n, _ids)
+          } else {
+            const poolWithoutId = _.set(pool, [parent, child], remainingIds)
+            const [newPool, ids] = getIDInstancesFromPool(
+              poolWithoutId,
+              parent,
+              child,
+              n - 1,
+              _ids.concat(id),
+            )
+            return [newPool, [id, ...ids]]
+          }
+        }
+      }
     }
 
     /**
@@ -1301,118 +1351,220 @@ export function getSeed<PhotonType, GeneratedSeedModels extends SeedModels>(
       parent: string,
       child: string,
       id: ID,
-      n: number = 1,
+      n: number,
     ): Pool {
       const ids = _.get(pool, [parent, child], [])
       return _.set(pool, [parent, child], [...ids, ...Array(n).fill(id)])
     }
 
     /**
+     * Inserts an id of a task into all parent fields it covers.
+     *
+     * @param id
+     * @param task
+     * @param pool
+     */
+    function insertTaskIntoPool(id: ID, task: Task, initialPool: Pool): Pool {
+      return task.model.fields
+        .filter(
+          field =>
+            /* Should either be an idField or a singular field definition. */
+            task.model.idFields.includes(field.name) || field.isId,
+        )
+        .reduce<Pool>(insertFieldIntoPool, initialPool)
+
+      function insertFieldIntoPool(pool: Pool, field: DMMF.Field): Pool {
+        const fieldModel = task.model
+
+        switch (field.type) {
+          /**
+           * Scalars
+           */
+          case Scalar.string:
+          case Scalar.int:
+          case Scalar.float:
+          case Scalar.date:
+          case Scalar.bool: {
+            return pool
+          }
+          /**
+           * Relations
+           */
+          case 'object': {
+            /* Resources calculation */
+            const relation = task.relations[field.name]
+
+            switch (relation.type) {
+              case '1-to-1': {
+                /**
+                 * model A {
+                 *  b: B
+                 * }
+                 * model B {
+                 *  a: A
+                 * }
+                 *
+                 * 1-to-1 relation should take at most one id from the resource pool
+                 * and submit no new ids. Because we already manage constraints during
+                 * order creation step, we can ignore it now.
+                 */
+                if (
+                  relation.relationTo === fieldModel.name &&
+                  !relation.field.isRequired
+                ) {
+                  /* Insert the ID of an instance into the pool. */
+                  const newPool = insertIDInstancesIntoPool(
+                    pool,
+                    field.type,
+                    fieldModel.name,
+                    id,
+                    1,
+                  )
+
+                  return newPool
+                } else {
+                  /* Relation doesn't create any child properties. */
+                  return pool
+                }
+              }
+              case '1-to-many': {
+                /**
+                 * model A {
+                 *  bs: B[]
+                 * }
+                 * model B {
+                 *  a: A
+                 * }
+                 *
+                 * 1-to-many creates the model instance and makes its ID available for later connections.
+                 */
+                if (relation.relationTo === fieldModel.name) {
+                  /* Create the relation while creating this model instance. */
+
+                  const units = faker.integer({
+                    min: relation.min,
+                    max: relation.max,
+                  })
+
+                  const newPool = insertIDInstancesIntoPool(
+                    pool,
+                    field.type,
+                    fieldModel.name,
+                    id,
+                    units,
+                  )
+
+                  return newPool
+                } else {
+                  return pool
+                }
+              }
+              case 'many-to-1': {
+                /**
+                 * model A {
+                 *  b: B
+                 * }
+                 * model B {
+                 *  a: A[]
+                 * }
+                 *
+                 * Many-to-1 relations either create an instance and make it available for later use,
+                 * or connect to existing instance.
+                 */
+                if (relation.relationTo === fieldModel.name) {
+                  /* Insert IDs of model instance into the pool. */
+
+                  const units = faker.integer({
+                    min: relation.min,
+                    max: relation.max,
+                  })
+
+                  const newPool = insertIDInstancesIntoPool(
+                    pool,
+                    field.type,
+                    fieldModel.name,
+                    id,
+                    units,
+                  )
+
+                  return newPool
+                } else {
+                  return pool
+                }
+              }
+              case 'many-to-many': {
+                /**
+                 * model A {
+                 *  bs: B[]
+                 * }
+                 * model B {
+                 *  as: A[]
+                 * }
+                 *
+                 * Many-to-many relationships simply have to follow consistency. They can either
+                 * create ID instances in the pool or connect to them.
+                 */
+                if (relation.relationTo === fieldModel.name) {
+                  /* Insert IDs of this instance to the pool. */
+
+                  const units = faker.integer({
+                    min: relation.min,
+                    max: relation.max,
+                  })
+
+                  const newPool = insertIDInstancesIntoPool(
+                    pool,
+                    field.type,
+                    fieldModel.name,
+                    id,
+                    units,
+                  )
+
+                  return newPool
+                } else {
+                  return pool
+                }
+              }
+              /* end of relation kind switches */
+            }
+          }
+          /**
+           * Default field type fallback.
+           */
+          default: {
+            /* istanbul ignore next */
+            throw new Error(
+              /* prettier-ignore */
+              mls`
+                  | Unsupported field type "${field.type}".
+                  | Please use a custom mock function or change your model definition.
+                  `,
+            )
+          }
+        }
+      }
+    }
+
+    /**
      * Creates instances of a requested relation and drains the remaining tasks.
      */
-    function getInstances(
+    function getMockOfModel(
       tasks: Task[],
-      _pool: Pool,
+      availablePool: Pool,
       model: string,
-      n: number,
-    ): [Task[], Pool, FixtureData[]] {
+    ): Mock {
       /* Find the requested tasks. */
-      const [instanceTasks, remainingTasks] = tasks.reduce<[Task[], Task[]]>(
-        ([acc, otherTasks], task) => {
-          if (task.model.name === model && acc.length < n) {
-            return [acc.concat(task), otherTasks]
-          } else {
-            return [acc, otherTasks.concat(task)]
-          }
-        },
-        [[], []],
-      )
+      const mockTask = tasks.find(task => task.model.name === model)
 
       /* Validation check, though it should never trigger */
       /* istanbul ignore next */
-      if (instanceTasks.length !== n) {
+      if (mockTask === undefined) {
         throw new Error('Something very unexpected occured.')
       }
 
-      /* Generate mock data for them. */
-      const [finalPool, finalTasks, instances] = instanceTasks.reduce<
-        [Pool, Task[], FixtureData[]]
-      >(
-        ([pool, tasks, acc], task) => {
-          const id = getFixtureId(task, tasks.length)
-          const [fixture, newPool, newTasks] = getMockDataForTask(
-            id,
-            pool,
-            tasks,
-            task,
-          )
+      const remainingTasks = tasks.filter(task => task.order !== mockTask.order)
 
-          return [newPool, newTasks, acc.concat(fixture)]
-        },
-        [_pool, remainingTasks, []],
-      )
-
-      return [finalTasks, finalPool, instances]
-    }
-  }
-
-  /**
-   * Seeds the fixtures to the database. Based on the `silent` option
-   * it performs data push. Photon is provided globally.
-   *
-   * @param fixtures
-   * @param opts
-   */
-  async function seedFixturesToDatabase(
-    client: any,
-    fixtures: Fixture[],
-    opts: { persist: boolean },
-  ): Promise<object[]> {
-    if (!opts.persist) {
-      /**
-       * Create Map, reduce ID references, and return model-type based
-       * collection of instances.
-       */
-      return _.sortBy(fixtures, f => f.order).map(f => f.data)
-    } else {
-      /**
-       * Generates a chain of promises that create DB instances.
-       */
-      const actions = _.sortBy(fixtures, f => f.order).reduce<
-        Promise<{ data: any; model: string }[]>
-      >(async (acc, f) => {
-        return acc.then(async res => {
-          /* Create a single instance */
-          try {
-            const seed = await client[f.mapping.model.toLowerCase()].create({
-              data: f.data,
-            })
-
-            return res.concat({
-              data: seed,
-              model: f.mapping.model,
-            })
-          } catch (err) /* istanbul ignore next */ {
-            throw err
-          }
-        })
-      }, Promise.resolve([]))
-
-      /* Internally executes the chain. */
-      const seeds: { data: any; model: string }[] = (await actions) as any
-      return seeds.reduce((acc, seed) => {
-        if (!Boolean(acc[seed.model])) {
-          return {
-            ...acc,
-            [`${seed.model}`]: [seed.data],
-          }
-        } else {
-          return {
-            ...acc,
-            [`${seed.model}`]: acc[seed.model].concat(seed.data),
-          }
-        }
-      }, {} as any)
+      return getMockForTask(availablePool, remainingTasks, mockTask)
     }
   }
 }

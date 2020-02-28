@@ -42,7 +42,7 @@ export type SeedOptions<PhotonType, GeneratedSeedModel extends SeedModels> = {
   client: PhotonType
   models: SeedModelsDefinition<GeneratedSeedModel>
   seed?: number
-  persist?: boolean
+  // persist?: boolean
 }
 
 /**
