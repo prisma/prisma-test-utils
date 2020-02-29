@@ -9,12 +9,26 @@ describe('seed:', () => {
   const client: PrismaClient = new PrismaClient({})
 
   const dbpath = path.resolve(__dirname, './data.db')
+  const migrationspath = path.resolve(__dirname, './migrations')
   const schemaPath = path.resolve(__dirname, './schema.prisma')
 
   beforeAll(async () => {
     /* Clear the database. */
 
+    if (fs.existsSync(migrationspath))
+      fs.rmdirSync(migrationspath, { recursive: true })
     if (fs.existsSync(dbpath)) fs.unlinkSync(dbpath)
+    await execa('yarn', [
+      'prisma2',
+      'migrate',
+      'save',
+      '--name',
+      'init',
+      '--experimental',
+      '--create-db',
+      '--schema',
+      schemaPath,
+    ])
     await execa('yarn', [
       'prisma2',
       'migrate',
@@ -32,8 +46,9 @@ describe('seed:', () => {
     if (fs.existsSync(dbpath)) fs.unlinkSync(dbpath)
   })
 
-  test('correctly generates seed data', async () => {
+  test('correctly seeds data', async () => {
     const data = await seed({
+      seed: 42,
       client,
       models: kit => ({
         '*': {
@@ -41,11 +56,15 @@ describe('seed:', () => {
         },
         House: {
           amount: 3,
+          factory: {
+            residents: {
+              max: 3,
+            },
+          },
         },
         Pet: {
           amount: 3,
           factory: {
-            animal: 'Dog',
             birthday: () => '2019-10-10T18:26:07.269Z',
           },
         },
@@ -61,36 +80,13 @@ describe('seed:', () => {
           },
         },
       }),
-      persist: false,
     })
 
     expect(data).toMatchSnapshot()
-  })
 
-  test('correctly seeds the data', async () => {
-    await seed({
-      client,
-      models: kit => ({
-        '*': {
-          amount: 5,
-        },
-        House: {
-          amount: 3,
-        },
-        Pet: {
-          factory: {
-            name: kit.faker.name,
-            animal: 'Dog',
-            birthday: '2019-10-10T18:26:07.269Z',
-          },
-        },
-      }),
-      persist: true,
+    const houses = await client.house.findMany({
+      include: { residents: true },
     })
-
-    /* Tests. */
-
-    const houses = await client.house.findMany({ include: { residents: true } })
     const pets = await client.pet.findMany({
       include: { toys: true, users: true },
     })

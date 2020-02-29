@@ -8,7 +8,7 @@ export type SeedFunction<
   GeneratedSeedModels extends SeedModels
 > = (
   options: SeedOptions<GeneratedPrismaClientType, GeneratedSeedModels>,
-) => Promise<object[]>
+) => Promise<Dictionary<object[]>>
 
 export type SeedModelsDefinition<GeneratedSeedModels extends SeedModels> = (
   kit: SeedKit,

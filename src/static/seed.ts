@@ -68,7 +68,7 @@ export function getSeed<
 
     debugger
 
-    return fixtures
+    return groupFixtures(fixtures)
   }
 
   /**
@@ -1617,5 +1617,27 @@ export function getSeed<
 
       return getMockForTask(availablePool, remainingTasks, mockTask)
     }
+  }
+
+  /**
+   * Cleverly groups the data so it's useful for the end user.
+   *
+   * @param fixtures
+   */
+  function groupFixtures(fixtures: Fixture[]): Dictionary<object[]> {
+    return fixtures.reduce<Dictionary<object[]>>((acc, fixture) => {
+      const model = fixture.model.name
+      if (acc.hasOwnProperty(model)) {
+        return {
+          ...acc,
+          [`${model}`]: acc[model].concat(fixture.seed),
+        }
+      } else {
+        return {
+          ...acc,
+          [`${model}`]: [fixture.seed],
+        }
+      }
+    }, {})
   }
 }
