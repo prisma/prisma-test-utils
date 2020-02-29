@@ -9,6 +9,18 @@
 
 //   debugger
 
+//   const data = await seed({
+//     seed: 44,
+//     client,
+//     models: kit => ({
+//       '*': {
+//         amount: 5,
+//       },
+//     }),
+//   })
+
+//   debugger
+
 //   // const data = await seed({
 //   //   seed: 42,
 //   //   client,

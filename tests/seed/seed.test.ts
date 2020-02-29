@@ -97,7 +97,7 @@ describe('seed:', () => {
     expect([houses, pets, toys, users]).toMatchSnapshot()
     expect(houses.length).toBe(3)
     expect(pets.length).toBe(6)
-    expect(toys.length).toBe(5)
+    expect(toys.length).toBe(3)
     expect(users.length).toBe(5)
   })
 })

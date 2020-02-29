@@ -28,7 +28,7 @@ enum Animal {
 }
 
 model Pet {
-  id       Int      @id @default(autoincrement())
+  PetId    Int      @id @default(autoincrement())
   name     String
   animal   Animal
   toys     Toy[]

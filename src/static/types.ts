@@ -32,26 +32,12 @@ export type SeedModel = {
   >
 }
 
-export type ID = string | number
-
-export type SeedModelFieldDefinition = ID | string | number | boolean
+export type SeedModelFieldDefinition = string | number | boolean // ID |
 
 export type SeedModelFieldRelationConstraint = {
   min?: number
   max?: number
 }
-
-export type FixtureData = Dictionary<
-  | string
-  | number
-  | boolean
-  | string[]
-  | number[]
-  | boolean[]
-  | { connect: { id: ID } }
-  | { connect: { id: ID }[] }
-  | { create: FixtureData }
->
 
 /**
  * Represents the outline of the Prisma Client functions.

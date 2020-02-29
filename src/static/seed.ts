@@ -6,7 +6,6 @@ import mls from 'multilines'
 
 import { Scalar } from './scalars'
 import {
-  ID,
   SeedKit,
   SeedModels,
   SeedOptions,
@@ -14,7 +13,6 @@ import {
   SeedModelFieldRelationConstraint,
   SeedFunction,
   PrismaClientType,
-  FixtureData,
 } from './types'
 import { withDefault } from './utils'
 
@@ -44,19 +42,22 @@ export function getSeed<
 
     const faker = new Chance(opts.seed)
 
-    const kit: SeedKit = { faker }
+    const kit: SeedKit = {
+      faker,
+    }
     const models: SeedModels = options.models
       ? options.models(kit)
-      : { '*': { amount: 5 } }
+      : {
+          '*': {
+            amount: 5,
+          },
+        }
 
     /* Fixture calculations */
 
     const orders: Order[] = getOrdersFromDMMF(dmmf, models)
     const steps: Step[] = getStepsFromOrders(orders)
-    debugger
     const tasks: Task[] = getTasksFromSteps(steps)
-
-    debugger
 
     /* Creates mock data and pushes it to Prisma */
 
@@ -129,6 +130,26 @@ export function getSeed<
   }
 
   /**
+   * ID field packs the id itself and the id field name.
+   * Examples:
+   *  - { id: 1 }
+   *  - { ArtistId: "uniqueid" }
+   */
+  type ID = Dictionary<string | number>
+
+  type FixtureData = Dictionary<
+    | string
+    | number
+    | boolean
+    | string[]
+    | number[]
+    | boolean[]
+    | { connect: ID }
+    | { connect: ID[] }
+    | { create: FixtureData }
+  >
+
+  /**
    * Represents the virtual unit.
    */
   type Fixture = {
@@ -136,10 +157,7 @@ export function getSeed<
     mapping: DMMF.Mapping
     seed: any
     data: FixtureData
-    relations: Dictionary<{
-      type: RelationType
-      relationTo: string // determines the direction of relation
-    }>
+    relations: Dictionary<Relation>
   }
 
   /* Helper functions */
@@ -879,7 +897,9 @@ export function getSeed<
     /**
      * Pool describes the resources made available by a parent type to its children.
      */
-    type Pool = Dictionary<{ [child: string]: ID[] }>
+    type Pool = Dictionary<{
+      [child: string]: ID[]
+    }>
 
     const initialPool: Pool = {}
 
@@ -937,16 +957,28 @@ export function getSeed<
           {},
         )
 
+      const methodName = _.camelCase(currentTask.mapping.model)
+      /**
+       * Make sure that client packs everyting.
+       */
+      if (!client[methodName]) {
+        throw new Error(
+          `Client is missing method for ${currentTask.model.name}`,
+        )
+      }
+
       /**
        * Load the data to database.
        */
-      const seed = await client[currentTask.mapping.model.toLowerCase()].create(
-        {
-          data,
-          // TODO: include statement should possibly be empty
-          ...(Object.keys(include).length ? { include } : {}),
-        },
-      )
+      const seed = await client[methodName].create({
+        data,
+        // TODO: include statement should possibly be empty
+        ...(Object.keys(include).length
+          ? {
+              include,
+            }
+          : {}),
+      })
 
       const fixture: Fixture = {
         seed: seed,
@@ -960,10 +992,10 @@ export function getSeed<
        * Save the id to the pool by figuring out which fields are parents and which are children.
        */
 
-      const poolWithTask = insertTaskIntoPool(seed.id, currentTask, newPool)
+      const poolWithFixture = insertFixtureIntoPool(fixture, newPool)
 
       /* Recurse */
-      const recursed = await iterate(newTasks, poolWithTask, iteration + 1)
+      const recursed = await iterate(newTasks, poolWithFixture, iteration + 1)
 
       return {
         fixtures: [fixture, ...recursed.fixtures],
@@ -1019,7 +1051,10 @@ export function getSeed<
               return {
                 pool,
                 tasks,
-                data: { ...data, [field.name]: value },
+                data: {
+                  ...data,
+                  [field.name]: value,
+                },
               }
             }
             case 'object': {
@@ -1035,7 +1070,10 @@ export function getSeed<
               return {
                 pool,
                 tasks,
-                data: { ...data, [field.name]: value },
+                data: {
+                  ...data,
+                  [field.name]: value,
+                },
               }
             }
             case 'symbol':
@@ -1058,7 +1096,10 @@ export function getSeed<
               return {
                 pool,
                 tasks,
-                data: { ...data, [field.name]: faker.guid() },
+                data: {
+                  ...data,
+                  [field.name]: faker.guid(),
+                },
               }
             }
             case Scalar.int: {
@@ -1066,7 +1107,10 @@ export function getSeed<
               return {
                 pool,
                 tasks,
-                data: { ...data, [field.name]: task.order },
+                data: {
+                  ...data,
+                  [field.name]: task.order,
+                },
               }
             }
             default: {
@@ -1088,7 +1132,10 @@ export function getSeed<
                 return {
                   pool,
                   tasks,
-                  data: { ...data, [field.name]: string },
+                  data: {
+                    ...data,
+                    [field.name]: string,
+                  },
                 }
               }
               case Scalar.int: {
@@ -1099,7 +1146,10 @@ export function getSeed<
                 return {
                   pool,
                   tasks,
-                  data: { ...data, [field.name]: number },
+                  data: {
+                    ...data,
+                    [field.name]: number,
+                  },
                 }
               }
               case Scalar.float: {
@@ -1108,7 +1158,10 @@ export function getSeed<
                 return {
                   pool,
                   tasks,
-                  data: { ...data, [field.name]: float },
+                  data: {
+                    ...data,
+                    [field.name]: float,
+                  },
                 }
               }
               case Scalar.date: {
@@ -1117,7 +1170,10 @@ export function getSeed<
                 return {
                   pool,
                   tasks,
-                  data: { ...data, [field.name]: date },
+                  data: {
+                    ...data,
+                    [field.name]: date,
+                  },
                 }
               }
               case Scalar.bool: {
@@ -1125,7 +1181,10 @@ export function getSeed<
                 return {
                   pool,
                   tasks,
-                  data: { ...data, [field.name]: boolean },
+                  data: {
+                    ...data,
+                    [field.name]: boolean,
+                  },
                 }
               }
               /* Unsupported scalar */
@@ -1162,7 +1221,11 @@ export function getSeed<
                   !relation.field.isRequired
                 ) {
                   /* Will insert the ID of an instance into the pool. */
-                  return { pool, tasks, data }
+                  return {
+                    pool,
+                    tasks,
+                    data,
+                  }
                 } else if (
                   relation.relationTo === fieldModel.name &&
                   relation.field.isRequired
@@ -1206,7 +1269,11 @@ export function getSeed<
                    */
                   switch (ids.length) {
                     case 0: {
-                      return { pool: newPool, tasks, data }
+                      return {
+                        pool: newPool,
+                        tasks,
+                        data,
+                      }
                     }
                     case 1: {
                       const [id] = ids
@@ -1216,7 +1283,7 @@ export function getSeed<
                         data: {
                           ...data,
                           [field.name]: {
-                            connect: { id: id! },
+                            connect: id,
                           },
                         },
                       }
@@ -1228,7 +1295,11 @@ export function getSeed<
                   }
                 } else {
                   /* Is created by the parent. */
-                  return { pool, tasks, data }
+                  return {
+                    pool,
+                    tasks,
+                    data,
+                  }
                 }
               }
               case '1-to-many': {
@@ -1244,7 +1315,11 @@ export function getSeed<
                  */
                 if (relation.relationTo === fieldModel.name) {
                   /* Create the relation while creating this model instance. */
-                  return { pool, tasks, data }
+                  return {
+                    pool,
+                    tasks,
+                    data,
+                  }
                 } else {
                   const units = faker.integer({
                     min: relation.min,
@@ -1259,15 +1334,13 @@ export function getSeed<
                     units,
                   )
 
-                  const connections = ids.map<{ id: ID }>(id => ({ id }))
-
                   return {
                     pool: newPool,
                     tasks,
                     data: {
                       ...data,
                       [field.name]: {
-                        connect: connections,
+                        connect: ids,
                       },
                     },
                   }
@@ -1288,7 +1361,11 @@ export function getSeed<
                 if (relation.relationTo === fieldModel.name) {
                   /* Insert IDs of model instance into the pool. */
 
-                  return { pool, tasks, data }
+                  return {
+                    pool,
+                    tasks,
+                    data,
+                  }
                 } else {
                   const units = faker.integer({
                     min: relation.min,
@@ -1310,7 +1387,11 @@ export function getSeed<
                   }
 
                   if (!id && !relation.field.isRequired) {
-                    return { pool: newPool, tasks, data }
+                    return {
+                      pool: newPool,
+                      tasks,
+                      data,
+                    }
                   }
 
                   return {
@@ -1319,7 +1400,7 @@ export function getSeed<
                     data: {
                       ...data,
                       [field.name]: {
-                        connect: { id },
+                        connect: id,
                       },
                     },
                   }
@@ -1340,7 +1421,11 @@ export function getSeed<
                 if (relation.relationTo === fieldModel.name) {
                   /* Insert IDs of this instance to the pool. */
 
-                  return { pool, tasks, data }
+                  return {
+                    pool,
+                    tasks,
+                    data,
+                  }
                 } else {
                   const units = faker.integer({
                     min: relation.min,
@@ -1355,15 +1440,13 @@ export function getSeed<
                     units,
                   )
 
-                  const connections = ids.map<{ id: ID }>(id => ({ id }))
-
                   return {
                     pool: newPool,
                     tasks,
                     data: {
                       ...data,
                       [field.name]: {
-                        connect: connections,
+                        connect: ids,
                       },
                     },
                   }
@@ -1381,7 +1464,10 @@ export function getSeed<
             return {
               pool,
               tasks,
-              data: { ...data, [field.name]: enume },
+              data: {
+                ...data,
+                [field.name]: enume,
+              },
             }
           }
           /**
@@ -1410,38 +1496,54 @@ export function getSeed<
       child: string,
       n: number,
       /* Internals */
-      _ids: ID[] = [],
+      // _ids: ID[] = [],
     ): [Pool, ID[]] {
-      switch (n) {
-        case 0: {
-          return [pool, []]
+      /* All available ids for this field (includes duplicates). */
+      const allIds: ID[] = _.get(pool, [parent, child], [])
+
+      /* Used ids */
+      let ids: ID[] = []
+      let remainingIds: ID[] = []
+
+      for (let index = 0; index < allIds.length; index++) {
+        const id = allIds[index]
+
+        /* Makes sure that ids are unique */
+        if (ids.some(_id => isId(_id, id))) {
+          remainingIds.push(id)
+          continue
         }
-        default: {
-          const [id, ...remainingIds] = _.get(pool, [parent, child], [])
 
-          /* istanbul ignore next */
-          if (id === undefined) {
-            throw new Error(
-              `Requesting more ${parent}.${child} ids than available.`,
-            )
-          }
-
-          /* Makes sure that ids are unique */
-          if (_ids.includes(id)) {
-            return getIDInstancesFromPool(pool, parent, child, n, _ids)
-          } else {
-            const poolWithoutId = _.set(pool, [parent, child], remainingIds)
-            const [newPool, ids] = getIDInstancesFromPool(
-              poolWithoutId,
-              parent,
-              child,
-              n - 1,
-              _ids.concat(id),
-            )
-            return [newPool, [id, ...ids]]
-          }
+        /* Fill the list. */
+        if (ids.length < n) {
+          ids.push(id)
+        } else {
+          remainingIds.push(id)
         }
       }
+
+      if (ids.length < n) {
+        throw new Error(
+          `Requesting more ${parent}.${child} ids than available.`,
+        )
+      }
+
+      /* Clear ids from the pool. */
+      const poolWithoutIds = _.set(pool, [parent, child], remainingIds)
+
+      return [poolWithoutIds, ids]
+    }
+
+    /**
+     * Tells whether two ids are the same.
+     *
+     * @param id
+     * @param comparable
+     */
+    function isId(id: ID, comparable: ID): boolean {
+      return [...Object.keys(id), ...Object.keys(comparable)].every(
+        key => id[key] === comparable[key],
+      )
     }
 
     /**
@@ -1465,17 +1567,33 @@ export function getSeed<
      * @param task
      * @param pool
      */
-    function insertTaskIntoPool(id: ID, task: Task, initialPool: Pool): Pool {
-      return task.model.fields
+    function insertFixtureIntoPool(fixture: Fixture, initialPool: Pool): Pool {
+      /**
+       * Calculates the id of this fixture.
+       */
+      const id = fixture.model.fields
         .filter(
-          field => field.kind === 'object',
-          /* Should either be an idField or a singular field definition. */
-          // task.model.idFields.includes(field.name) || field.isId,
+          field => fixture.model.idFields.includes(field.name) || field.isId,
         )
+        .reduce<ID>((acc, field) => {
+          if (!fixture.seed.hasOwnProperty(field.name)) {
+            throw new Error(
+              `Return data of ${fixture.model.name} is missing id field data for ${field.name}.`,
+            )
+          }
+
+          return {
+            ...acc,
+            [field.name]: fixture.seed[field.name],
+          }
+        }, {})
+
+      return fixture.model.fields
+        .filter(field => field.kind === 'object')
         .reduce<Pool>(insertFieldIntoPool, initialPool)
 
       function insertFieldIntoPool(pool: Pool, field: DMMF.Field): Pool {
-        const fieldModel = task.model
+        const fieldModel = fixture.model
 
         switch (field.kind) {
           /**
@@ -1490,7 +1608,7 @@ export function getSeed<
            */
           case 'object': {
             /* Resources calculation */
-            const relation = task.relations[field.name]
+            const relation = fixture.relations[field.name]
 
             switch (relation.type) {
               case '1-to-1': {
