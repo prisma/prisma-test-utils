@@ -63,7 +63,7 @@ describe('seed:', () => {
           },
         },
         Pet: {
-          amount: 3,
+          amount: 6,
           factory: {
             birthday: () => '2019-10-10T18:26:07.269Z',
           },
@@ -72,7 +72,6 @@ describe('seed:', () => {
           amount: 3,
         },
         User: {
-          amount: 2,
           factory: {
             house: {
               min: 1,
@@ -97,7 +96,7 @@ describe('seed:', () => {
 
     expect([houses, pets, toys, users]).toMatchSnapshot()
     expect(houses.length).toBe(3)
-    expect(pets.length).toBe(5)
+    expect(pets.length).toBe(6)
     expect(toys.length).toBe(5)
     expect(users.length).toBe(5)
   })

@@ -1,401 +1,417 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`seed: correctly generates seed data 1`] = `
-Array [
-  Object {
-    "id": "f70c6744-c2cb-5a28-b4c6-5aa0680dac0c",
-    "name": "tima",
-    "price": -376088146896.4864,
-  },
-  Object {
-    "id": "41cae0fd-2b74-5d13-942a-845c2ba00047",
-    "name": "bave",
-    "price": -107811686055.936,
-  },
-  Object {
-    "id": "b428ac91-ec57-5e13-a34c-a08720199469",
-    "name": "sa",
-    "price": 37531676993.1264,
-  },
-  Object {
-    "animal": "Dog",
-    "birthday": "2019-10-10T18:26:07.269Z",
-    "id": 4,
-    "name": "ejjitluh",
-    "toys": Object {
-      "connect": Array [
-        Object {
-          "id": "f70c6744-c2cb-5a28-b4c6-5aa0680dac0c",
-        },
-      ],
-    },
-  },
-  Object {
-    "animal": "Dog",
-    "birthday": "2019-10-10T18:26:07.269Z",
-    "id": 5,
-    "name": "ju",
-    "toys": Object {
-      "connect": Array [
-        Object {
-          "id": "41cae0fd-2b74-5d13-942a-845c2ba00047",
-        },
-      ],
-    },
-  },
-  Object {
-    "animal": "Dog",
-    "birthday": "2019-10-10T18:26:07.269Z",
-    "id": 6,
-    "name": "mok",
-    "toys": Object {
-      "connect": Array [
-        Object {
-          "id": "b428ac91-ec57-5e13-a34c-a08720199469",
-        },
-      ],
-    },
-  },
-  Object {
-    "email": "wus",
-    "id": "aa8d6667-74b9-5f5b-9884-2fbbfe5f5645",
-    "isActive": false,
-    "name": "rij",
-    "pet": Object {
-      "connect": Object {
-        "id": 4,
-      },
-    },
-  },
-  Object {
-    "email": "dul",
-    "id": "7e2a361b-a2bd-5a95-bf43-69cd4137dd0b",
-    "isActive": false,
-    "name": "vaopu",
-    "pet": Object {
-      "connect": Object {
-        "id": 5,
-      },
-    },
-  },
-  Object {
-    "address": "ofhi",
-    "id": "1993f7b9-ff9b-5ed5-ba8f-8eac3312d6be",
-    "numberOfRooms": 249546199,
-    "residents": Object {
-      "connect": Array [
-        Object {
-          "id": "aa8d6667-74b9-5f5b-9884-2fbbfe5f5645",
-        },
-      ],
-    },
-  },
-  Object {
-    "address": "umso",
-    "id": "1fb0e0de-626e-5ce0-ae40-31aaef95d5c3",
-    "numberOfRooms": -1800221258,
-    "residents": Object {
-      "connect": Array [
-        Object {
-          "id": "7e2a361b-a2bd-5a95-bf43-69cd4137dd0b",
-        },
-      ],
-    },
-  },
-  Object {
-    "address": "ta",
-    "id": "fdd67f25-0513-58b7-9cf3-c6a84f5da637",
-    "numberOfRooms": -1398585549,
-    "residents": Object {
-      "connect": Array [],
-    },
-  },
-]
-`;
-
-exports[`seed: correctly seeds the data 1`] = `
-Array [
-  Array [
+exports[`seed: correctly seeds data 1`] = `
+Object {
+  "House": Array [
     Object {
-      "address": "fe",
-      "id": "75ac0020-e99f-56a0-9f13-04008bee1d8e",
-      "numberOfRooms": 243959576,
+      "address": "irevaumi",
+      "id": "3c6a84f5-da63-57df-8bc0-611398c5f6bd",
+      "numberOfRooms": 127348283,
       "residents": Array [
         Object {
-          "email": "fef",
-          "id": "5b827dc1-993f-57b9-bf9b-ed51a8f8eac3",
-          "isActive": false,
-          "name": "pedej",
-        },
-      ],
-    },
-    Object {
-      "address": "tuc",
-      "id": "98694bbd-450f-5ce3-b9f6-86c66f3ee717",
-      "numberOfRooms": 48715257,
-      "residents": Array [
-        Object {
-          "email": "leg",
-          "id": "1fb0e0de-626e-5ce0-ae40-31aaef95d5c3",
-          "isActive": false,
-          "name": "umso",
-        },
-      ],
-    },
-    Object {
-      "address": "bu",
-      "id": "357d5b61-7a99-5fa1-8b24-5af2c30e848a",
-      "numberOfRooms": -844968178,
-      "residents": Array [
-        Object {
-          "email": "rur",
-          "id": "2505138b-78cf-53c6-a84f-5da637df5bc0",
+          "email": "ju",
+          "id": "e13d34ca-0872-5019-9469-fb4d3a0f816e",
           "isActive": true,
-          "name": "liedowa",
+          "name": "sezsi",
+        },
+      ],
+    },
+    Object {
+      "address": "lavub",
+      "id": "d0b09399-5dfe-5f66-9989-17958b9c7954",
+      "numberOfRooms": -928052335,
+      "residents": Array [],
+    },
+    Object {
+      "address": "uze",
+      "id": "e326250d-c6ad-52fc-8f56-865e43b3f5ee",
+      "numberOfRooms": -56942030,
+      "residents": Array [
+        Object {
+          "email": "junla",
+          "id": "a0171dea-a8d6-5667-94b9-f5b98842fbbf",
+          "isActive": false,
+          "name": "kos",
+        },
+        Object {
+          "email": "jocnuf",
+          "id": "8763d7e2-a361-5ba2-ada9-52f4369cd413",
+          "isActive": true,
+          "name": "husefuw",
+        },
+        Object {
+          "email": "wijug",
+          "id": "993f7b9f-f9be-5d51-a8f8-eac3312d6bef",
+          "isActive": false,
+          "name": "fef",
         },
       ],
     },
   ],
-  Array [
+  "Pet": Array [
     Object {
       "animal": "Dog",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": 1,
+      "name": "gafgohrak",
+      "toys": Array [],
+    },
+    Object {
+      "animal": "Dog",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": 2,
+      "name": "mabuj",
+      "toys": Array [],
+    },
+    Object {
+      "animal": "Cat",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": 3,
+      "name": "taj",
+      "toys": Array [],
+    },
+    Object {
+      "animal": "Dog",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": 4,
+      "name": "cuval",
+      "toys": Array [],
+    },
+    Object {
+      "animal": "Dog",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": 5,
+      "name": "unukaho",
+      "toys": Array [],
+    },
+    Object {
+      "animal": "Cat",
       "birthday": 2019-10-10T18:26:07.269Z,
       "id": 6,
-      "name": "Louis Castro",
-      "toys": Array [
+      "name": "tibawha",
+      "toys": Array [],
+    },
+  ],
+  "Toy": Array [
+    Object {
+      "id": "a1e86c42-d617-4de9-bae3-d1cd4790c659",
+      "name": "ofosid",
+      "price": -97579029233.664,
+    },
+    Object {
+      "id": "5b128b51-ea49-44d8-9540-92ba21741f37",
+      "name": "ci",
+      "price": 659644306633.5232,
+    },
+    Object {
+      "id": "2c1cec63-d37c-4e48-bdbc-8744d0a6f706",
+      "name": "fopcu",
+      "price": 399917433697.0752,
+    },
+  ],
+  "User": Array [
+    Object {
+      "email": "ju",
+      "house": null,
+      "id": "e13d34ca-0872-5019-9469-fb4d3a0f816e",
+      "isActive": true,
+      "name": "sezsi",
+      "pet": Object {
+        "animal": "Dog",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": 1,
+        "name": "gafgohrak",
+      },
+    },
+    Object {
+      "email": "junla",
+      "house": null,
+      "id": "a0171dea-a8d6-5667-94b9-f5b98842fbbf",
+      "isActive": false,
+      "name": "kos",
+      "pet": Object {
+        "animal": "Dog",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": 2,
+        "name": "mabuj",
+      },
+    },
+    Object {
+      "email": "jocnuf",
+      "house": null,
+      "id": "8763d7e2-a361-5ba2-ada9-52f4369cd413",
+      "isActive": true,
+      "name": "husefuw",
+      "pet": Object {
+        "animal": "Cat",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": 3,
+        "name": "taj",
+      },
+    },
+    Object {
+      "email": "wijug",
+      "house": null,
+      "id": "993f7b9f-f9be-5d51-a8f8-eac3312d6bef",
+      "isActive": false,
+      "name": "fef",
+      "pet": Object {
+        "animal": "Dog",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": 4,
+        "name": "cuval",
+      },
+    },
+    Object {
+      "email": "liptemdov",
+      "house": null,
+      "id": "e626ece0-ae40-531a-aef9-5d5c32203d45",
+      "isActive": true,
+      "name": "leg",
+      "pet": Object {
+        "animal": "Dog",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": 5,
+        "name": "unukaho",
+      },
+    },
+  ],
+}
+`;
+
+exports[`seed: correctly seeds data 2`] = `
+Array [
+  Array [
+    Object {
+      "address": "irevaumi",
+      "id": "3c6a84f5-da63-57df-8bc0-611398c5f6bd",
+      "numberOfRooms": 127348283,
+      "residents": Array [
         Object {
-          "id": "f70c6744-c2cb-5a28-b4c6-5aa0680dac0c",
-          "name": "tima",
-          "price": -376088146896.4864,
+          "email": "ju",
+          "id": "e13d34ca-0872-5019-9469-fb4d3a0f816e",
+          "isActive": true,
+          "name": "sezsi",
         },
       ],
-      "users": Array [
+    },
+    Object {
+      "address": "lavub",
+      "id": "d0b09399-5dfe-5f66-9989-17958b9c7954",
+      "numberOfRooms": -928052335,
+      "residents": Array [],
+    },
+    Object {
+      "address": "uze",
+      "id": "e326250d-c6ad-52fc-8f56-865e43b3f5ee",
+      "numberOfRooms": -56942030,
+      "residents": Array [
         Object {
-          "email": "fef",
-          "id": "5b827dc1-993f-57b9-bf9b-ed51a8f8eac3",
+          "email": "junla",
+          "id": "a0171dea-a8d6-5667-94b9-f5b98842fbbf",
           "isActive": false,
-          "name": "pedej",
+          "name": "kos",
         },
-      ],
-    },
-    Object {
-      "animal": "Dog",
-      "birthday": 2019-10-10T18:26:07.269Z,
-      "id": 7,
-      "name": "Jessie Webb",
-      "toys": Array [
         Object {
-          "id": "41cae0fd-2b74-5d13-942a-845c2ba00047",
-          "name": "bave",
-          "price": -107811686055.936,
+          "email": "jocnuf",
+          "id": "8763d7e2-a361-5ba2-ada9-52f4369cd413",
+          "isActive": true,
+          "name": "husefuw",
         },
-      ],
-      "users": Array [
         Object {
-          "email": "leg",
-          "id": "1fb0e0de-626e-5ce0-ae40-31aaef95d5c3",
+          "email": "wijug",
+          "id": "993f7b9f-f9be-5d51-a8f8-eac3312d6bef",
           "isActive": false,
-          "name": "umso",
-        },
-      ],
-    },
-    Object {
-      "animal": "Dog",
-      "birthday": 2019-10-10T18:26:07.269Z,
-      "id": 8,
-      "name": "Sue Ford",
-      "toys": Array [
-        Object {
-          "id": "b428ac91-ec57-5e13-a34c-a08720199469",
-          "name": "sa",
-          "price": 37531676993.1264,
-        },
-      ],
-      "users": Array [
-        Object {
-          "email": "rur",
-          "id": "2505138b-78cf-53c6-a84f-5da637df5bc0",
-          "isActive": true,
-          "name": "liedowa",
-        },
-      ],
-    },
-    Object {
-      "animal": "Dog",
-      "birthday": 2019-10-10T18:26:07.269Z,
-      "id": 9,
-      "name": "Theodore Holmes",
-      "toys": Array [
-        Object {
-          "id": "0f816e38-4f0e-543e-ae7c-ba0171deaa8d",
-          "name": "woscujduv",
-          "price": 630573438389.4528,
-        },
-      ],
-      "users": Array [
-        Object {
-          "email": "sajopbed",
-          "id": "c80333ed-0b09-5399-8dfe-f66898917958",
-          "isActive": true,
-          "name": "fow",
-        },
-      ],
-    },
-    Object {
-      "animal": "Dog",
-      "birthday": 2019-10-10T18:26:07.269Z,
-      "id": 10,
-      "name": "Elva Curry",
-      "toys": Array [
-        Object {
-          "id": "2fbbfe5f-5645-5e93-b1b0-68763d7e2a36",
-          "name": "biga",
-          "price": 712944317261.4144,
-        },
-      ],
-      "users": Array [
-        Object {
-          "email": "pufwi",
-          "id": "6250dc6a-d2fc-56f5-8865-e43b3f5eed40",
-          "isActive": true,
-          "name": "putitpo",
+          "name": "fef",
         },
       ],
     },
   ],
   Array [
     Object {
-      "id": "f70c6744-c2cb-5a28-b4c6-5aa0680dac0c",
-      "name": "tima",
-      "pet": Object {
-        "animal": "Dog",
-        "birthday": 2019-10-10T18:26:07.269Z,
-        "id": 6,
-        "name": "Louis Castro",
-      },
-      "price": -376088146896.4864,
+      "animal": "Dog",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": 1,
+      "name": "gafgohrak",
+      "toys": Array [],
+      "users": Array [
+        Object {
+          "email": "ju",
+          "id": "e13d34ca-0872-5019-9469-fb4d3a0f816e",
+          "isActive": true,
+          "name": "sezsi",
+        },
+      ],
     },
     Object {
-      "id": "41cae0fd-2b74-5d13-942a-845c2ba00047",
-      "name": "bave",
-      "pet": Object {
-        "animal": "Dog",
-        "birthday": 2019-10-10T18:26:07.269Z,
-        "id": 7,
-        "name": "Jessie Webb",
-      },
-      "price": -107811686055.936,
+      "animal": "Dog",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": 2,
+      "name": "mabuj",
+      "toys": Array [],
+      "users": Array [
+        Object {
+          "email": "junla",
+          "id": "a0171dea-a8d6-5667-94b9-f5b98842fbbf",
+          "isActive": false,
+          "name": "kos",
+        },
+      ],
     },
     Object {
-      "id": "b428ac91-ec57-5e13-a34c-a08720199469",
-      "name": "sa",
-      "pet": Object {
-        "animal": "Dog",
-        "birthday": 2019-10-10T18:26:07.269Z,
-        "id": 8,
-        "name": "Sue Ford",
-      },
-      "price": 37531676993.1264,
+      "animal": "Cat",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": 3,
+      "name": "taj",
+      "toys": Array [],
+      "users": Array [
+        Object {
+          "email": "jocnuf",
+          "id": "8763d7e2-a361-5ba2-ada9-52f4369cd413",
+          "isActive": true,
+          "name": "husefuw",
+        },
+      ],
     },
     Object {
-      "id": "0f816e38-4f0e-543e-ae7c-ba0171deaa8d",
-      "name": "woscujduv",
-      "pet": Object {
-        "animal": "Dog",
-        "birthday": 2019-10-10T18:26:07.269Z,
-        "id": 9,
-        "name": "Theodore Holmes",
-      },
-      "price": 630573438389.4528,
+      "animal": "Dog",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": 4,
+      "name": "cuval",
+      "toys": Array [],
+      "users": Array [
+        Object {
+          "email": "wijug",
+          "id": "993f7b9f-f9be-5d51-a8f8-eac3312d6bef",
+          "isActive": false,
+          "name": "fef",
+        },
+      ],
     },
     Object {
-      "id": "2fbbfe5f-5645-5e93-b1b0-68763d7e2a36",
-      "name": "biga",
-      "pet": Object {
-        "animal": "Dog",
-        "birthday": 2019-10-10T18:26:07.269Z,
-        "id": 10,
-        "name": "Elva Curry",
-      },
-      "price": 712944317261.4144,
+      "animal": "Dog",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": 5,
+      "name": "unukaho",
+      "toys": Array [],
+      "users": Array [
+        Object {
+          "email": "liptemdov",
+          "id": "e626ece0-ae40-531a-aef9-5d5c32203d45",
+          "isActive": true,
+          "name": "leg",
+        },
+      ],
+    },
+    Object {
+      "animal": "Cat",
+      "birthday": 2019-10-10T18:26:07.269Z,
+      "id": 6,
+      "name": "tibawha",
+      "toys": Array [],
+      "users": Array [],
     },
   ],
   Array [
     Object {
-      "email": "fef",
+      "id": "a1e86c42-d617-4de9-bae3-d1cd4790c659",
+      "name": "ofosid",
+      "pet": null,
+      "price": -97579029233.664,
+    },
+    Object {
+      "id": "5b128b51-ea49-44d8-9540-92ba21741f37",
+      "name": "ci",
+      "pet": null,
+      "price": 659644306633.5232,
+    },
+    Object {
+      "id": "2c1cec63-d37c-4e48-bdbc-8744d0a6f706",
+      "name": "fopcu",
+      "pet": null,
+      "price": 399917433697.0752,
+    },
+  ],
+  Array [
+    Object {
+      "email": "ju",
       "house": Object {
-        "address": "fe",
-        "id": "75ac0020-e99f-56a0-9f13-04008bee1d8e",
-        "numberOfRooms": 243959576,
+        "address": "irevaumi",
+        "id": "3c6a84f5-da63-57df-8bc0-611398c5f6bd",
+        "numberOfRooms": 127348283,
       },
-      "id": "5b827dc1-993f-57b9-bf9b-ed51a8f8eac3",
+      "id": "e13d34ca-0872-5019-9469-fb4d3a0f816e",
+      "isActive": true,
+      "name": "sezsi",
+      "pet": Object {
+        "animal": "Dog",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": 1,
+        "name": "gafgohrak",
+      },
+    },
+    Object {
+      "email": "junla",
+      "house": Object {
+        "address": "uze",
+        "id": "e326250d-c6ad-52fc-8f56-865e43b3f5ee",
+        "numberOfRooms": -56942030,
+      },
+      "id": "a0171dea-a8d6-5667-94b9-f5b98842fbbf",
       "isActive": false,
-      "name": "pedej",
+      "name": "kos",
       "pet": Object {
         "animal": "Dog",
         "birthday": 2019-10-10T18:26:07.269Z,
-        "id": 6,
-        "name": "Louis Castro",
+        "id": 2,
+        "name": "mabuj",
       },
     },
     Object {
-      "email": "leg",
+      "email": "jocnuf",
       "house": Object {
-        "address": "tuc",
-        "id": "98694bbd-450f-5ce3-b9f6-86c66f3ee717",
-        "numberOfRooms": 48715257,
+        "address": "uze",
+        "id": "e326250d-c6ad-52fc-8f56-865e43b3f5ee",
+        "numberOfRooms": -56942030,
       },
-      "id": "1fb0e0de-626e-5ce0-ae40-31aaef95d5c3",
+      "id": "8763d7e2-a361-5ba2-ada9-52f4369cd413",
+      "isActive": true,
+      "name": "husefuw",
+      "pet": Object {
+        "animal": "Cat",
+        "birthday": 2019-10-10T18:26:07.269Z,
+        "id": 3,
+        "name": "taj",
+      },
+    },
+    Object {
+      "email": "wijug",
+      "house": Object {
+        "address": "uze",
+        "id": "e326250d-c6ad-52fc-8f56-865e43b3f5ee",
+        "numberOfRooms": -56942030,
+      },
+      "id": "993f7b9f-f9be-5d51-a8f8-eac3312d6bef",
       "isActive": false,
-      "name": "umso",
+      "name": "fef",
       "pet": Object {
         "animal": "Dog",
         "birthday": 2019-10-10T18:26:07.269Z,
-        "id": 7,
-        "name": "Jessie Webb",
+        "id": 4,
+        "name": "cuval",
       },
     },
     Object {
-      "email": "rur",
-      "house": Object {
-        "address": "bu",
-        "id": "357d5b61-7a99-5fa1-8b24-5af2c30e848a",
-        "numberOfRooms": -844968178,
-      },
-      "id": "2505138b-78cf-53c6-a84f-5da637df5bc0",
-      "isActive": true,
-      "name": "liedowa",
-      "pet": Object {
-        "animal": "Dog",
-        "birthday": 2019-10-10T18:26:07.269Z,
-        "id": 8,
-        "name": "Sue Ford",
-      },
-    },
-    Object {
-      "email": "sajopbed",
+      "email": "liptemdov",
       "house": null,
-      "id": "c80333ed-0b09-5399-8dfe-f66898917958",
+      "id": "e626ece0-ae40-531a-aef9-5d5c32203d45",
       "isActive": true,
-      "name": "fow",
+      "name": "leg",
       "pet": Object {
         "animal": "Dog",
         "birthday": 2019-10-10T18:26:07.269Z,
-        "id": 9,
-        "name": "Theodore Holmes",
-      },
-    },
-    Object {
-      "email": "pufwi",
-      "house": null,
-      "id": "6250dc6a-d2fc-56f5-8865-e43b3f5eed40",
-      "isActive": true,
-      "name": "putitpo",
-      "pet": Object {
-        "animal": "Dog",
-        "birthday": 2019-10-10T18:26:07.269Z,
-        "id": 10,
-        "name": "Elva Curry",
+        "id": 5,
+        "name": "unukaho",
       },
     },
   ],

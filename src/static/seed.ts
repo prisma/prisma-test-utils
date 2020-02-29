@@ -53,6 +53,7 @@ export function getSeed<
 
     const orders: Order[] = getOrdersFromDMMF(dmmf, models)
     const steps: Step[] = getStepsFromOrders(orders)
+    debugger
     const tasks: Task[] = getTasksFromSteps(steps)
 
     debugger
@@ -65,8 +66,6 @@ export function getSeed<
       models,
       tasks,
     )
-
-    debugger
 
     return groupFixtures(fixtures)
   }
@@ -177,10 +176,7 @@ export function getSeed<
           const seedModelField: SeedModelFieldRelationConstraint = _.get(
             fakerModel,
             ['factory', field.name],
-            {
-              min: 1,
-              max: 1,
-            },
+            {},
           ) as object
 
           switch (typeof seedModelField) {
@@ -388,10 +384,26 @@ export function getSeed<
          *  as: [A]
          * }
          */
+        if (
+          field.isRequired &&
+          relationSeedModel.amount < fieldSeedModel.amount
+        ) {
+          const missingInstances =
+            fieldSeedModel.amount - relationSeedModel.amount
+          throw new Error(
+            /* prettier-ignore */
+            mls`
+            | ${fieldModel.name}.${field.name} requests more (${fieldSeedModel.amount}) instances of ${relationModel.name}(${relationSeedModel.amount}) than available.
+            | Please add ${missingInstances} more ${relationModel.name} instances.
+            `,
+          )
+        }
+
+        const min = field.isRequired ? 1 : withDefault(0, definition.min)
 
         return {
           type: 'many-to-1',
-          min: field.isRequired ? 1 : withDefault(0, definition.min),
+          min: min,
           max: 1,
           relationTo: getRelationDirection(
             'many-to-1',
@@ -413,7 +425,18 @@ export function getSeed<
          * }
          */
 
-        const min = withDefault(field.isRequired ? 1 : 0, definition.min)
+        /**
+         * TODO: This is not completely accurate, because there
+         * could be more of this type than of backRelation, and this
+         * setup doesn't allow for that.
+         *
+         * TODO: Intellisense: if back relation field required min should be at least 1.
+         */
+        // const min = backRelationField.isRequired
+        //   ? 1
+        //   : withDefault(0, definition.min)
+
+        const min = withDefault(0, definition.min)
         const max = withDefault(min, definition.max)
 
         /* Validation */
@@ -426,29 +449,41 @@ export function getSeed<
             | ${fieldModel.name}.${field.name}: number of minimum instances is higher than maximum.
             `,
           )
-        } else if (max > relationSeedModel.amount) {
-          /* istanbul ignore next */ /* Missing relation instances */
-          const missingInstances = max - relationSeedModel.amount
+        }
+        // else if (max > relationSeedModel.amount) {
+        //   /* istanbul ignore next */ /* Missing relation instances */
+        //   const missingInstances = max - relationSeedModel.amount
+        //   throw new Error(
+        //     /* prettier-ignore */
+        //     mls`
+        //     | ${fieldModel.name}.${field.name} requests more (${max}) instances of ${relationModel.name}(${relationSeedModel.amount}) than available.
+        //     | Please add more (${missingInstances}) ${relationModel.name} instances.
+        //     `,
+        //   )
+        // }
+        if (min * fieldSeedModel.amount > relationSeedModel.amount) {
+          const missingInstances =
+            min * fieldSeedModel.amount - relationSeedModel.amount
           throw new Error(
             /* prettier-ignore */
             mls`
-            | ${fieldModel.name}.${field.name} requests more (${max}) instances of ${relationModel.name}(${relationSeedModel.amount}) than available.
-            | Please add more (${missingInstances}) ${relationModel.name} instances.
+            | ${fieldModel.name}.${field.name} requests more (${min * fieldSeedModel.amount}) instances of ${relationModel.name}(${relationSeedModel.amount}) than available.
+            | Please add ${missingInstances} more ${relationModel.name} instances.
             `,
           )
-        } else {
-          /* Valid declaration */
-          return {
-            type: '1-to-many',
-            min: min,
-            max: max,
-            relationTo: getRelationDirection(
-              '1-to-many',
-              field,
-              backRelationField,
-            ),
-            backRelationField: backRelationField,
-          }
+        }
+
+        /* Valid declaration */
+        return {
+          type: '1-to-many',
+          min: min,
+          max: max,
+          relationTo: getRelationDirection(
+            '1-to-many',
+            field,
+            backRelationField,
+          ),
+          backRelationField: backRelationField,
         }
       } else {
         /**
@@ -975,10 +1010,7 @@ export function getSeed<
 
         /* Custom field mocks */
 
-        if (
-          seedModels[task.model.name] &&
-          seedModels[task.model.name]!.factory
-        ) {
+        if (seedModels[task.model.name]?.factory) {
           const mock = seedModels[task.model.name]!.factory![field.name]
           switch (typeof mock) {
             case 'function': {
@@ -1387,13 +1419,15 @@ export function getSeed<
         default: {
           const [id, ...remainingIds] = _.get(pool, [parent, child], [])
 
+          /* istanbul ignore next */
+          if (id === undefined) {
+            throw new Error(
+              `Requesting more ${parent}.${child} ids than available.`,
+            )
+          }
+
           /* Makes sure that ids are unique */
           if (_ids.includes(id)) {
-            /* istanbul ignore next */
-            if (n > remainingIds.length) {
-              throw new Error(`Requesting more ids than available.`)
-            }
-
             return getIDInstancesFromPool(pool, parent, child, n, _ids)
           } else {
             const poolWithoutId = _.set(pool, [parent, child], remainingIds)
@@ -1505,10 +1539,11 @@ export function getSeed<
                 if (relation.relationTo === fieldModel.name) {
                   /* Create the relation while creating this model instance. */
 
-                  const units = faker.integer({
-                    min: relation.min,
-                    max: relation.max,
-                  })
+                  // const units = faker.integer({
+                  //   min: relation.min,
+                  //   max: relation.max,
+                  // })
+                  const units = Math.max(1, relation.max)
 
                   const newPool = insertIDInstancesIntoPool(
                     pool,
@@ -1538,10 +1573,11 @@ export function getSeed<
                 if (relation.relationTo === fieldModel.name) {
                   /* Insert IDs of model instance into the pool. */
 
-                  const units = faker.integer({
-                    min: relation.min,
-                    max: relation.max,
-                  })
+                  // const units = faker.integer({
+                  //   min: relation.min,
+                  //   max: relation.max,
+                  // })
+                  const units = Math.max(1, relation.max)
 
                   const newPool = insertIDInstancesIntoPool(
                     pool,
@@ -1571,10 +1607,11 @@ export function getSeed<
                 if (relation.relationTo === fieldModel.name) {
                   /* Insert IDs of this instance to the pool. */
 
-                  const units = faker.integer({
-                    min: relation.min,
-                    max: relation.max,
-                  })
+                  // const units = faker.integer({
+                  //   min: relation.min,
+                  //   max: relation.max,
+                  // })
+                  const units = Math.max(1, relation.max)
 
                   const newPool = insertIDInstancesIntoPool(
                     pool,
@@ -1630,12 +1667,12 @@ export function getSeed<
       if (acc.hasOwnProperty(model)) {
         return {
           ...acc,
-          [`${model}`]: acc[model].concat(fixture.seed),
+          [model]: acc[model].concat(fixture.seed),
         }
       } else {
         return {
           ...acc,
-          [`${model}`]: [fixture.seed],
+          [model]: [fixture.seed],
         }
       }
     }, {})

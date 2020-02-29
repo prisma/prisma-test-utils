@@ -3,6 +3,8 @@
     "rootDir": "src",
     "outDir": "dist",
 
+    "lib": ["dom", "es2017", "es2019"],
+
     "target": "es6",
     "module": "commonjs",
     "sourceMap": true,

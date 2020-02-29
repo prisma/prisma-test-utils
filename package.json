@@ -35,7 +35,7 @@
     "@types/jest": "^25.1.2",
     "@types/lodash": "^4.14.138",
     "@types/mysql": "^2.15.7",
-    "@types/node": "^13.7.1",
+    "@types/node": "^13.7.7",
     "@types/pg": "^7.11.1",
     "@types/rimraf": "^2.0.3",
     "@zeit/ncc": "^0.21.1",
@@ -55,7 +55,7 @@
     "semantic-release": "^17.0.3",
     "ts-jest": "^25.2.0",
     "ts-node": "^8.3.0",
-    "typescript": "^3.6.3"
+    "typescript": "^3.8.3"
   },
   "peerDependencies": {
     "@prisma/cli": "*",
