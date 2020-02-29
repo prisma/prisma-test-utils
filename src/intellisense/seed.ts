@@ -33,17 +33,16 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
     const fields = model.fields
 
     /**
-     * Enum fields have to be manually resolved. Because of that,
-     *  factory is required on types that have enum fields.
+     * Factory has to be required on models that include non default
+     * scalar fields.
      */
-    const hasEnumFields = fields.some(f => f.kind === 'enum')
     const hasSupportedScalars = fields.filter(isScalar).every(isSupportedScalar)
 
     /* prettier-ignore */
     const generatedSeedModelType = ml`
-    | ${model.name}${q(!hasEnumFields && hasSupportedScalars)}: { 
+    | ${model.name}${q(hasSupportedScalars)}: { 
     |   amount?: number, 
-    |   factory${q(!hasEnumFields && hasSupportedScalars)}: {
+    |   factory${q(hasSupportedScalars)}: {
     |     ${filterMap(fields, f => generateSeedModelFieldType(model, f)).join(EOL)} 
     |   }
     | }
@@ -68,7 +67,7 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
          */
         const { values } = enums.find(e => e.name === field.type)!
         const union = values.map(val => `"${val}"`).join(` | `)
-        return `${field.name}: (${union}) | (() => ${union})`
+        return `${field.name}?: (${union}) | (() => ${union})`
       }
       case 'object': {
         /**

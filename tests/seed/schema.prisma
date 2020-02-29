@@ -8,11 +8,11 @@ generator client {
   output   = "./@generated/client"
 }
 
-// generator testutils {
-//   provider = "./dist/generator.js"
-//   // the path is resolved relative to cwd not relative to file path
-//   output   = "./@generated/prisma-test-utils"
-// }
+generator testutils {
+  provider = "./dist/generator.js"
+  // the path is resolved relative to cwd not relative to file path
+  output   = "./@generated/prisma-test-utils"
+}
 
 model User {
   id       String  @id
@@ -36,7 +36,7 @@ model Pet {
 }
 
 model Toy {
-  id    String @id
+  id    String @id @default(uuid())
   name  String
   price Float
 }
