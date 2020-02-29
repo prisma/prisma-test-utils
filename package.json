@@ -1,6 +1,6 @@
 {
   "name": "prisma-test-utils",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "main": "dist/generator.js",
   "types": "dist/generator.d.ts",
   "files": [
