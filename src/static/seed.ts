@@ -957,13 +957,13 @@ export function getSeed<
           {},
         )
 
-      const methodName = _.camelCase(currentTask.mapping.model)
+      const methodName = _.lowerFirst(currentTask.mapping.model)
       /**
        * Make sure that client packs everyting.
        */
       if (!client[methodName]) {
         throw new Error(
-          `Client is missing method for ${currentTask.model.name}`,
+          `Client is missing method for ${currentTask.model.name} (methodName = ${methodName}, mappingModel = ${currentTask.mapping.model})`,
         )
       }
 
