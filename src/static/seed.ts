@@ -743,6 +743,7 @@ export function getSeed<
       sortedSteps: Step[],
       pool: Pool,
     ): Step[] {
+      //console.log(`allOrders: ${allOrders}, remainingOrders: ${remainingOrders}, sortedSteps: ${sortedSteps}`)
       switch (remainingOrders.length) {
         case 0: {
           return []
@@ -1140,8 +1141,8 @@ export function getSeed<
               }
               case Scalar.int: {
                 const number = faker.integer({
-                  min: -2147483647,
-                  max: 2147483647,
+                  min: 1,
+                  max: 100,
                 })
                 return {
                   pool,
@@ -1153,7 +1154,7 @@ export function getSeed<
                 }
               }
               case Scalar.float: {
-                const float = faker.floating()
+                const float = faker.floating({ min: -10000, max: 10000 })
 
                 return {
                   pool,
