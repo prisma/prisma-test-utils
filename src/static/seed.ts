@@ -141,9 +141,7 @@ export function getSeed<
     | string
     | number
     | boolean
-    | string[]
-    | number[]
-    | boolean[]
+    | Date
     | { connect: ID }
     | { connect: ID[] }
     | { create: FixtureData }
@@ -1152,7 +1150,7 @@ export function getSeed<
                 }
               }
               case Scalar.date: {
-                const date = faker.date().toISOString()
+                const date = faker.date()
 
                 return {
                   pool,
