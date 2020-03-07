@@ -26,3 +26,13 @@ export function filterMap<T, Y>(xs: T[], f: (x: T) => Y | null): Y[] {
 export function notNull<T>(val: T | null): val is T {
   return val !== null
 }
+
+/**
+ * Negates the boolean function.
+ * @param fn
+ */
+export function not<T, TS extends Array<T>>(
+  fn: (...params: TS) => boolean,
+): (...params: TS) => boolean {
+  return (...params) => !fn(...params)
+}

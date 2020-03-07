@@ -14,7 +14,7 @@ import {
   SeedFunction,
   PrismaClientType,
 } from './types'
-import { withDefault } from './utils'
+import { withDefault, not } from './utils'
 
 /**
  * Creates a function which can be used to seed mock data to database.
@@ -96,10 +96,10 @@ export function getSeed<
   }
 
   type RelationType = '1-to-1' | '1-to-many' | 'many-to-1' | 'many-to-many'
-
+  type RelationDirection = string | { optional: true }
   type Relation = {
     type: RelationType
-    relationTo: string
+    relationTo: RelationDirection
     field: DMMF.Field
     backRelationField: DMMF.Field // signifies the back relation
     min: number
@@ -114,9 +114,9 @@ export function getSeed<
    */
   type Step = {
     order: number // the creation order of a step, starts with 0
+    amount: number // number of instances created in this step
     model: DMMF.Model
     mapping: DMMF.Mapping
-    amount: number // number of instances created in this step
     relations: Dictionary<Relation>
     enums: Dictionary<DMMF.Enum>
   }
@@ -319,7 +319,7 @@ export function getSeed<
       type: RelationType
       min: number
       max: number
-      relationTo: string
+      relationTo: RelationDirection
       backRelationField: DMMF.Field
     } {
       /**
@@ -337,7 +337,7 @@ export function getSeed<
        */
       const relationModel = getDMMFModel(dmmfModels, field.type)
       const backRelationField = relationModel.fields.find(
-        f => f.type === fieldModel.name,
+        f => f.relationName === field.relationName,
       )!
       const relationSeedModel = getSeedModel(seedModels, field.type)
 
@@ -570,7 +570,7 @@ export function getSeed<
       relationType: RelationType,
       field: DMMF.Field,
       backRelationField: DMMF.Field,
-    ): string {
+    ): RelationDirection {
       switch (relationType) {
         /**
          * NOTE: field and backRelationField might seem inverted here.
@@ -589,7 +589,7 @@ export function getSeed<
              *
              * -> Create B while creating A, the order doesn't matter.
              */
-            return _.head([field.type, backRelationField.type].sort())!
+            return { optional: true }
           } else if (!field.isRequired && backRelationField.isRequired) {
             /**
              * model A {
@@ -625,7 +625,7 @@ export function getSeed<
              *
              * -> The order doesn't matter just be consistent.
              */
-            return _.head([field.type, backRelationField.type].sort())!
+            return { optional: true }
           }
         }
         case '1-to-many': {
@@ -703,7 +703,7 @@ export function getSeed<
            *
            * -> The order doesn't matter, just be consistent.
            */
-          return _.head([field.type, backRelationField.type].sort())!
+          return { optional: true }
         }
       }
     }
@@ -720,76 +720,47 @@ export function getSeed<
    * @param orders
    */
   function getStepsFromOrders(orders: Order[]): Step[] {
-    type Pool = Dictionary<{
-      model: DMMF.Model
-      units: number
-    }>
+    type Pool = Dictionary<DMMF.Model>
 
-    /* Triggers the order to steps conversion */
+    let graph: Order[] = orders.filter(not(isLeafOrder))
+    let pool: Pool = {} // edges
+    let sortedSteps: Step[] = [] // L
+    let leafs: Order[] = orders.filter(isLeafOrder) // S
 
-    const steps = sort(orders, orders, [], {})
-    return steps
+    while (leafs.length !== 0) {
+      const leaf = leafs.shift()! // n
+      const { pool: poolWithLeaf, step: leafStep } = insertOrderIntoPool(
+        sortedSteps.length,
+        pool,
+        leaf,
+      )
 
-    /* Helper functions */
+      pool = poolWithLeaf
+      sortedSteps.push(leafStep)
 
-    /**
-     * The sort function functionally implements topological sort algorithm
-     * by making sure all relations have been defined prior to the inclusion of
-     * an order in the chain.
-     */
-    function sort(
-      allOrders: Order[],
-      remainingOrders: Order[],
-      sortedSteps: Step[],
-      pool: Pool,
-    ): Step[] {
-      switch (remainingOrders.length) {
-        case 0: {
-          return []
-        }
-        case 1: {
-          const [o] = remainingOrders
-
-          /* Checks if the order is well defined */
-          /* istanbul ignore else */
-          if (isOrderWellDefinedInPool(pool, o)) {
-            const [steps] = getStepsFromOrder(allOrders, sortedSteps, pool, o)
-
-            return steps
-          } else {
-            /**
-             * Since this is the last order, we cannot obtain any new resources,
-             * meaning that there's an issue with the order.
-             */
-            throw new Error(`${o.model.name} uses undefined relations!`)
-          }
-        }
-        default: {
-          const [o, ...os] = remainingOrders
-
-          /* Checks if the order is well defined */
-          if (isOrderWellDefinedInPool(pool, o)) {
-            const [steps, newPool] = getStepsFromOrder(
-              allOrders,
-              sortedSteps,
-              pool,
-              o,
-            )
-
-            return [
-              ...steps,
-              ...sort(allOrders, os, [...sortedSteps, ...steps], newPool),
-            ]
-          } else {
-            /**
-             * If the order is not yet well defined, we put it at the end of the list
-             * and wait for resources in the pool to be adequate.
-             */
-            return sort(allOrders, [...os, o], sortedSteps, pool)
-          }
+      for (const order of graph) {
+        if (isOrderWellDefinedInPool(pool, order)) {
+          /* Remove the edge from the graph. */
+          graph = graph.filter(({ model }) => model.name !== order.model.name)
+          /* Update the pool and push to the list. */
+          const { pool: newPool, step } = insertOrderIntoPool(
+            sortedSteps.length,
+            pool,
+            order,
+          )
+          pool = newPool
+          sortedSteps.push(step)
         }
       }
     }
+
+    if (graph.length !== 0) {
+      throw new Error(`${graph.map(o => o.model.name).join(', ')} have cycles!`)
+    }
+
+    return sortedSteps
+
+    /* Helper functions */
 
     /**
      * Determines whether we can already process the order based on the pool
@@ -798,31 +769,47 @@ export function getSeed<
      * This function in combination with `getStepsFromOrder` should give you
      * all you need to implement meaningful topological sort on steps.
      */
-    function isOrderWellDefinedInPool(pool: Pool, order: Order) {
-      return Object.values(order.relations).every(
-        relation =>
-          pool.hasOwnProperty(relation.field.type) ||
-          relation.relationTo === order.model.name,
-      )
+    function isOrderWellDefinedInPool(pool: Pool, order: Order): boolean {
+      return Object.values(order.relations).every(relation => {
+        const relationTo = relation.relationTo
+        switch (typeof relationTo) {
+          case 'object': {
+            return relationTo.optional
+          }
+          case 'string': {
+            return (
+              pool.hasOwnProperty(relation.field.type) ||
+              relationTo === order.model.name
+            )
+          }
+        }
+      })
     }
 
     /**
-     * Converts a well defined order to multiple steps.
+     * Tells whether the order has relations.
+     * @param order
+     */
+    function isLeafOrder(order: Order): boolean {
+      return Object.keys(order.relations).length === 0
+    }
+
+    /**
+     * Converts a well defined order to a step and adds it to the pool.
      *
      * This function in combination with `isOrderWellDefinedInPool` should give
      * you everything you need to implement meaningful topological sort on steps.
      */
-    function getStepsFromOrder(
-      allOrders: Order[],
-      sortedSteps: Step[],
+    function insertOrderIntoPool(
+      ordinal: number,
       pool: Pool,
       order: Order,
-    ): [Step[], Pool] {
+    ): { step: Step; pool: Pool } {
       /**
        * A step unit derived from the order.
        */
       const step: Step = {
-        order: sortedSteps.length,
+        order: ordinal,
         amount: order.amount,
         model: order.model,
         mapping: order.mapping,
@@ -835,13 +822,10 @@ export function getSeed<
        */
       const newPool: Pool = {
         ...pool,
-        [order.model.name]: {
-          model: order.model,
-          units: order.amount,
-        },
+        [order.model.name]: order.model,
       }
 
-      return [[step], newPool]
+      return { step, pool: newPool }
     }
   }
 
@@ -1029,7 +1013,7 @@ export function getSeed<
       return task.model.fields
         .filter(
           field =>
-            /* ID field shouldn't have a default setting. */
+            /* ID fields with default shouldn't have a generated id. */
             !(field.isId && field.default !== undefined),
         )
         .reduce<Mock>(getMockDataForField, initialMock)
@@ -1089,7 +1073,7 @@ export function getSeed<
 
         /* ID field */
 
-        if (field.isId) {
+        if (field.isId || fieldModel.idFields.includes(field.name)) {
           switch (field.type) {
             case Scalar.string: {
               /* GUID id for strings */
@@ -1140,8 +1124,8 @@ export function getSeed<
               }
               case Scalar.int: {
                 const number = faker.integer({
-                  min: -2147483647,
-                  max: 2147483647,
+                  min: -2000,
+                  max: 2000,
                 })
                 return {
                   pool,
@@ -1153,7 +1137,11 @@ export function getSeed<
                 }
               }
               case Scalar.float: {
-                const float = faker.floating()
+                const float = faker.floating({
+                  min: -1000,
+                  max: 1000,
+                  fixed: 2,
+                })
 
                 return {
                   pool,
