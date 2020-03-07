@@ -36,3 +36,17 @@ export function not<T, TS extends Array<T>>(
 ): (...params: TS) => boolean {
   return (...params) => !fn(...params)
 }
+
+/**
+ * Filters keys from an object.
+ * @param dict
+ * @param fn
+ */
+export function filterKeys<T>(
+  dict: { [key: string]: T },
+  fn: (key: string, value: T) => boolean,
+): { [key: string]: T } {
+  return Object.keys(dict)
+    .filter(key => fn(key, dict[key]))
+    .reduce((acc, key) => ({ ...acc, [key]: dict[key] }), {})
+}
