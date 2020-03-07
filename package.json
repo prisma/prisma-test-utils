@@ -58,11 +58,9 @@
     "typescript": "^3.8.3"
   },
   "peerDependencies": {
-    "@prisma/cli": "*",
+    "@prisma/client": "*",
     "@prisma/lift": "*",
-    "@prisma/photon": "*",
-    "prisma2": "*",
-    "typescript": "*"
+    "prisma2": "*"
   },
   "peerDependenciesMeta": {
     "prisma2": {
