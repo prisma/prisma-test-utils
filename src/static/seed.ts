@@ -96,10 +96,10 @@ export function getSeed<
   }
 
   type RelationType = '1-to-1' | '1-to-many' | 'many-to-1' | 'many-to-many'
-  type RelationDirection = string | { optional: true }
+  type RelationDirection = { optional: boolean; to: string }
   type Relation = {
     type: RelationType
-    relationTo: RelationDirection
+    direction: RelationDirection
     field: DMMF.Field
     backRelationField: DMMF.Field // signifies the back relation
     min: number
@@ -205,7 +205,7 @@ export function getSeed<
                 min,
                 max,
                 backRelationField,
-                relationTo,
+                direction,
               } = getRelationType(
                 dmmf.datamodel.models,
                 seedModels,
@@ -220,7 +220,7 @@ export function getSeed<
                   type: type,
                   min: min,
                   max: max,
-                  relationTo: relationTo,
+                  direction,
                   field,
                   backRelationField,
                 },
@@ -319,7 +319,7 @@ export function getSeed<
       type: RelationType
       min: number
       max: number
-      relationTo: RelationDirection
+      direction: RelationDirection
       backRelationField: DMMF.Field
     } {
       /**
@@ -383,7 +383,7 @@ export function getSeed<
             type: 'many-to-many',
             min: min,
             max: max,
-            relationTo: getRelationDirection(
+            direction: getRelationDirection(
               'many-to-many',
               field,
               backRelationField,
@@ -423,7 +423,7 @@ export function getSeed<
           type: 'many-to-1',
           min: min,
           max: 1,
-          relationTo: getRelationDirection(
+          direction: getRelationDirection(
             'many-to-1',
             field,
             backRelationField,
@@ -496,7 +496,7 @@ export function getSeed<
           type: '1-to-many',
           min: min,
           max: max,
-          relationTo: getRelationDirection(
+          direction: getRelationDirection(
             '1-to-many',
             field,
             backRelationField,
@@ -549,11 +549,7 @@ export function getSeed<
             type: '1-to-1',
             min: field.isRequired ? 1 : withDefault(0, definition.min),
             max: 1,
-            relationTo: getRelationDirection(
-              '1-to-1',
-              field,
-              backRelationField,
-            ),
+            direction: getRelationDirection('1-to-1', field, backRelationField),
             backRelationField: backRelationField,
           }
         }
@@ -589,7 +585,11 @@ export function getSeed<
              *
              * -> Create B while creating A, the order doesn't matter.
              */
-            return { optional: true }
+
+            return {
+              optional: true,
+              to: _.head([field.type, backRelationField.type].sort())!,
+            }
           } else if (!field.isRequired && backRelationField.isRequired) {
             /**
              * model A {
@@ -601,7 +601,7 @@ export function getSeed<
              *
              * We should create A first, and connect B with A once we create B.
              */
-            return backRelationField.type
+            return { optional: false, to: backRelationField.type }
           } else if (field.isRequired && !backRelationField.isRequired) {
             /**
              * model A {
@@ -613,7 +613,7 @@ export function getSeed<
              *
              * We should create B first.
              */
-            return field.type
+            return { optional: false, to: field.type }
           } else {
             /**
              * model A {
@@ -625,7 +625,10 @@ export function getSeed<
              *
              * -> The order doesn't matter just be consistent.
              */
-            return { optional: true }
+            return {
+              optional: true,
+              to: _.head([field.type, backRelationField.type].sort())!,
+            }
           }
         }
         case '1-to-many': {
@@ -643,7 +646,7 @@ export function getSeed<
              *
              * -> We should create A and connect Bs to it later.
              */
-            return backRelationField.type
+            return { optional: false, to: backRelationField.type }
           } else if (!field.isRequired && !backRelationField.isRequired) {
             /**
              * model A {
@@ -655,7 +658,7 @@ export function getSeed<
              *
              * -> We should create B first.
              */
-            return field.type
+            return { optional: false, to: field.type }
           } else {
             throw new Error('Someting unexpected happened!')
           }
@@ -675,7 +678,7 @@ export function getSeed<
              *
              * -> We should create B and connect As to it.
              */
-            return field.type
+            return { optional: false, to: field.type }
           } else if (!field.isRequired && !backRelationField.isRequired) {
             /**
              * model A {
@@ -687,7 +690,10 @@ export function getSeed<
              *
              * -> We should create A(s) first and then connect B with them.
              */
-            return backRelationField.type
+            return {
+              optional: false,
+              to: backRelationField.type,
+            }
           } else {
             throw new Error('Someting unexpected happened!')
           }
@@ -703,7 +709,10 @@ export function getSeed<
            *
            * -> The order doesn't matter, just be consistent.
            */
-          return { optional: true }
+          return {
+            optional: true,
+            to: _.head([field.type, backRelationField.type].sort())!,
+          }
         }
       }
     }
@@ -770,20 +779,12 @@ export function getSeed<
      * all you need to implement meaningful topological sort on steps.
      */
     function isOrderWellDefinedInPool(pool: Pool, order: Order): boolean {
-      return Object.values(order.relations).every(relation => {
-        const relationTo = relation.relationTo
-        switch (typeof relationTo) {
-          case 'object': {
-            return relationTo.optional
-          }
-          case 'string': {
-            return (
-              pool.hasOwnProperty(relation.field.type) ||
-              relationTo === order.model.name
-            )
-          }
-        }
-      })
+      return Object.values(order.relations).every(
+        relation =>
+          pool.hasOwnProperty(relation.field.type) ||
+          relation.direction.to === order.model.name ||
+          relation.direction.optional,
+      )
     }
 
     /**
@@ -1205,7 +1206,7 @@ export function getSeed<
                  * order creation step, we can ignore it now.
                  */
                 if (
-                  relation.relationTo === fieldModel.name &&
+                  relation.direction.to === fieldModel.name &&
                   !relation.field.isRequired
                 ) {
                   /* Will insert the ID of an instance into the pool. */
@@ -1215,7 +1216,7 @@ export function getSeed<
                     data,
                   }
                 } else if (
-                  relation.relationTo === fieldModel.name &&
+                  relation.direction.to === fieldModel.name &&
                   relation.field.isRequired
                 ) {
                   /* Creates the instances while creating itself. */
@@ -1236,7 +1237,7 @@ export function getSeed<
                     },
                   }
                 } else if (
-                  !(relation.relationTo === fieldModel.name) &&
+                  !(relation.direction.to === fieldModel.name) &&
                   !relation.backRelationField.isRequired
                 ) {
                   const units = faker.integer({
@@ -1301,7 +1302,7 @@ export function getSeed<
                  *
                  * 1-to-many creates the model instance and makes its ID available for later connections.
                  */
-                if (relation.relationTo === fieldModel.name) {
+                if (relation.direction.to === fieldModel.name) {
                   /* Create the relation while creating this model instance. */
                   return {
                     pool,
@@ -1346,7 +1347,7 @@ export function getSeed<
                  * Many-to-1 relations either create an instance and make it available for later use,
                  * or connect to existing instance.
                  */
-                if (relation.relationTo === fieldModel.name) {
+                if (relation.direction.to === fieldModel.name) {
                   /* Insert IDs of model instance into the pool. */
 
                   return {
@@ -1406,7 +1407,7 @@ export function getSeed<
                  * Many-to-many relationships simply have to follow consistency. They can either
                  * create ID instances in the pool or connect to them.
                  */
-                if (relation.relationTo === fieldModel.name) {
+                if (relation.direction.to === fieldModel.name) {
                   /* Insert IDs of this instance to the pool. */
 
                   return {
@@ -1613,7 +1614,7 @@ export function getSeed<
                  * order creation step, we can ignore it now.
                  */
                 if (
-                  relation.relationTo === fieldModel.name &&
+                  relation.direction.to === fieldModel.name &&
                   !relation.field.isRequired
                 ) {
                   /* Insert the ID of an instance into the pool. */
@@ -1642,7 +1643,7 @@ export function getSeed<
                  *
                  * 1-to-many creates the model instance and makes its ID available for later connections.
                  */
-                if (relation.relationTo === fieldModel.name) {
+                if (relation.direction.to === fieldModel.name) {
                   /* Create the relation while creating this model instance. */
 
                   // const units = faker.integer({
@@ -1676,7 +1677,7 @@ export function getSeed<
                  * Many-to-1 relations either create an instance and make it available for later use,
                  * or connect to existing instance.
                  */
-                if (relation.relationTo === fieldModel.name) {
+                if (relation.direction.to === fieldModel.name) {
                   /* Insert IDs of model instance into the pool. */
 
                   // const units = faker.integer({
@@ -1710,7 +1711,7 @@ export function getSeed<
                  * Many-to-many relationships simply have to follow consistency. They can either
                  * create ID instances in the pool or connect to them.
                  */
-                if (relation.relationTo === fieldModel.name) {
+                if (relation.direction.to === fieldModel.name) {
                   /* Insert IDs of this instance to the pool. */
 
                   // const units = faker.integer({
