@@ -50,3 +50,18 @@ export function filterKeys<T>(
     .filter(key => fn(key, dict[key]))
     .reduce((acc, key) => ({ ...acc, [key]: dict[key] }), {})
 }
+
+/**
+ * Filters keys from an object.
+ * @param dict
+ * @param fn
+ */
+export function mapEntries<T>(
+  dict: { [key: string]: T },
+  fn: (value: T, key: string) => T,
+): { [key: string]: T } {
+  return Object.keys(dict).reduce(
+    (acc, key) => ({ ...acc, [key]: fn(dict[key], key) }),
+    {},
+  )
+}

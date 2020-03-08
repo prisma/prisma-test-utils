@@ -14,7 +14,7 @@ import {
   SeedFunction,
   PrismaClientType,
 } from './types'
-import { withDefault, not, filterKeys } from './utils'
+import { withDefault, not, filterKeys, mapEntries } from './utils'
 
 /**
  * Creates a function which can be used to seed mock data to database.
@@ -36,7 +36,6 @@ export function getSeed<
      */
     const opts = {
       seed: 42,
-      // persist: true,
       ...options,
     }
 
@@ -65,6 +64,7 @@ export function getSeed<
       options.client,
       faker,
       models,
+      orders,
       tasks,
     )
 
@@ -152,9 +152,7 @@ export function getSeed<
    */
   type Fixture = {
     model: DMMF.Model
-    mapping: DMMF.Mapping
     seed: any
-    data: FixtureData
     relations: Dictionary<Relation>
   }
 
@@ -198,30 +196,16 @@ export function getSeed<
           switch (typeof seedModelField) {
             case 'object': {
               /* Calculate the relation properties */
-              const {
-                type,
-                min,
-                max,
-                backRelationField,
-                direction,
-              } = getRelationType(
-                dmmf.datamodel.models,
-                seedModels,
-                field,
-                model,
-                seedModelField,
-              )
 
               return {
                 ...acc,
-                [field.name]: {
-                  type: type,
-                  min: min,
-                  max: max,
-                  direction,
+                [field.name]: getRelationType(
+                  dmmf.datamodel.models,
+                  seedModels,
                   field,
-                  backRelationField,
-                },
+                  model,
+                  seedModelField,
+                ),
               }
             }
             /* istanbul ignore next */
@@ -313,13 +297,7 @@ export function getSeed<
       field: DMMF.Field,
       fieldModel: DMMF.Model,
       definition: SeedModelFieldRelationConstraint,
-    ): {
-      type: RelationType
-      min: number
-      max: number
-      direction: RelationDirection
-      backRelationField: DMMF.Field
-    } {
+    ): Relation {
       /**
        * model A {
        *  field: Relation
@@ -381,11 +359,8 @@ export function getSeed<
             type: 'many-to-many',
             min: min,
             max: max,
-            direction: getRelationDirection(
-              'many-to-many',
-              field,
-              backRelationField,
-            ),
+            direction: getRelationDirection(field, backRelationField),
+            field,
             backRelationField: backRelationField,
           }
         }
@@ -421,11 +396,8 @@ export function getSeed<
           type: 'many-to-1',
           min: min,
           max: 1,
-          direction: getRelationDirection(
-            'many-to-1',
-            field,
-            backRelationField,
-          ),
+          direction: getRelationDirection(field, backRelationField),
+          field,
           backRelationField: backRelationField,
         }
       } else if (field.isList && !backRelationField.isList) {
@@ -453,7 +425,7 @@ export function getSeed<
         //   : withDefault(0, definition.min)
 
         const min = withDefault(0, definition.min)
-        const max = withDefault(min, definition.max)
+        const max = withDefault(fieldSeedModel.amount, definition.max)
 
         /* Validation */
 
@@ -494,11 +466,8 @@ export function getSeed<
           type: '1-to-many',
           min: min,
           max: max,
-          direction: getRelationDirection(
-            '1-to-many',
-            field,
-            backRelationField,
-          ),
+          direction: getRelationDirection(field, backRelationField),
+          field,
           backRelationField: backRelationField,
         }
       } else {
@@ -547,7 +516,8 @@ export function getSeed<
             type: '1-to-1',
             min: field.isRequired ? 1 : withDefault(0, definition.min),
             max: 1,
-            direction: getRelationDirection('1-to-1', field, backRelationField),
+            direction: getRelationDirection(field, backRelationField),
+            field,
             backRelationField: backRelationField,
           }
         }
@@ -561,157 +531,146 @@ export function getSeed<
      * `relation direction` tells which of the two models should be created first.
      */
     function getRelationDirection(
-      relationType: RelationType,
       field: DMMF.Field,
       backRelationField: DMMF.Field,
     ): RelationDirection {
-      switch (relationType) {
-        /**
-         * NOTE: field and backRelationField might seem inverted here.
-         *      The trick is that to get the right type we have to examine
-         *      back relation to get the current type, and vice versa.
-         */
-        case '1-to-1': {
-          if (field.isRequired && backRelationField.isRequired) {
-            /**
-             * model A {
-             *  b: B
-             * }
-             * model B {
-             *  a: A
-             * }
-             *
-             * -> Create B while creating A, the order doesn't matter.
-             */
+      /* Model of the observed type. */
 
-            return {
-              optional: true,
-              from: _.head([field.type, backRelationField.type].sort())!,
-            }
-          } else if (!field.isRequired && backRelationField.isRequired) {
-            /**
-             * model A {
-             *  b: B?
-             * }
-             * model B {
-             *  a: A
-             * }
-             *
-             * We should create A first, and connect B with A once we create B.
-             */
-            return { optional: false, from: backRelationField.type }
-          } else if (field.isRequired && !backRelationField.isRequired) {
-            /**
-             * model A {
-             *  b: B
-             * }
-             * model B {
-             *  a: A?
-             * }
-             *
-             * We should create B first.
-             */
-            return { optional: false, from: field.type }
-          } else {
-            /**
-             * model A {
-             *  b: B?
-             * }
-             * model B {
-             *  a: A?
-             * }
-             *
-             * -> The order doesn't matter just be consistent.
-             */
-            return {
-              optional: true,
-              from: _.head([field.type, backRelationField.type].sort())!,
-            }
-          }
+      const fieldModel = backRelationField.type
+      const relationModel = field.type
+
+      if (field.isRequired && backRelationField.isRequired) {
+        /**
+         * model A {
+         *  b: B
+         * }
+         * model B {
+         *  a: A
+         * }
+         *
+         * -> Create B while creating A, the order doesn't matter.
+         */
+
+        return {
+          optional: true,
+          from: _.head([fieldModel, relationModel].sort())!,
         }
-        case '1-to-many': {
-          /**
-           * Fields are expected to be lists - not required.
-           */
-          if (!field.isRequired && backRelationField.isRequired) {
-            /**
-             * model A {
-             *  b: B[]
-             * }
-             * model B {
-             *  a: A
-             * }
-             *
-             * -> We should create A and connect Bs to it later.
-             */
-            return { optional: false, from: backRelationField.type }
-          } else if (!field.isRequired && !backRelationField.isRequired) {
-            /**
-             * model A {
-             *  b: B[]
-             * }
-             * model B {
-             *  a: A?
-             * }
-             *
-             * -> We should create B first.
-             */
-            return { optional: false, from: field.type }
-          } else {
-            throw new Error('Someting unexpected happened!')
-          }
+      } else if (field.isRequired && !backRelationField.isRequired) {
+        /**
+         * model A {
+         *  b: B
+         * }
+         * model B {
+         *  a: A?
+         * }
+         *
+         * We should create B first.
+         */
+        return {
+          optional: false,
+          from: relationModel,
         }
-        case 'many-to-1': {
-          /**
-           * Back relations are expected to be lists - not required.
-           */
-          if (field.isRequired && !backRelationField.isRequired) {
-            /**
-             * model A {
-             *  b: B
-             * }
-             * model B {
-             *  a: A[]
-             * }
-             *
-             * -> We should create B and connect As to it.
-             */
-            return { optional: false, from: field.type }
-          } else if (!field.isRequired && !backRelationField.isRequired) {
-            /**
-             * model A {
-             *  b: B?
-             * }
-             * model B {
-             *  a: A[]
-             * }
-             *
-             * -> We should create A(s) first and then connect B with them.
-             */
-            return {
-              optional: false,
-              from: backRelationField.type,
-            }
-          } else {
-            throw new Error('Someting unexpected happened!')
-          }
+      } else if (field.isRequired && backRelationField.isList) {
+        /**
+         * model A {
+         *  b: B
+         * }
+         * model B {
+         *  a: A[]
+         * }
+         *
+         * -> We should create B and connect As to it.
+         */
+        return { optional: false, from: relationModel }
+      } else if (field.isList && backRelationField.isRequired) {
+        /**
+         * model A {
+         *  b: B[]
+         * }
+         * model B {
+         *  a: A
+         * }
+         *
+         * -> We should create A and connect Bs to it later.
+         */
+        return { optional: false, from: fieldModel }
+      } else if (field.isList && !backRelationField.isRequired) {
+        /**
+         * model A {
+         *  b: B[]
+         * }
+         * model B {
+         *  a: A?
+         * }
+         *
+         * -> We should create B first.
+         */
+        return {
+          optional: true,
+          from: _.head([fieldModel, relationModel].sort())!,
         }
-        case 'many-to-many': {
-          /**
-           * model A {
-           *  b: B[]
-           * }
-           * model B {
-           *  a: A[]
-           * }
-           *
-           * -> The order doesn't matter, just be consistent.
-           */
-          return {
-            optional: true,
-            from: _.head([field.type, backRelationField.type].sort())!,
-          }
+      } else if (field.isList && backRelationField.isList) {
+        /**
+         * model A {
+         *  b: B[]
+         * }
+         * model B {
+         *  a: A[]
+         * }
+         *
+         * -> The order doesn't matter, just be consistent.
+         */
+        return {
+          optional: true,
+          from: _.head([fieldModel, relationModel].sort())!,
         }
+      } else if (!field.isRequired && backRelationField.isRequired) {
+        /**
+         * model A {
+         *  b: B?
+         * }
+         * model B {
+         *  a: A
+         * }
+         *
+         * We should create A first, and connect B with A once we create B.
+         */
+        return {
+          optional: false,
+          from: fieldModel,
+        }
+      } else if (!field.isRequired && !backRelationField.isRequired) {
+        /**
+         * model A {
+         *  b: B?
+         * }
+         * model B {
+         *  a: A?
+         * }
+         *
+         * -> The order doesn't matter just be consistent.
+         */
+        return {
+          optional: true,
+          from: _.head([fieldModel, relationModel].sort())!,
+        }
+      } else if (!field.isRequired && backRelationField.isList) {
+        /**
+         * model A {
+         *  b: B?
+         * }
+         * model B {
+         *  a: A[]
+         * }
+         *
+         * -> We should create A(s) first and then connect B with them.
+         */
+        return {
+          optional: true,
+          from: _.head([fieldModel, relationModel].sort())!,
+        }
+      } else {
+        throw new Error(`Uncovered relation type.`)
       }
     }
   }
@@ -782,12 +741,15 @@ export function getSeed<
     }
 
     /**
-     * Tells whether the order has relations.
+     * Tells whether the order has outgoing relations.
+     *
      * @param order
      */
     function isLeafOrder(order: Order): boolean {
       return Object.values(order.relations).every(
-        relation => relation.direction.from === order.model.name,
+        relation =>
+          relation.direction.from === order.model.name ||
+          relation.direction.optional,
       )
     }
 
@@ -803,6 +765,28 @@ export function getSeed<
       order: Order,
     ): { step: Step; pool: Pool } {
       /**
+       * Fix optional relations' direction.
+       */
+      const fixedRelations = mapEntries(order.relations, relation => {
+        if (!relation.direction.optional) return relation
+
+        return {
+          ...relation,
+          direction: {
+            optional: false,
+            /**
+             * If pool already includes the model of the relation,
+             * make the foreign relation first and create this model
+             * afterwards.
+             */
+            from: pool.hasOwnProperty(relation.field.type)
+              ? /* back relation model */ relation.field.type
+              : /* this model */ relation.backRelationField.type,
+          },
+        }
+      })
+
+      /**
        * A step unit derived from the order.
        */
       const step: Step = {
@@ -810,7 +794,7 @@ export function getSeed<
         amount: order.amount,
         model: order.model,
         mapping: order.mapping,
-        relations: order.relations,
+        relations: fixedRelations,
         enums: order.enums,
       }
 
@@ -873,6 +857,7 @@ export function getSeed<
     client: Client,
     faker: Chance.Chance,
     seedModels: SeedModels,
+    orders: Order[],
     tasks: Task[],
   ): Promise<Fixture[]> {
     /**
@@ -917,26 +902,11 @@ export function getSeed<
 
       /* Recursive step */
       /* Fixture calculation */
-      // const id = getFixtureId(task, remainingTasks.length)
-      const { data, pool: newPool, tasks: newTasks } = getMockForTask(
+      const { data, pool: newPool, tasks: newTasks, include } = getMockForTask(
         availablePool,
         remainingTasks,
         currentTask,
       )
-
-      /**
-       * Calculates which relations Prisma should include in the
-       * return data.
-       */
-      const include = currentTask.model.fields
-        .filter(field => field.kind === 'object' && !field.isGenerated)
-        .reduce<Dictionary<true>>(
-          (include, field) => ({
-            ...include,
-            [field.name]: true,
-          }),
-          {},
-        )
 
       const methodName = _.lowerFirst(currentTask.mapping.model)
       /**
@@ -962,10 +932,8 @@ export function getSeed<
       })
 
       const fixture: Fixture = {
-        seed: seed,
         model: currentTask.model,
-        mapping: currentTask.mapping,
-        data: data,
+        seed: seed,
         relations: currentTask.relations,
       }
 
@@ -973,7 +941,7 @@ export function getSeed<
        * Save the id to the pool by figuring out which fields are parents and which are children.
        */
 
-      const poolWithFixture = insertFixtureIntoPool(fixture, newPool)
+      const poolWithFixture = insertFixtureIntoPool(fixture, newPool, orders)
 
       /* Recurse */
       const recursed = await iterate(newTasks, poolWithFixture, iteration + 1)
@@ -988,6 +956,7 @@ export function getSeed<
       pool: Pool
       tasks: Task[]
       data: FixtureData
+      include: { [field: string]: true | { include: Mock['include'] } }
     }
 
     /**
@@ -1005,6 +974,7 @@ export function getSeed<
         pool: availablePool,
         tasks: otherTasks,
         data: {},
+        include: {},
       }
 
       return task.model.fields
@@ -1016,7 +986,7 @@ export function getSeed<
         .reduce<Mock>(getMockDataForField, initialMock)
 
       function getMockDataForField(
-        { pool, tasks, data }: Mock,
+        { pool, tasks, data, include }: Mock,
         field: DMMF.Field,
       ): Mock {
         const fieldModel = task.model
@@ -1036,6 +1006,7 @@ export function getSeed<
                   ...data,
                   [field.name]: value,
                 },
+                include,
               }
             }
             case 'object': {
@@ -1055,6 +1026,7 @@ export function getSeed<
                   ...data,
                   [field.name]: value,
                 },
+                include,
               }
             }
             case 'symbol':
@@ -1081,6 +1053,7 @@ export function getSeed<
                   ...data,
                   [field.name]: faker.guid(),
                 },
+                include,
               }
             }
             case Scalar.int: {
@@ -1092,6 +1065,7 @@ export function getSeed<
                   ...data,
                   [field.name]: task.order,
                 },
+                include,
               }
             }
             default: {
@@ -1117,6 +1091,7 @@ export function getSeed<
                     ...data,
                     [field.name]: string,
                   },
+                  include,
                 }
               }
               case Scalar.int: {
@@ -1131,6 +1106,7 @@ export function getSeed<
                     ...data,
                     [field.name]: number,
                   },
+                  include,
                 }
               }
               case Scalar.float: {
@@ -1147,6 +1123,7 @@ export function getSeed<
                     ...data,
                     [field.name]: float,
                   },
+                  include,
                 }
               }
               case Scalar.date: {
@@ -1159,6 +1136,7 @@ export function getSeed<
                     ...data,
                     [field.name]: date,
                   },
+                  include,
                 }
               }
               case Scalar.bool: {
@@ -1170,6 +1148,7 @@ export function getSeed<
                     ...data,
                     [field.name]: boolean,
                   },
+                  include,
                 }
               }
               /* Unsupported scalar */
@@ -1182,6 +1161,10 @@ export function getSeed<
           }
           /**
            * Relations
+           *
+           * NOTE: this function assumes that we've sorted orders in
+           *   such an order that this is the most crucial step that
+           *   needs to be finished.
            */
           case 'object': {
             /* Resources calculation */
@@ -1189,28 +1172,32 @@ export function getSeed<
 
             switch (relation.type) {
               case '1-to-1': {
-                /**
-                 * model A {
-                 *  b: B
-                 * }
-                 * model B {
-                 *  a: A
-                 * }
-                 *
-                 * 1-to-1 relation should take at most one id from the resource pool
-                 * and submit no new ids. Because we already manage constraints during
-                 * order creation step, we can ignore it now.
-                 */
                 if (relation.field.isRequired) {
+                  /**
+                   * model A {
+                   *  b: B
+                   * }
+                   * model B {
+                   *  a: A
+                   * }
+                   *
+                   * We are creating model A.
+                   *
+                   * NOTE: field a in model B could also be optional.
+                   *      This function assumes that the order is such that
+                   *      this step should also create an instance of model B
+                   *      regardless of the meaning.
+                   */
+                  /* Creates the instances while creating itself. */
                   /**
                    * The other part of this relation will be taken out by the
                    * creation step below using getMockOfModel.
                    */
-                  /* Creates the instances while creating itself. */
                   const {
                     tasks: newTasks,
                     pool: newPool,
                     data: instance,
+                    include: mockInclude,
                   } = getMockOfModel(tasks, pool, relation.field)
 
                   return {
@@ -1222,11 +1209,29 @@ export function getSeed<
                         create: instance,
                       },
                     },
+                    include: {
+                      ...include,
+                      [field.name]:
+                        Object.keys(mockInclude).length !== 0
+                          ? { include: mockInclude }
+                          : true,
+                    },
                   }
                 } else if (
-                  relation.direction.from === relation.backRelationField.name &&
+                  /* If this model is second made */
+                  relation.direction.from !== fieldModel.name &&
                   !relation.backRelationField.isRequired
                 ) {
+                  /**
+                   * model A {
+                   *  b: B
+                   * }
+                   * model B {
+                   *  a?: A
+                   * }
+                   *
+                   * We are creating model B.
+                   */
                   const units = faker.integer({
                     min: relation.min,
                     max: relation.max,
@@ -1249,6 +1254,7 @@ export function getSeed<
                         pool: newPool,
                         tasks,
                         data,
+                        include,
                       }
                     }
                     case 1: {
@@ -1262,6 +1268,10 @@ export function getSeed<
                             connect: id,
                           },
                         },
+                        include: {
+                          ...include,
+                          [field.name]: true,
+                        },
                       }
                     }
                     /* istanbul ignore next */
@@ -1270,33 +1280,54 @@ export function getSeed<
                     }
                   }
                 } else {
-                  /* Is created by the parent. */
+                  /**
+                   * It is possible that this is the other side of the relation
+                   * that has already been created in another process.
+                   *
+                   * We should't do anything in that case.
+                   */
                   return {
                     pool,
                     tasks,
                     data,
+                    include,
                   }
                 }
               }
               case '1-to-many': {
-                /**
-                 * model A {
-                 *  bs: B[]
-                 * }
-                 * model B {
-                 *  a: A
-                 * }
-                 *
-                 * 1-to-many creates the model instance and makes its ID available for later connections.
-                 */
-                if (relation.direction.from === fieldModel.name) {
-                  /* Create the relation while creating this model instance. */
+                if (
+                  /* This model is created first. */
+                  relation.direction.from === fieldModel.name
+                ) {
+                  /**
+                   * model A {
+                   *  bs: B[]
+                   * }
+                   * model B {
+                   *  a: A
+                   * }
+                   *
+                   * We are creating model A.
+                   */
+                  /* Skip creating the relation as we'll connect to it when creating model B. */
                   return {
                     pool,
                     tasks,
                     data,
+                    include,
                   }
                 } else {
+                  /* This is the second model in relation. */
+                  /**
+                   * model A {
+                   *  bs: B[]
+                   * }
+                   * model B {
+                   *  a: A
+                   * }
+                   *
+                   * We are creating model B, As already exist.
+                   */
                   const units = faker.integer({
                     min: relation.min,
                     max: relation.max,
@@ -1319,30 +1350,66 @@ export function getSeed<
                         connect: ids,
                       },
                     },
+                    include: {
+                      ...include,
+                      [field.name]: true,
+                    },
                   }
                 }
               }
               case 'many-to-1': {
-                /**
-                 * model A {
-                 *  b: B
-                 * }
-                 * model B {
-                 *  a: A[]
-                 * }
-                 *
-                 * Many-to-1 relations either create an instance and make it available for later use,
-                 * or connect to existing instance.
-                 */
-                if (relation.direction.from === fieldModel.name) {
-                  /* Insert IDs of model instance into the pool. */
+                if (
+                  /* This is the first model to be created in the relation. */
+                  relation.direction.from === fieldModel.name &&
+                  relation.field.isRequired
+                ) {
+                  /**
+                   * model A {
+                   *  b: B
+                   * }
+                   * model B {
+                   *  a: A[]
+                   * }
+                   *
+                   * We are creating A.
+                   */
+                  const {
+                    tasks: newTasks,
+                    pool: newPool,
+                    data: instance,
+                    include: mockInclude,
+                  } = getMockOfModel(tasks, pool, relation.field)
 
                   return {
-                    pool,
-                    tasks,
-                    data,
+                    pool: newPool,
+                    tasks: newTasks,
+                    data: {
+                      ...data,
+                      [field.name]: {
+                        create: instance,
+                      },
+                    },
+                    include: {
+                      ...include,
+                      [field.name]:
+                        Object.keys(mockInclude).length !== 0
+                          ? { include: mockInclude }
+                          : true,
+                    },
                   }
-                } else {
+                } /* This model is created second. */ else if (
+                  relation.direction.from !== fieldModel.name
+                ) {
+                  /**
+                   * model A {
+                   *  b: B
+                   * }
+                   * model B {
+                   *  a: A[]
+                   * }
+                   *
+                   * We are creating A, B already exists.
+                   */
                   const units = faker.integer({
                     min: relation.min,
                     max: relation.max,
@@ -1367,6 +1434,7 @@ export function getSeed<
                       pool: newPool,
                       tasks,
                       data,
+                      include,
                     }
                   }
 
@@ -1379,30 +1447,48 @@ export function getSeed<
                         connect: id,
                       },
                     },
+                    include: {
+                      ...include,
+                      [field.name]: true,
+                    },
+                  }
+                } else {
+                  /* Some other task will create this relation. */
+                  return {
+                    pool,
+                    tasks,
+                    data,
+                    include,
                   }
                 }
               }
               case 'many-to-many': {
-                /**
-                 * model A {
-                 *  bs: B[]
-                 * }
-                 * model B {
-                 *  as: A[]
-                 * }
-                 *
-                 * Many-to-many relationships simply have to follow consistency. They can either
-                 * create ID instances in the pool or connect to them.
-                 */
                 if (relation.direction.from === fieldModel.name) {
+                  /**
+                   * model A {
+                   *  bs: B[]
+                   * }
+                   * model B {
+                   *  as: A[]
+                   * }
+                   */
                   /* Insert IDs of this instance to the pool. */
 
                   return {
                     pool,
                     tasks,
                     data,
+                    include,
                   }
                 } else {
+                  /**
+                   * model A {
+                   *  bs: B[]
+                   * }
+                   * model B {
+                   *  as: A[]
+                   * }
+                   */
                   const units = faker.integer({
                     min: relation.min,
                     max: relation.max,
@@ -1425,6 +1511,10 @@ export function getSeed<
                         connect: ids,
                       },
                     },
+                    include: {
+                      ...include,
+                      [field.name]: true,
+                    },
                   }
                 }
               }
@@ -1444,6 +1534,7 @@ export function getSeed<
                 ...data,
                 [field.name]: enume,
               },
+              include,
             }
           }
           /**
@@ -1543,7 +1634,11 @@ export function getSeed<
      * @param task
      * @param pool
      */
-    function insertFixtureIntoPool(fixture: Fixture, initialPool: Pool): Pool {
+    function insertFixtureIntoPool(
+      fixture: Fixture,
+      initialPool: Pool,
+      orders: Order[],
+    ): Pool {
       /**
        * Calculates the id of this fixture.
        */
@@ -1568,6 +1663,15 @@ export function getSeed<
         .filter(field => field.kind === 'object')
         .reduce<Pool>(insertFieldIntoPool, initialPool)
 
+      /**
+       * This complements getMockDataForField's relations part.
+       *  * For every relation that returns unchanged mock, this should
+       *    insert id into the pool.
+       *  * For every nested create relation it should extract child fixture.
+       *
+       * @param pool
+       * @param field
+       */
       function insertFieldIntoPool(pool: Pool, field: DMMF.Field): Pool {
         const fieldModel = fixture.model
 
@@ -1588,22 +1692,43 @@ export function getSeed<
 
             switch (relation.type) {
               case '1-to-1': {
-                /**
-                 * model A {
-                 *  b: B
-                 * }
-                 * model B {
-                 *  a: A
-                 * }
-                 *
-                 * 1-to-1 relation should take at most one id from the resource pool
-                 * and submit no new ids. Because we already manage constraints during
-                 * order creation step, we can ignore it now.
-                 */
-                if (
+                if (relation.field.isRequired) {
+                  /**
+                   * Extracts a subfixture from compound create relation.
+                   */
+                  const subfixtureOrder: Order = getFieldOrder(field)
+                  const subfixture: Fixture = {
+                    seed: fixture.seed[field.name]!,
+                    model: {
+                      ...subfixtureOrder.model,
+                      fields: subfixtureOrder.model.fields.filter(
+                        ({ relationName }) =>
+                          relationName !== field.relationName,
+                      ),
+                    },
+                    relations: filterKeys(
+                      subfixtureOrder.relations,
+                      (key, relation) =>
+                        relation.field.relationName !== field.relationName,
+                    ),
+                  }
+                  return insertFixtureIntoPool(subfixture, pool, orders)
+                } else if (
                   relation.direction.from === fieldModel.name &&
                   !relation.field.isRequired
                 ) {
+                  /**
+                   * model A {
+                   *  b: B
+                   * }
+                   * model B {
+                   *  a: A
+                   * }
+                   *
+                   * 1-to-1 relation should take at most one id from the resource pool
+                   * and submit no new ids. Because we already manage constraints during
+                   * order creation step, we can ignore it now.
+                   */
                   /* Insert the ID of an instance into the pool. */
                   const newPool = insertIDInstancesIntoPool(
                     pool,
@@ -1653,18 +1778,46 @@ export function getSeed<
                 }
               }
               case 'many-to-1': {
-                /**
-                 * model A {
-                 *  b: B
-                 * }
-                 * model B {
-                 *  a: A[]
-                 * }
-                 *
-                 * Many-to-1 relations either create an instance and make it available for later use,
-                 * or connect to existing instance.
-                 */
-                if (relation.direction.from === fieldModel.name) {
+                if (
+                  /* This is the first model to be created in the relation. */
+                  relation.direction.from === fieldModel.name &&
+                  relation.field.isRequired
+                ) {
+                  /**
+                   * Extracts a subfixture from compound create relation.
+                   */
+                  const subfixtureOrder: Order = getFieldOrder(field)
+                  const subfixture: Fixture = {
+                    seed: fixture.seed[field.name]!,
+                    model: {
+                      ...subfixtureOrder.model,
+                      fields: subfixtureOrder.model.fields.filter(
+                        ({ relationName }) =>
+                          relationName !== field.relationName,
+                      ),
+                    },
+                    relations: filterKeys(
+                      subfixtureOrder.relations,
+                      (key, relation) =>
+                        relation.field.relationName !== field.relationName,
+                    ),
+                  }
+                  return insertFixtureIntoPool(subfixture, pool, orders)
+                } else if (
+                  relation.direction.from === fieldModel.name &&
+                  !relation.field.isRequired
+                ) {
+                  /**
+                   * model A {
+                   *  b: B
+                   * }
+                   * model B {
+                   *  a: A[]
+                   * }
+                   *
+                   * Many-to-1 relations either create an instance and make it available for later use,
+                   * or connect to existing instance.
+                   */
                   /* Insert IDs of model instance into the pool. */
 
                   // const units = faker.integer({
@@ -1725,6 +1878,14 @@ export function getSeed<
           }
         }
       }
+
+      /**
+       * Finds the order of type of the field.
+       * @param field
+       */
+      function getFieldOrder(field: DMMF.Field): Order {
+        return orders.find(order => order.model.name === field.type)!
+      }
     }
 
     /**
@@ -1735,6 +1896,7 @@ export function getSeed<
       availablePool: Pool,
       field: DMMF.Field,
     ): Mock {
+      // TODO: this doesn't put an id into fixture in the end.
       /* Find the requested tasks. */
       const mockTask = tasks.find(task => task.model.name === field.type)
 
