@@ -27,7 +27,7 @@ No installation! Comes preinstalled with `prisma2`! 🎉
 ```prisma
 generator test-utils {
   provider = "prisma-test-utils"
-  output = "node*modules/@generated/test-utils"
+  output = "node-modules/@generated/test-utils"
 }
 ```
 
@@ -141,7 +141,7 @@ test('test with seed data', async () => {
   await seed({
     client,
     models: kit => ({
-      _: {
+      '*': {
         /* Default number of instances. */
         amount: 500,
       },
@@ -155,6 +155,8 @@ test('test with seed data', async () => {
           entry: () => {
             return `A generated entry from the function.`
           },
+          /* Define scalar list mock functions */
+          tags: () => kit.faker.n(kit.faker.name, 3)
           /* Manage relations. */
           posts: {
             max: 100,

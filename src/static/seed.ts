@@ -1,7 +1,6 @@
-import { DMMF, debug } from '@prisma/client/runtime'
+import { DMMF } from '@prisma/client/runtime'
 import Chance from 'chance'
-import _ from 'lodash'
-import { Dictionary } from 'lodash'
+import _, { Dictionary } from 'lodash'
 import mls from 'multilines'
 
 import { Scalar } from './scalars'
@@ -13,6 +12,7 @@ import {
   SeedModelFieldRelationConstraint,
   SeedFunction,
   PrismaClientType,
+  SeedModelScalarListDefinition,
 } from './types'
 import { withDefault, not, filterKeys, mapEntries } from './utils'
 
@@ -136,12 +136,11 @@ export function getSeed<
    *  - { ArtistId: "uniqueid" }
    */
   type ID = Dictionary<string | number>
+  type Scalar = string | number | boolean | Date
 
   type FixtureData = Dictionary<
-    | string
-    | number
-    | boolean
-    | Date
+    | Scalar
+    | { set: Scalar[] }
     | { connect: ID }
     | { connect: ID[] }
     | { create: FixtureData }
@@ -581,7 +580,10 @@ export function getSeed<
          *
          * -> We should create B and connect As to it.
          */
-        return { optional: false, from: relationModel }
+        return {
+          optional: false,
+          from: relationModel,
+        }
       } else if (field.isList && backRelationField.isRequired) {
         /**
          * model A {
@@ -593,7 +595,10 @@ export function getSeed<
          *
          * -> We should create A and connect Bs to it later.
          */
-        return { optional: false, from: fieldModel }
+        return {
+          optional: false,
+          from: fieldModel,
+        }
       } else if (field.isList && !backRelationField.isRequired) {
         /**
          * model A {
@@ -763,7 +768,10 @@ export function getSeed<
       ordinal: number,
       pool: Pool,
       order: Order,
-    ): { step: Step; pool: Pool } {
+    ): {
+      step: Step
+      pool: Pool
+    } {
       /**
        * Fix optional relations' direction.
        */
@@ -806,7 +814,10 @@ export function getSeed<
         [order.model.name]: order.model,
       }
 
-      return { step, pool: newPool }
+      return {
+        step,
+        pool: newPool,
+      }
     }
   }
 
@@ -956,7 +967,9 @@ export function getSeed<
       pool: Pool
       tasks: Task[]
       data: FixtureData
-      include: { [field: string]: true | { include: Mock['include'] } }
+      include: {
+        [field: string]: true | { include: Mock['include'] }
+      }
     }
 
     /**
@@ -998,20 +1011,52 @@ export function getSeed<
           switch (typeof mock) {
             case 'function': {
               /* Custom function */
-              const value = mock.call(faker)
-              return {
-                pool,
-                tasks,
-                data: {
-                  ...data,
-                  [field.name]: value,
-                },
-                include,
+              if (field.isList) {
+                const values = (mock as () => SeedModelFieldDefinition[]).call(
+                  faker,
+                )
+                return {
+                  pool,
+                  tasks,
+                  data: {
+                    ...data,
+                    [field.name]: { set: values },
+                  },
+                  include,
+                }
+              } else {
+                const value = (mock as () => SeedModelFieldDefinition).call(
+                  faker,
+                )
+                return {
+                  pool,
+                  tasks,
+                  data: {
+                    ...data,
+                    [field.name]: value,
+                  },
+                  include,
+                }
               }
             }
             case 'object': {
-              /* Relation constraint */
-              break
+              /* Relation or scalar list */
+              if (field.isList) {
+                /* Scalar list */
+                const values = mock as SeedModelFieldDefinition[]
+                return {
+                  pool,
+                  tasks,
+                  data: {
+                    ...data,
+                    [field.name]: { set: values },
+                  },
+                  include,
+                }
+              } else {
+                /* Relation */
+                break
+              }
             }
             case 'bigint':
             case 'boolean':
@@ -1078,6 +1123,104 @@ export function getSeed<
 
         switch (field.kind) {
           case 'scalar': {
+            /**
+             * List scalar mocks.
+             *
+             * We provide good default mocks for functions. Anything more complex
+             * or flexible can be achieved using the exposed Chance.js library.
+             */
+            if (field.isList) {
+              switch (field.type) {
+                /**
+                 * Scalars
+                 */
+                case Scalar.string: {
+                  const strings = faker.n(faker.string, 3)
+
+                  return {
+                    pool,
+                    tasks,
+                    data: {
+                      ...data,
+                      [field.name]: {
+                        set: strings,
+                      },
+                    },
+                    include,
+                  }
+                }
+                case Scalar.int: {
+                  const numbers = faker.n(faker.integer, 3, {
+                    min: -2000,
+                    max: 2000,
+                  })
+
+                  return {
+                    pool,
+                    tasks,
+                    data: {
+                      ...data,
+                      [field.name]: { set: numbers },
+                    },
+                    include,
+                  }
+                }
+                case Scalar.float: {
+                  const floats = faker.n(faker.floating, 3, {
+                    min: -1000,
+                    max: 1000,
+                    fixed: 2,
+                  })
+
+                  return {
+                    pool,
+                    tasks,
+                    data: {
+                      ...data,
+                      [field.name]: { set: floats },
+                    },
+                    include,
+                  }
+                }
+                case Scalar.date: {
+                  const dates = faker.n(faker.date, 3)
+
+                  return {
+                    pool,
+                    tasks,
+                    data: {
+                      ...data,
+                      [field.name]: { set: dates },
+                    },
+                    include,
+                  }
+                }
+                case Scalar.bool: {
+                  const booleans = faker.n(faker.bool, 3)
+
+                  return {
+                    pool,
+                    tasks,
+                    data: {
+                      ...data,
+                      [field.name]: { set: booleans },
+                    },
+                    include,
+                  }
+                }
+                /* Unsupported scalar */
+                default: {
+                  throw new Error(
+                    `Unsupported scalar field ${task.model.name}${field.name} of type ${field.type}`,
+                  )
+                }
+              }
+            }
+
+            /**
+             * Scalar mocks.
+             */
+
             switch (field.type) {
               /**
                * Scalars
@@ -1154,7 +1297,7 @@ export function getSeed<
               /* Unsupported scalar */
               default: {
                 throw new Error(
-                  `Unsupported scalar field of type ${field.type}`,
+                  `Unsupported scalar field ${task.model.name}${field.name} of type ${field.type}`,
                 )
               }
             }

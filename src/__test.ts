@@ -7,7 +7,24 @@
 
 //   const seed: SeedFunction<PrismaClient, GeneratedSeedModels> = getSeed(dmmf)
 
-//   // debugger
+//   const dogo = await client.pet.create({
+//     data: {
+//       name: 'wubju',
+//       nicknames: {
+//         set: [
+//           'Arthur Parker',
+//           'Jack Chavez',
+//           'Hunter Franklin',
+//           'Betty Gill',
+//           'Louis Reeves',
+//         ],
+//       },
+//       animal: 'Dog',
+//       birthday: '2040-07-14T19:13:01.534Z',
+//     },
+//   })
+
+//   debugger
 
 //   // const user = await client.user.create({
 //   //   data: {
@@ -33,6 +50,12 @@
 //     models: kit => ({
 //       '*': {
 //         amount: 3,
+//       },
+//       Pet: {
+//         factory: {
+//           animal: 'Dog',
+//           nicknames: () => kit.faker.n(kit.faker.name, 5),
+//         },
 //       },
 //     }),
 //   })
