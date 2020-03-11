@@ -28,12 +28,15 @@ export type SeedModel = {
   factory?: Dictionary<
     | SeedModelFieldDefinition
     | (() => SeedModelFieldDefinition)
+    | SeedModelScalarListDefinition
     | SeedModelFieldRelationConstraint
   >
 }
 
-export type SeedModelFieldDefinition = string | number | boolean // ID |
-
+export type SeedModelFieldDefinition = string | number | boolean
+export type SeedModelScalarListDefinition =
+  | SeedModelFieldDefinition[]
+  | (() => SeedModelFieldDefinition[])
 export type SeedModelFieldRelationConstraint = {
   min?: number
   max?: number

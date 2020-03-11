@@ -97,12 +97,16 @@ export function generateGeneratedSeedModelsType(dmmf: DMMF.Document): string {
         }
       }
       case 'scalar': {
+        const scalar = getTSTypeFromDMMFScalar(field.type)
+        const supported = isSupportedScalar(field)
+        if (field.isList) {
+          /* prettier-ignore */
+          return `${field.name}${q(supported)}: ${scalar}[] | (() => ${scalar}[])`
+        }
         /**
          * The field should provide a function which results in a type
          * of the scalar.
          */
-        const scalar = getTSTypeFromDMMFScalar(field.type)
-        const supported = isSupportedScalar(field)
         return `${field.name}${q(supported)}: ${scalar} | (() => ${scalar})`
       }
       default: {
