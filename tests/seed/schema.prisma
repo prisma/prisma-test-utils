@@ -1,7 +1,8 @@
-datasource sqlite {
-  url      = "file:./data.db"
-  provider = "sqlite"
+datasource db {
+  provider = "postgres"
+  url      = "postgresql://prisma:prisma@127.0.0.1:5432/simple"
 }
+
 
 generator client {
   provider = "prisma-client-js"
@@ -28,11 +29,12 @@ enum Animal {
 }
 
 model Pet {
-  PetId    Int      @id @default(autoincrement())
-  name     String
-  animal   Animal
-  toys     Toy[]
-  birthday DateTime
+  PetId     Int      @id @default(autoincrement())
+  name      String
+  nicknames String[]
+  animal    Animal
+  toys      Toy[]
+  birthday  DateTime
 }
 
 model Toy {

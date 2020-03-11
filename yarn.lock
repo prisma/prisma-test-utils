@@ -473,10 +473,10 @@
   dependencies:
     "@types/node" ">= 8"
 
-"@prisma/client@^2.0.0-alpha.843":
-  version "2.0.0-alpha.843"
-  resolved "https://registry.yarnpkg.com/@prisma/client/-/client-2.0.0-alpha.843.tgz#0e5c94183a3a12c09c574ecfb35654ae37ed67f5"
-  integrity sha512-EqS5D1GcP97x6qoxQjH3EvprG2o9034uwox+ngpFKRNcOlkN025AGFlwrmB18PUXVbOWBzuUjiKjl9C6I5ddCQ==
+"@prisma/client@^2.0.0-preview023":
+  version "2.0.0-preview023"
+  resolved "https://registry.yarnpkg.com/@prisma/client/-/client-2.0.0-preview023.tgz#d24515b3f62f1d3730fca7d07a43cff36e308f6c"
+  integrity sha512-R3e+CFr5HkDTzMYnNk9iYsjY76C9/3zxdUxmejD3hivJGJ6yEKq5p95gE3skkzWnj5BBa9tE15tNI7/uZZhv5A==
 
 "@prisma/engine-core@2.0.41":
   version "2.0.41"
@@ -519,10 +519,10 @@
     debug "4.1.1"
     isbinaryfile "^4.0.2"
 
-"@prisma/generator-helper@^0.0.40":
-  version "0.0.40"
-  resolved "https://registry.yarnpkg.com/@prisma/generator-helper/-/generator-helper-0.0.40.tgz#11ad45706efad86c1f7bc837f724b1f46c90879d"
-  integrity sha512-s9keJBkVnFJhhftr7kbULYg9cfp0Xsd/eZrGbUI/9HWtCctIPsRy0joTi/leL7cIoobQYI3RYHydxtumo21pFg==
+"@prisma/generator-helper@^0.0.43":
+  version "0.0.43"
+  resolved "https://registry.yarnpkg.com/@prisma/generator-helper/-/generator-helper-0.0.43.tgz#4dac47a7ccc304af05e87f33d55334584b65eb1d"
+  integrity sha512-SRYIxUJGFjDmWOVPQx+BPgb9pI/If+2PcWDN0ImaU8hyBgH5AJo3E/wyOAvtpRYrgajV8Hy1i4EAzMDhVt7xqg==
   dependencies:
     "@types/cross-spawn" "^6.0.1"
     chalk "^3.0.0"
@@ -7332,10 +7332,10 @@ prisma-yml@^1.0.88:
     scuid "^1.0.2"
     yaml-ast-parser "^0.0.40"
 
-prisma2@^2.0.0-alpha.843:
-  version "2.0.0-alpha.843"
-  resolved "https://registry.yarnpkg.com/prisma2/-/prisma2-2.0.0-alpha.843.tgz#039e4380ef5acfdb844974167280b06b52da2159"
-  integrity sha512-DQEYxKVE1zmvOSmfbYmhWJGhbg/nEDx1vYn32XBFwQhXgTn2fIWM5hP/2ZJm+wMcpPwUczpyJFZRa0DtcjdR8Q==
+prisma2@^2.0.0-preview023:
+  version "2.0.0-preview023"
+  resolved "https://registry.yarnpkg.com/prisma2/-/prisma2-2.0.0-preview023.tgz#9c692b6fe0f3917b9ad295db6fa15018e5465ca9"
+  integrity sha512-rwK1fzVcC9S9eJJBn1qBwO3ccuN0FRii3UkQcwIGg98jyo3nx0QuLSmH0c6xtxDWhzIN1sRMepZf959AaVNxkA==
 
 process-nextick-args@~2.0.0:
   version "2.0.1"

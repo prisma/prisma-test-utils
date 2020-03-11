@@ -1,6 +1,6 @@
 {
   "name": "prisma-test-utils",
-  "version": "0.3.10",
+  "version": "0.4.0",
   "main": "dist/generator.js",
   "types": "dist/generator.d.ts",
   "files": [
@@ -28,8 +28,8 @@
     "pg": "^7.12.1"
   },
   "devDependencies": {
-    "@prisma/client": "^2.0.0-alpha.843",
-    "@prisma/generator-helper": "^0.0.40",
+    "@prisma/client": "^2.0.0-preview023",
+    "@prisma/generator-helper": "^0.0.43",
     "@prisma/lift": "^0.3.384",
     "@types/execa": "^2.0.0",
     "@types/jest": "^25.1.2",
@@ -50,7 +50,7 @@
     "npm-run-all": "^4.1.5",
     "prettier": "^1.17.1",
     "pretty-quick": "^2.0.1",
-    "prisma2": "^2.0.0-alpha.843",
+    "prisma2": "^2.0.0-preview023",
     "rimraf": "^3.0.2",
     "semantic-release": "^17.0.3",
     "ts-jest": "^25.2.0",
@@ -58,11 +58,9 @@
     "typescript": "^3.8.3"
   },
   "peerDependencies": {
-    "@prisma/cli": "*",
+    "@prisma/client": "*",
     "@prisma/lift": "*",
-    "@prisma/photon": "*",
-    "prisma2": "*",
-    "typescript": "*"
+    "prisma2": "*"
   },
   "peerDependenciesMeta": {
     "prisma2": {
