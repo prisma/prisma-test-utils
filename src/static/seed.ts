@@ -1183,7 +1183,12 @@ export function getSeed<
                   }
                 }
                 case Scalar.date: {
-                  const dates = faker.n(faker.date, 3)
+                  const dates = faker.n(() => {
+                    return faker.date({
+                      min: new Date(Date.UTC(1970, 0, 1)),
+                      max: new Date(Date.UTC(2038, 1, 19)),
+                    })
+                  }, 3)
 
                   return {
                     pool,
@@ -1270,7 +1275,10 @@ export function getSeed<
                 }
               }
               case Scalar.date: {
-                const date = faker.date()
+                const date = faker.date({
+                  min: new Date(Date.UTC(1970, 0, 1)),
+                  max: new Date(Date.UTC(2038, 1, 19)),
+                })
 
                 return {
                   pool,
