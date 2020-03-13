@@ -195,6 +195,32 @@ interface SQLitePoolOptions {
 }
 ```
 
+## Local development
+
+> :construction: NOTE: Please comment your work and read the comments that are already in there.
+
+I didn't want to remove half the files of this library - the pool part - and that's why there's more files than you'll usually need for developing seed utils. Please don't remove the extra files as this work very nicely the way it is.
+
+The most important file for seeding is `src/static/seed.ts` and `src/intellisense/seed.ts`. The first one is the logic and the second one provides customized types.
+
+Furthermore:
+
+- **To create a new DB instance:** Spin up the `docker-compose up -d` and use TablePlus or alternative to import the sql.
+- **To examine the behaviour of the library:** Uncomment `src/__test` file and start the debugger. `src/__test` file references files in the `tests/seed` folder. Read on about that!
+- **To setup `tests/seed` folder:** Navigate to that directory and use `yarn prisma2 <cmd>` to setup everything that you need. I usually use one of these functions:
+
+  - `yarn prisma2 introspect yarn prisma2 introspect --url="postgresql://prisma:prisma@127.0.0.1/ruma"`
+  - `yarn prisma2 migrate up --experimental`
+  - `yarn prisma2 migrate save --name "init" --experimental`
+  - `yarn prisma2 generate`.
+    I have also added the `README.md` file in there with missing generator definitions from introspection. Copy and paste them to the top.
+
+- **To push changes:** Preferablly do a PR, and don't forget to comment out `src/__test` file.
+- **To publish a new version:** I use `npx np --no-tests`.
+- **To apply changes in the `intellisense`:** Run `yarn build`.
+- **To test the utils outside debugger:** Run `yarn build:runtime`.
+- **To get new VSCode type definitions after changing the schema:** Reload VSCode :slightly_smiling_face:
+
 ## LICENSE
 
 MIT @ Prisma
