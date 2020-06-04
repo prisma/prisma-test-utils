@@ -519,10 +519,10 @@
     debug "4.1.1"
     isbinaryfile "^4.0.2"
 
-"@prisma/generator-helper@^0.0.43":
-  version "0.0.43"
-  resolved "https://registry.yarnpkg.com/@prisma/generator-helper/-/generator-helper-0.0.43.tgz#4dac47a7ccc304af05e87f33d55334584b65eb1d"
-  integrity sha512-SRYIxUJGFjDmWOVPQx+BPgb9pI/If+2PcWDN0ImaU8hyBgH5AJo3E/wyOAvtpRYrgajV8Hy1i4EAzMDhVt7xqg==
+"@prisma/generator-helper@^2.0.0-preview024":
+  version "2.0.0-preview024"
+  resolved "https://registry.yarnpkg.com/@prisma/generator-helper/-/generator-helper-2.0.0-preview024.tgz#0f7c25ef930459946f032d6052456718ea1b159c"
+  integrity sha512-ON2ivUZLPDDK/uloJiUPydNciYLSqaJuj5e+n5E5ulMBTEqFSHhHstu6RRuzqwC7NiXZyurFCAdK8fybZqkJeA==
   dependencies:
     "@types/cross-spawn" "^6.0.1"
     chalk "^3.0.0"

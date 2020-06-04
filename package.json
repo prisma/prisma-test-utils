@@ -1,6 +1,6 @@
 {
   "name": "prisma-test-utils",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "main": "dist/generator.js",
   "types": "dist/generator.d.ts",
   "files": [
@@ -19,6 +19,7 @@
     "release": "semantic-release"
   },
   "dependencies": {
+    "@prisma/generator-helper": "^2.0.0-preview024",
     "@types/chance": "^1.0.6",
     "chance": "^1.1.0",
     "fs-extra": "^8.1.0",
@@ -29,7 +30,6 @@
   },
   "devDependencies": {
     "@prisma/client": "^2.0.0-preview023",
-    "@prisma/generator-helper": "^0.0.43",
     "@prisma/lift": "^0.3.384",
     "@types/execa": "^2.0.0",
     "@types/jest": "^25.1.2",
