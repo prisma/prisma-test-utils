@@ -9,6 +9,7 @@ export const Scalar = {
   int: 'Int',
   float: 'Float',
   date: 'DateTime',
+  json: 'Json',
 }
 
 /**

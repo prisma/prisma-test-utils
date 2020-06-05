@@ -1230,6 +1230,20 @@ export function getSeed<
               /**
                * Scalars
                */
+              case Scalar.json: {
+                const json = JSON.stringify({
+                  name: faker.word(),
+                })
+                return {
+                  pool,
+                  tasks,
+                  data: {
+                    ...data,
+                    [field.name]: json,
+                  },
+                  include,
+                }
+              }
               case Scalar.string: {
                 const string = faker.word()
                 return {
