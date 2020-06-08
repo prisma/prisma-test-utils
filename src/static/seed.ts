@@ -994,7 +994,7 @@ export function getSeed<
         .filter(
           field =>
             /* ID fields with default shouldn't have a generated id. */
-            !(field.isId && field.default !== undefined),
+            !(field.isId && field.hasDefaultValue !== undefined),
         )
         .reduce<Mock>(getMockDataForField, initialMock)
 
