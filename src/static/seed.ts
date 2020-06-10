@@ -182,6 +182,18 @@ export function getSeed<
       /* Find Photon mappings for seeding step */
       const mapping = dmmf.mappings.find(m => m.model === model.name)!
 
+      /* The relation syntax change made the schema have an additional scalar field for
+       * each relation. This part of code removes that scalar field from the model as it
+       * is not required while creating a model object.
+       */
+      const allRelationFields = model.fields.flatMap(
+        field => field.relationFromFields ?? [],
+      )
+
+      model.fields = model.fields.filter(
+        f => !allRelationFields.includes(f.name),
+      )
+
       /* Generate relations based on provided restrictions. */
       const relations: Order['relations'] = model.fields
         .filter(f => f.kind === 'object')
