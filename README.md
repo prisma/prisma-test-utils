@@ -4,7 +4,7 @@
 [![CircleCI](https://circleci.com/gh/prisma/prisma-test-utils/tree/master.svg?style=shield)](https://circleci.com/gh/prisma/prisma-test-utils/tree/master)
 [![codecov](https://codecov.io/gh/prisma/prisma-test-utils/branch/master/graph/badge.svg)](https://codecov.io/gh/prisma/prisma-test-utils)
 
-> ⚠️ **This project is temporarily unmaintained. Please reach out in the [`#prisma2`](https://prisma.slack.com/messages/CKQTGR6T0/) channel on the [Prisma Slack](https://slack.prisma.io) if you're interested in collaborating on it. We're planning to pick up development soon again (see [this issue](https://github.com/prisma/prisma-test-utils/issues/6)).**
+> ⚠️ **This project is temporarily unmaintained. See [this issue](https://github.com/prisma/prisma-test-utils/issues/6).**
 
 In testing workflows, generating seed data usually includes a lot of boilerplate and hardcoded fixtures that need to be migrated with changing code.
 
