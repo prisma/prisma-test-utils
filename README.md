@@ -1,8 +1,8 @@
 # 🃏 prisma-test-utils
 
 [![npm version](https://badge.fury.io/js/prisma-test-utils.svg)](https://badge.fury.io/js/prisma-test-utils)
-[![CircleCI](https://circleci.com/gh/prisma/prisma-test-utils/tree/master.svg?style=shield)](https://circleci.com/gh/prisma/prisma-test-utils/tree/master)
-[![codecov](https://codecov.io/gh/prisma/prisma-test-utils/branch/master/graph/badge.svg)](https://codecov.io/gh/prisma/prisma-test-utils)
+[![CircleCI](https://circleci.com/gh/prisma/prisma-test-utils/tree/main.svg?style=shield)](https://circleci.com/gh/prisma/prisma-test-utils/tree/main)
+[![codecov](https://codecov.io/gh/prisma/prisma-test-utils/branch/main/graph/badge.svg)](https://codecov.io/gh/prisma/prisma-test-utils)
 
 > ⚠️ **This project is temporarily unmaintained. See [this issue](https://github.com/prisma/prisma-test-utils/issues/6).**
 
